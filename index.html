@@ -2883,6 +2883,7 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
 }
 
 function navToActivity(tab) {
@@ -2897,6 +2898,7 @@ function navToActivity(tab) {
   if(tab) switchMatchTab(tab);
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3159,6 +3161,7 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
 }
 
 function navToActivity(tab) {
@@ -3173,6 +3176,7 @@ function navToActivity(tab) {
   if(tab) switchMatchTab(tab);
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4889,6 +4893,47 @@ function goToPubStep1() {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+
+function autoDetectCity() {
+  if(!navigator.geolocation) return;
+  const label = document.getElementById('geo-label');
+  const sub = document.getElementById('geo-sub');
+  const btn = document.getElementById('geo-btn');
+  if(!label) return;
+  // Already detected
+  if(label.textContent.startsWith('📍') && !label.textContent.includes('automáticamente')) return;
+  label.textContent = 'Detectando ubicación...';
+  if(sub) sub.textContent = 'Un momento...';
+  if(btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      document.getElementById('pub-lat').value = lat;
+      document.getElementById('pub-lng').value = lng;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const geo = await res.json();
+        const city = geo.address.city || geo.address.town || geo.address.village || geo.address.municipality || 'Barcelona';
+        document.getElementById('pub-loc').value = city;
+        if(label) label.textContent = '📍 ' + city;
+        if(sub) sub.textContent = 'Ubicación detectada automáticamente';
+        if(btn) { btn.textContent = '✓'; btn.style.background = 'var(--green)'; btn.disabled = false; }
+      } catch(e) {
+        document.getElementById('pub-loc').value = 'Barcelona';
+        if(label) label.textContent = '📍 Barcelona (por defecto)';
+        if(sub) sub.textContent = '';
+        if(btn) { btn.textContent = '✓'; btn.disabled = false; }
+      }
+    },
+    () => {
+      // Sin permiso — dejamos Barcelona por defecto silenciosamente
+      if(label) label.textContent = '📍 Barcelona';
+      if(sub) sub.textContent = 'Activa la ubicación para detectarla automáticamente';
+      if(btn) { btn.textContent = 'Reintentar'; btn.disabled = false; }
+    },
+    { timeout: 8000 }
+  );
+}
 
 function requestGeoLocation() {
   const label = document.getElementById('geo-label');
