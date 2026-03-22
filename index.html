@@ -4346,12 +4346,10 @@ async function loadMyItems() {
     return;
   }
 
-  const userName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
-
   const { data, error } = await db
     .from('items')
     .select('*')
-    .eq('user_name', userName)
+    .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
 
   if (error || !data) {
@@ -4502,7 +4500,7 @@ async function saveEditItem() {
   };
   if (photoUrl) updates.photos = photoUrl;
 
-  const { error } = await db.from('items').update(updates).eq('id', id);
+  const { error } = await db.from('items').update(updates).eq('id', id).eq('user_id', currentUser.id);
 
   if (error) {
     errEl.textContent = 'Error al guardar: ' + error.message;
@@ -4520,7 +4518,7 @@ async function saveEditItem() {
 async function deleteItem(itemId, btnEl) {
   if (!confirm('¿Seguro que quieres eliminar este objeto? Esta acción no se puede deshacer.')) return;
   btnEl.textContent = '⏳'; btnEl.disabled = true;
-  const { error } = await db.from('items').delete().eq('id', itemId);
+  const { error } = await db.from('items').delete().eq('id', itemId).eq('user_id', currentUser.id);
   if (error) { showToast('⚠️ Error al eliminar'); btnEl.textContent = '🗑'; btnEl.disabled = false; return; }
   showToast('✓ Objeto eliminado');
   loadMyItems();
@@ -5429,6 +5427,7 @@ async function publishItem() {
     wants: wantsFlat.join(', '),
     photos: photoUrls.length ? photoUrls[0] : '',
     user_name: userName,
+    user_id: currentUser ? currentUser.id : null,
   };
 
   // Guardar en Supabase
