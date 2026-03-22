@@ -1387,6 +1387,32 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 }
 
 </style>
+<script>
+// Funciones de navegación — disponibles inmediatamente, sin depender de Supabase
+function showAuthScreen() {
+  document.getElementById('view-landing').style.display = 'none';
+  document.getElementById('view-landing').classList.remove('active');
+  document.getElementById('view-auth').style.display = '';
+  document.getElementById('view-auth').classList.add('active');
+  document.getElementById('main-nav').style.display = 'none';
+  const bn = document.querySelector('.bottom-nav');
+  if (bn) bn.style.display = 'none';
+}
+function scrollToHow() {
+  document.getElementById('lp-how').scrollIntoView({ behavior: 'smooth' });
+}
+function switchAuthTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('auth-form-login').style.display = isLogin ? '' : 'none';
+  document.getElementById('auth-form-register').style.display = isLogin ? 'none' : '';
+  document.getElementById('auth-tab-login').style.borderBottomColor = isLogin ? 'var(--accent)' : 'transparent';
+  document.getElementById('auth-tab-login').style.color = isLogin ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('auth-tab-login').style.fontWeight = isLogin ? '700' : '500';
+  document.getElementById('auth-tab-register').style.borderBottomColor = isLogin ? 'transparent' : 'var(--accent)';
+  document.getElementById('auth-tab-register').style.color = isLogin ? 'var(--muted)' : 'var(--accent)';
+  document.getElementById('auth-tab-register').style.fontWeight = isLogin ? '500' : '700';
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
