@@ -4231,24 +4231,35 @@ function renderProfile() {
   // Update trust passport
   const level = getTrustLevel(myTrustScore);
   const lvlData = TRUST_LEVELS[level];
-  document.getElementById('trust-level-badge').textContent = lvlData.label;
-  document.getElementById('trust-level-badge').className = 'trust-level-badge ' + lvlData.cls;
-  document.getElementById('trust-score').textContent = myTrustScore;
-  document.getElementById('trust-name').textContent = document.getElementById('edit-name')?.value || 'Alex Martínez';
-  document.getElementById('trust-rating').textContent = '4.9';
-  document.getElementById('trust-review-count').textContent = REVIEWS_DATA.length + myCompletedTrades - 3;
-  document.getElementById('tm-completados').textContent = myCompletedTrades;
-  document.getElementById('tm-publicados').textContent = myItems.length;
-  document.getElementById('tm-ratio').textContent = '100%';
-  document.getElementById('savings-amount').textContent = mySavings.toLocaleString('es-ES') + ' €';
-  document.getElementById('prof-stat-items').textContent = myItems.length;
+  const trustLevelBadge = document.getElementById('trust-level-badge');
+  if(trustLevelBadge) { trustLevelBadge.textContent = lvlData.label; trustLevelBadge.className = 'trust-level-badge ' + lvlData.cls; }
+  const trustScore = document.getElementById('trust-score');
+  if(trustScore) trustScore.textContent = myTrustScore;
+  const trustName = document.getElementById('trust-name');
+  if(trustName) trustName.textContent = document.getElementById('edit-name')?.value || 'Usuario';
+  const trustRating = document.getElementById('trust-rating');
+  if(trustRating) trustRating.textContent = '4.9';
+  const trustReviewCount = document.getElementById('trust-review-count');
+  if(trustReviewCount) trustReviewCount.textContent = REVIEWS_DATA.length + myCompletedTrades - 3;
+  const tmCompletados = document.getElementById('tm-completados');
+  if(tmCompletados) tmCompletados.textContent = myCompletedTrades;
+  const tmPublicados = document.getElementById('tm-publicados');
+  if(tmPublicados) tmPublicados.textContent = myItems.length;
+  const tmRatio = document.getElementById('tm-ratio');
+  if(tmRatio) tmRatio.textContent = '100%';
+  const savingsAmount = document.getElementById('savings-amount');
+  if(savingsAmount) savingsAmount.textContent = mySavings.toLocaleString('es-ES') + ' €';
+  const profStatItems = document.getElementById('prof-stat-items');
+  if(profStatItems) profStatItems.textContent = myItems.length;
 
   // Progress bar
   const nextLevelMin = level === 'elite' ? 100 : TRUST_LEVELS[getTrustLevel(myTrustScore+1)]?.min || 100;
   const curMin = lvlData.min;
   const pct = Math.round(((myTrustScore - curMin) / (100 - curMin)) * 100);
-  document.querySelector('.trust-progress-fill').style.width = Math.max(4,pct) + '%';
-  document.querySelector('.trust-progress-label span:last-child').textContent = myTrustScore + ' / 100 pts';
+  const progressFill = document.querySelector('.trust-progress-fill');
+  if(progressFill) progressFill.style.width = Math.max(4,pct) + '%';
+  const progressLabel = document.querySelector('.trust-progress-label span:last-child');
+  if(progressLabel) progressLabel.textContent = myTrustScore + ' / 100 pts';
 
   // My active items — se cargan desde Supabase en loadMyItems()
   document.getElementById('my-items-grid').innerHTML =
