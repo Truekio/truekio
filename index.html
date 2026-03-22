@@ -2188,6 +2188,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <option>Libros</option>
               <option>Servicios</option>
               <option>Juguetes</option>
+              <option>Cartas</option>
+              <option>Juegos de mesa</option>
               <option>Otro</option>
             </select>
           </div>
@@ -2736,7 +2738,8 @@ let shippingMode = 'persona';
 // Emoji automático por categoría
 const CAT_EMOJI = {
   'Electrónica':'📱','Música':'🎵','Deporte':'⚽','Ropa':'👗',
-  'Hogar':'🏠','Libros':'📚','Servicios':'🤝','Juguetes':'🧸','Otro':'📦'
+  'Hogar':'🏠','Libros':'📚','Servicios':'🤝','Juguetes':'🧸',
+  'Cartas':'🃏','Juegos de mesa':'🎲','Otro':'📦'
 };
 function getEmojiForCat(cat) {
   const base = cat ? cat.split('|')[0] : 'Otro';
@@ -4780,6 +4783,8 @@ const PUB_SUBCATS = {
   'Libros': ['Ficción','Ciencia ficción','Fantasía','Thriller','Romance','Terror','Historia','Biografías','Autoayuda','Ciencia','Filosofía','Infantil','Cómics y manga','Cocina','Economía','Otro'],
   'Servicios': ['Salud · Dentista','Salud · Fisioterapeuta','Salud · Psicólogo','Salud · Nutricionista','Salud · Veterinario','Construcción · Electricista','Construcción · Fontanero','Construcción · Carpintero','Construcción · Pintor','Educación · Idiomas','Educación · Música','Educación · Apoyo escolar','Tecnología · Diseño web','Tecnología · Ordenadores','Tecnología · Fotografía','Belleza · Peluquería','Belleza · Masajes','Legal · Abogado','Legal · Gestoría','Hogar · Limpieza','Hogar · Jardinería','Otro'],
   'Juguetes': ['Bebés','Juegos de mesa','Figuras y coleccionables','Construcción','Electrónicos','Exterior','Otro'],
+  'Cartas': ['Magic: The Gathering','Pokémon','Yu-Gi-Oh!','Flesh and Blood','Otras cartas coleccionables'],
+  'Juegos de mesa': ['Estrategia','Rol','Temáticos','Cooperativos','Económicos / Gestión','Abstractos','Otro'],
   'Otro': [],
 };
 
