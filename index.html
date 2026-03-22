@@ -293,9 +293,8 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .item-actions{display:flex;gap:8px;margin-top:auto;}
 .fav-btn{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;padding:0;}
 .fav-btn:hover{background:var(--accent-l);border-color:rgba(78,143,186,.2);}
-.fav-btn:hover .fav-heart{stroke:var(--accent);}
-.fav-btn.faved{background:var(--accent-l);border-color:var(--accent);}
-.fav-btn.faved .fav-heart{stroke:var(--accent);fill:var(--accent);}
+.fav-btn:hover svg{stroke:var(--accent);}
+.fav-btn.faved svg{stroke:#e53e3e;fill:#e53e3e;}
 .fav-heart{width:16px;height:16px;stroke:var(--muted2);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:all .2s;}
 
 /* Category-specific card themes */
@@ -3071,7 +3070,7 @@ function itemCardHTML(item, isPremiumView=false) {
     const arrows = allPhotos.length > 1 ? `
       <button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button>
       <button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
-    const count = allPhotos.length > 1 ? `<div class="carousel-count" id="${cid}-count">1 / ${allPhotos.length}</div>` : '';
+    const count = ''; // contador de fotos eliminado
     return `<div class="card-carousel" id="${cid}" data-idx="0" data-total="${allPhotos.length}"
       onmousedown="carouselDragStart(event,'${cid}')"
       ontouchstart="carouselTouchStart(event,'${cid}')"
@@ -3092,12 +3091,15 @@ function itemCardHTML(item, isPremiumView=false) {
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}" onclick_disabled="">
-    <div class="item-img" style="background:transparent">
+    <div class="item-img" style="background:transparent;cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
       ${topBadge}
       ${item.verified ? '<div class="item-verified">✓ Verificado</div>' : ''}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
+    </div>
+    <div style="display:flex;justify-content:flex-end;padding:6px 10px 0;background:var(--white)">
+      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)" style="background:none;border:none;cursor:pointer;padding:2px;line-height:0"><svg class="fav-heart" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body">
       <div class="item-user-row">
@@ -3118,12 +3120,7 @@ function itemCardHTML(item, isPremiumView=false) {
           `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}${o.items.length>1?' +'+( o.items.length-1):''}</span>`
         ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
       </div>
-      <div class="item-actions">
-        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openDetail(${item.id})">
-          ${isMatch ? '⚡ Ver y proponer' : '👁 Ver objeto'}
-        </button>
-        <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-      </div>
+
     </div>
   </div>`;
 }
@@ -3347,7 +3344,7 @@ function itemCardHTML(item, isPremiumView=false) {
     const arrows = allPhotos.length > 1 ? `
       <button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button>
       <button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
-    const count = allPhotos.length > 1 ? `<div class="carousel-count" id="${cid}-count">1 / ${allPhotos.length}</div>` : '';
+    const count = ''; // contador de fotos eliminado
     return `<div class="card-carousel" id="${cid}" data-idx="0" data-total="${allPhotos.length}"
       onmousedown="carouselDragStart(event,'${cid}')"
       ontouchstart="carouselTouchStart(event,'${cid}')"
@@ -3368,12 +3365,15 @@ function itemCardHTML(item, isPremiumView=false) {
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}" onclick_disabled="">
-    <div class="item-img" style="background:transparent">
+    <div class="item-img" style="background:transparent;cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
       ${topBadge}
       ${item.verified ? '<div class="item-verified">✓ Verificado</div>' : ''}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
+    </div>
+    <div style="display:flex;justify-content:flex-end;padding:6px 10px 0;background:var(--white)">
+      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)" style="background:none;border:none;cursor:pointer;padding:2px;line-height:0"><svg class="fav-heart" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body">
       <div class="item-user-row">
@@ -3394,12 +3394,7 @@ function itemCardHTML(item, isPremiumView=false) {
           `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}${o.items.length>1?' +'+( o.items.length-1):''}</span>`
         ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
       </div>
-      <div class="item-actions">
-        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openDetail(${item.id})">
-          ${isMatch ? '⚡ Ver y proponer' : '👁 Ver objeto'}
-        </button>
-        <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-      </div>
+
     </div>
   </div>`;
 }
@@ -4215,7 +4210,7 @@ function openDetail(itemId) {
   // Badges
   document.getElementById('detail-badges').innerHTML = [
     item.condition ? `<span style="background:var(--bg2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px">📦 ${item.condition}</span>` : '',
-    `<span style="background:var(--bg2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px">🤝 En persona</span>`,
+
   ].join('');
 
   // Mostrar con display:flex en vez de clase open
