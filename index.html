@@ -4308,8 +4308,7 @@ async function loadMyItems() {
     </div>`;
   }).join('');
 }
-
-
+function switchPTab(tab) {
   ['items','done','reviews','config'].forEach(t => {
     const btn = document.getElementById('ptab-btn-'+t);
     const content = document.getElementById('ptab-'+t);
