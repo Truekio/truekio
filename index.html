@@ -2325,8 +2325,23 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
 
         <!-- Qué aceptas -->
+        <!-- Ciudad — obligatorio -->
         <div class="card step-card">
-          <div class="step-head"><div class="step-num">3</div><div class="step-title">¿Qué aceptas a cambio? <span id="demand-prefilled-badge" style="display:none;font-size:10px;font-weight:700;background:var(--green-l);color:var(--green);padding:3px 8px;border-radius:99px;border:1px solid #c6eeda;margin-left:6px">✓ Pre-rellenado</span></div></div>
+          <div class="step-head"><div class="step-num">3</div><div class="step-title">Ciudad <span style="font-size:11px;font-weight:500;color:var(--accent)">obligatorio</span></div></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:10px">
+            <span style="font-size:1.1rem">📍</span>
+            <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2);flex:1">Detectando ubicación...</div>
+            <button type="button" id="geo-btn" onclick="requestGeoLocation()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Reintentar</button>
+          </div>
+          <input id="pub-loc" placeholder="Escribe tu ciudad si no se detecta" style="width:100%;box-sizing:border-box" oninput="document.getElementById('pub-lat').value='';document.getElementById('pub-lng').value=''">
+          <input type="hidden" id="pub-lat" value="">
+          <input type="hidden" id="pub-lng" value="">
+          <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+        </div>
+
+        <!-- Qué aceptas -->
+        <div class="card step-card">
+          <div class="step-head"><div class="step-num">4</div><div class="step-title">¿Qué aceptas a cambio? <span id="demand-prefilled-badge" style="display:none;font-size:10px;font-weight:700;background:var(--green-l);color:var(--green);padding:3px 8px;border-radius:99px;border:1px solid #c6eeda;margin-left:6px">✓ Pre-rellenado</span></div></div>
           <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6" id="step3-sub">
             Añade una o más opciones de lo que aceptarías a cambio.
           </p>
@@ -2428,21 +2443,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <div id="price-hint" style="margin-top:10px;padding:10px 14px;background:var(--accent-l);border-radius:10px;font-size:12px;color:var(--accent);font-weight:600;display:none">
             💡 Buscaremos objetos entre <span id="price-min">—</span> y <span id="price-max">—</span> €
           </div>
-        </div>
-
-        <div class="card step-card">
-          <div class="step-head"><div class="step-num">6</div><div class="step-title">Ubicación</div></div>
-          <div id="geo-status" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer" onclick="requestGeoLocation()">
-            <span style="font-size:1.2rem">📍</span>
-            <div style="flex:1">
-              <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2)">Detectar mi ubicación automáticamente</div>
-              <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:2px">Haz clic para usar tu ubicación actual</div>
-            </div>
-            <button type="button" id="geo-btn" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Detectar</button>
-          </div>
-          <input type="hidden" id="pub-loc" value="Barcelona">
-          <input type="hidden" id="pub-lat" value="">
-          <input type="hidden" id="pub-lng" value="">
         </div>
 
         <!-- Botones paso 2 -->
@@ -4870,6 +4870,8 @@ function goToPubStep2() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name) { showToast('⚠️ Escribe el nombre del objeto primero'); return; }
   if(!exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
+  const city = document.getElementById('pub-loc').value.trim();
+  if(!city) { showToast('⚠️ Indica la ciudad del objeto'); return; }
   document.getElementById('pub-step-1').style.display = 'none';
   document.getElementById('pub-step-2').style.display = '';
   document.getElementById('pub-step-ind-1').style.borderBottomColor = 'var(--border2)';
@@ -4913,10 +4915,10 @@ function autoDetectCity() {
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
         const geo = await res.json();
-        const city = geo.address.city || geo.address.town || geo.address.village || geo.address.municipality || 'Barcelona';
+        const city = geo.address.city || geo.address.town || geo.address.village || geo.address.municipality || '';
         document.getElementById('pub-loc').value = city;
-        if(label) label.textContent = '📍 ' + city;
-        if(sub) sub.textContent = 'Ubicación detectada automáticamente';
+        if(label) label.textContent = '📍 ' + (city || 'Ubicación detectada');
+        if(sub) sub.textContent = city ? 'Puedes editarla si es incorrecta' : 'Escribe tu ciudad manualmente';
         if(btn) { btn.textContent = '✓'; btn.style.background = 'var(--green)'; btn.disabled = false; }
       } catch(e) {
         document.getElementById('pub-loc').value = 'Barcelona';
@@ -5560,6 +5562,8 @@ function selectShip(el, mode) {
 async function publishItem() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
+  const city = document.getElementById('pub-loc').value.trim();
+  if(!city){showToast('⚠️ Indica la ciudad del objeto');return;}
   if(!exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
 
   // Parse category — ahora son dos campos separados
