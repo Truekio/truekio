@@ -1387,6 +1387,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -2358,13 +2359,110 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
 // ═══ SUPABASE ═══
 const SUPABASE_URL = 'https://qljhvzqeijkmaeftaqem.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsamh2enFlaWprbWFlZnRhcWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTg5MzcsImV4cCI6MjA4OTY5NDkzN30.lgLm3O3DxSvp3VkbJ6CqMw8bS3N1472rLO46AeD_L-Y';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ═══ AUTH STATE ═══
+let currentUser = null;
+
+function showAuthScreen() {
+  document.getElementById('view-landing').style.display = 'none';
+  document.getElementById('view-landing').classList.remove('active');
+  document.getElementById('view-auth').style.display = '';
+  document.getElementById('view-auth').classList.add('active');
+  document.getElementById('main-nav').style.display = 'none';
+  const bn = document.querySelector('.bottom-nav');
+  if (bn) bn.style.display = 'none';
+}
+
+function enterApp() {
+  document.getElementById('view-landing').style.display = 'none';
+  document.getElementById('view-landing').classList.remove('active');
+  document.getElementById('view-auth').style.display = 'none';
+  document.getElementById('view-auth').classList.remove('active');
+  document.getElementById('main-nav').style.display = '';
+  const bn = document.querySelector('.bottom-nav');
+  if (bn) bn.style.display = '';
+
+  if (currentUser) {
+    const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    const since = new Date(currentUser.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const editName = document.getElementById('edit-name');
+    const editEmail = document.querySelector('#ptab-config input[type="email"]');
+    if (editName) editName.value = name;
+    if (editEmail) editEmail.value = currentUser.email;
+    const trustName = document.getElementById('trust-name');
+    const trustMeta = document.getElementById('trust-meta');
+    if (trustName) trustName.textContent = name;
+    if (trustMeta) trustMeta.textContent = '📍 Barcelona · Miembro desde ' + since;
+    const avatarNav = document.querySelector('.avatar-nav');
+    if (avatarNav) avatarNav.textContent = name.charAt(0).toUpperCase();
+  }
+
+  navTo('explore');
+}
+
+function scrollToHow() {
+  document.getElementById('lp-how').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function handleLogout() {
+  await db.auth.signOut();
+  currentUser = null;
+  document.getElementById('main-nav').style.display = 'none';
+  const bn = document.querySelector('.bottom-nav');
+  if (bn) bn.style.display = 'none';
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-landing').style.display = '';
+  document.getElementById('view-landing').classList.add('active');
+  showToast('Sesión cerrada');
+}
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  if (!email || !password) { errEl.textContent = 'Por favor rellena email y contraseña.'; errEl.style.display = ''; return; }
+  btn.textContent = 'Entrando...'; btn.disabled = true; errEl.style.display = 'none';
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Email o contraseña incorrectos.'; errEl.style.display = ''; btn.textContent = 'Entrar →'; btn.disabled = false; return; }
+  currentUser = data.user;
+  enterApp();
+  showToast('✓ Bienvenido de nuevo');
+}
+
+async function handleRegister() {
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  const errEl = document.getElementById('register-error');
+  const btn = document.getElementById('register-btn');
+  if (!name || !email || !password) { errEl.textContent = 'Por favor rellena todos los campos.'; errEl.style.display = ''; return; }
+  if (password.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.style.display = ''; return; }
+  btn.textContent = 'Creando cuenta...'; btn.disabled = true; errEl.style.display = 'none';
+  const { data, error } = await db.auth.signUp({ email, password, options: { data: { name } } });
+  if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = ''; btn.textContent = 'Crear cuenta →'; btn.disabled = false; return; }
+  currentUser = data.user;
+  enterApp();
+  showToast('✦ Cuenta creada — ¡bienvenido a Truekio!');
+}
+
+function switchAuthTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('auth-form-login').style.display = isLogin ? '' : 'none';
+  document.getElementById('auth-form-register').style.display = isLogin ? 'none' : '';
+  document.getElementById('auth-tab-login').style.borderBottomColor = isLogin ? 'var(--accent)' : 'transparent';
+  document.getElementById('auth-tab-login').style.color = isLogin ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('auth-tab-login').style.fontWeight = isLogin ? '700' : '500';
+  document.getElementById('auth-tab-register').style.borderBottomColor = isLogin ? 'transparent' : 'var(--accent)';
+  document.getElementById('auth-tab-register').style.color = isLogin ? 'var(--muted)' : 'var(--accent)';
+  document.getElementById('auth-tab-register').style.fontWeight = isLogin ? '500' : '700';
+}
 
 async function loadItemsFromSupabase() {
   const { data, error } = await db.from('items').select('*').order('created_at', { ascending: false });
@@ -5440,152 +5538,6 @@ document.addEventListener('mouseup', e => {
   });
 });
 
-
-// ═══ LANDING PAGE ═══
-// ═══ AUTH STATE ═══
-let currentUser = null;
-
-function switchAuthTab(tab) {
-  const isLogin = tab === 'login';
-  document.getElementById('auth-form-login').style.display = isLogin ? '' : 'none';
-  document.getElementById('auth-form-register').style.display = isLogin ? 'none' : '';
-  document.getElementById('auth-tab-login').style.borderBottomColor = isLogin ? 'var(--accent)' : 'transparent';
-  document.getElementById('auth-tab-login').style.color = isLogin ? 'var(--accent)' : 'var(--muted)';
-  document.getElementById('auth-tab-login').style.fontWeight = isLogin ? '700' : '500';
-  document.getElementById('auth-tab-register').style.borderBottomColor = isLogin ? 'transparent' : 'var(--accent)';
-  document.getElementById('auth-tab-register').style.color = isLogin ? 'var(--muted)' : 'var(--accent)';
-  document.getElementById('auth-tab-register').style.fontWeight = isLogin ? '500' : '700';
-}
-
-async function handleLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  const btn = document.getElementById('login-btn');
-
-  if (!email || !password) {
-    errEl.textContent = 'Por favor rellena email y contraseña.';
-    errEl.style.display = '';
-    return;
-  }
-
-  btn.textContent = 'Entrando...';
-  btn.disabled = true;
-  errEl.style.display = 'none';
-
-  const { data, error } = await db.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    errEl.textContent = 'Email o contraseña incorrectos.';
-    errEl.style.display = '';
-    btn.textContent = 'Entrar →';
-    btn.disabled = false;
-    return;
-  }
-
-  currentUser = data.user;
-  enterApp();
-  showToast('✓ Bienvenido de nuevo');
-}
-
-async function handleRegister() {
-  const name = document.getElementById('register-name').value.trim();
-  const email = document.getElementById('register-email').value.trim();
-  const password = document.getElementById('register-password').value;
-  const errEl = document.getElementById('register-error');
-  const btn = document.getElementById('register-btn');
-
-  if (!name || !email || !password) {
-    errEl.textContent = 'Por favor rellena todos los campos.';
-    errEl.style.display = '';
-    return;
-  }
-  if (password.length < 6) {
-    errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-    errEl.style.display = '';
-    return;
-  }
-
-  btn.textContent = 'Creando cuenta...';
-  btn.disabled = true;
-  errEl.style.display = 'none';
-
-  const { data, error } = await db.auth.signUp({ email, password, options: { data: { name } } });
-
-  if (error) {
-    errEl.textContent = 'Error al crear la cuenta: ' + error.message;
-    errEl.style.display = '';
-    btn.textContent = 'Crear cuenta →';
-    btn.disabled = false;
-    return;
-  }
-
-  currentUser = data.user;
-  enterApp();
-  showToast('✦ Cuenta creada — ¡bienvenido a Truekio!');
-}
-
-function showAuthScreen() {
-  document.getElementById('view-landing').style.display = 'none';
-  document.getElementById('view-landing').classList.remove('active');
-  document.getElementById('view-auth').style.display = '';
-  document.getElementById('view-auth').classList.add('active');
-  document.getElementById('main-nav').style.display = 'none';
-  const bn = document.querySelector('.bottom-nav');
-  if (bn) bn.style.display = 'none';
-}
-
-function enterApp() {
-  document.getElementById('view-landing').style.display = 'none';
-  document.getElementById('view-landing').classList.remove('active');
-  document.getElementById('view-auth').style.display = 'none';
-  document.getElementById('view-auth').classList.remove('active');
-  document.getElementById('main-nav').style.display = '';
-  const bn = document.querySelector('.bottom-nav');
-  if (bn) bn.style.display = '';
-
-  // Rellenar perfil con datos reales del usuario
-  if (currentUser) {
-    const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
-    const email = currentUser.email;
-    const since = new Date(currentUser.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-
-    // Campos editables
-    const editName = document.getElementById('edit-name');
-    const editEmail = document.querySelector('#ptab-config input[type="email"]');
-    if (editName) editName.value = name;
-    if (editEmail) editEmail.value = email;
-
-    // Trust passport
-    const trustName = document.getElementById('trust-name');
-    const trustMeta = document.getElementById('trust-meta');
-    if (trustName) trustName.textContent = name;
-    if (trustMeta) trustMeta.textContent = '📍 Barcelona · Miembro desde ' + since;
-
-    // Avatar nav
-    const avatarNav = document.querySelector('.avatar-nav');
-    if (avatarNav) avatarNav.textContent = name.charAt(0).toUpperCase();
-  }
-
-  navTo('explore');
-}
-
-async function handleLogout() {
-  await db.auth.signOut();
-  currentUser = null;
-  // Volver a la landing
-  document.getElementById('main-nav').style.display = 'none';
-  const bn = document.querySelector('.bottom-nav');
-  if (bn) bn.style.display = 'none';
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-landing').style.display = '';
-  document.getElementById('view-landing').classList.add('active');
-  showToast('Sesión cerrada');
-}
-
-function scrollToHow() {
-  document.getElementById('lp-how').scrollIntoView({ behavior: 'smooth' });
-}
 
 </script>
 </body>
