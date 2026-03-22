@@ -3035,7 +3035,7 @@ function itemCardHTML(item, isPremiumView=false) {
   const allPhotos = (item.images && item.images.length) ? item.images
     : (item.photos && item.photos.length) ? item.photos
     : item.photo ? [item.photo] : [];
-  const cid = 'car-' + item.id;
+  const cid = 'car-' + String(item.id).replace(/-/g, '');
   const imgContent = allPhotos.length > 0 ? (() => {
     const slides = allPhotos.map((src, i) =>
       `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onerror="this.parentElement.style.background='var(--bg2)'"></div>`
@@ -3311,7 +3311,7 @@ function itemCardHTML(item, isPremiumView=false) {
   const allPhotos = (item.images && item.images.length) ? item.images
     : (item.photos && item.photos.length) ? item.photos
     : item.photo ? [item.photo] : [];
-  const cid = 'car-' + item.id;
+  const cid = 'car-' + String(item.id).replace(/-/g, '');
   const imgContent = allPhotos.length > 0 ? (() => {
     const slides = allPhotos.map((src, i) =>
       `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onerror="this.parentElement.style.background='var(--bg2)'"></div>`
