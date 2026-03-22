@@ -2294,57 +2294,17 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <label>Categoría</label>
               <select id="wants-cat" onchange="updateSubcat()">
                 <option value="">— Cualquier categoría —</option>
-                <optgroup label="Objetos">
-                  <option>Electrónica</option><option>Música</option><option>Deporte</option>
-                  <option>Ropa y moda</option><option>Hogar y jardín</option>
-                  <option>Vehículos</option><option>Arte y coleccionismo</option><option>Juguetes e infantil</option>
-                  <option>Herramientas</option>
-                </optgroup>
-                <optgroup label="📚 Libros (por género)">
-                  <option value="Libros|Ficción">Libros · Ficción</option>
-                  <option value="Libros|Ciencia ficción">Libros · Ciencia ficción</option>
-                  <option value="Libros|Fantasía">Libros · Fantasía</option>
-                  <option value="Libros|Thriller y suspense">Libros · Thriller y suspense</option>
-                  <option value="Libros|Romance">Libros · Romance</option>
-                  <option value="Libros|Terror">Libros · Terror</option>
-                  <option value="Libros|Historia">Libros · Historia</option>
-                  <option value="Libros|Biografías">Libros · Biografías</option>
-                  <option value="Libros|Autoayuda">Libros · Autoayuda</option>
-                  <option value="Libros|Ciencia">Libros · Ciencia</option>
-                  <option value="Libros|Filosofía">Libros · Filosofía</option>
-                  <option value="Libros|Infantil y juvenil">Libros · Infantil y juvenil</option>
-                  <option value="Libros|Cómics y manga">Libros · Cómics y manga</option>
-                  <option value="Libros|Poesía">Libros · Poesía</option>
-                  <option value="Libros|Arte y fotografía">Libros · Arte y fotografía</option>
-                  <option value="Libros|Cocina">Libros · Cocina</option>
-                  <option value="Libros|Economía">Libros · Economía</option>
-                </optgroup>
-                <optgroup label="🤝 Servicios profesionales">
-                  <option value="Servicios|Salud · Dentista">Servicios · Dentista</option>
-                  <option value="Servicios|Salud · Médico general">Servicios · Médico general</option>
-                  <option value="Servicios|Salud · Fisioterapeuta">Servicios · Fisioterapeuta</option>
-                  <option value="Servicios|Salud · Psicólogo">Servicios · Psicólogo</option>
-                  <option value="Servicios|Salud · Nutricionista">Servicios · Nutricionista</option>
-                  <option value="Servicios|Salud · Veterinario">Servicios · Veterinario</option>
-                  <option value="Servicios|Construcción · Carpintero">Servicios · Carpintero</option>
-                  <option value="Servicios|Construcción · Electricista">Servicios · Electricista</option>
-                  <option value="Servicios|Construcción · Fontanero">Servicios · Fontanero</option>
-                  <option value="Servicios|Construcción · Pintor">Servicios · Pintor</option>
-                  <option value="Servicios|Construcción · Albañil">Servicios · Albañil</option>
-                  <option value="Servicios|Educación · Profesor idiomas">Servicios · Clases de idiomas</option>
-                  <option value="Servicios|Educación · Música / instrumento">Servicios · Clases de música</option>
-                  <option value="Servicios|Educación · Apoyo escolar">Servicios · Apoyo escolar</option>
-                  <option value="Servicios|Tecnología · Diseño web">Servicios · Diseño web</option>
-                  <option value="Servicios|Tecnología · Reparación ordenadores">Servicios · Reparación ordenadores</option>
-                  <option value="Servicios|Tecnología · Fotografía">Servicios · Fotografía</option>
-                  <option value="Servicios|Belleza · Peluquería">Servicios · Peluquería</option>
-                  <option value="Servicios|Belleza · Masajes">Servicios · Masajes</option>
-                  <option value="Servicios|Legal · Abogado">Servicios · Abogado</option>
-                  <option value="Servicios|Legal · Gestoría / asesoría">Servicios · Gestoría</option>
-                  <option value="Servicios|Hogar · Limpieza">Servicios · Limpieza del hogar</option>
-                  <option value="Servicios|Hogar · Jardinería">Servicios · Jardinería</option>
-                  <option value="Servicios|Transporte · Mecánico">Servicios · Mecánico</option>
-                </optgroup>
+                <option>Electrónica</option>
+                <option>Música</option>
+                <option>Deporte</option>
+                <option>Ropa</option>
+                <option>Hogar</option>
+                <option>Libros</option>
+                <option>Servicios</option>
+                <option>Juguetes</option>
+                <option>Cartas</option>
+                <option>Juegos de mesa</option>
+                <option>Otro</option>
               </select>
             </div>
             <div class="field" style="margin-bottom:0">
@@ -4754,23 +4714,24 @@ const SUBCATS = {
 };
 
 function updateSubcat() {
-  const raw = document.getElementById('wants-cat').value;
+  const cat = document.getElementById('wants-cat').value;
   const sub = document.getElementById('wants-subcat');
   const btn = document.getElementById('btn-add-cat');
-  if(!raw) {
+  if(!cat) {
     sub.innerHTML = '<option value="">— Selecciona categoría primero —</option>';
-    btn.style.display = 'none';
+    sub.disabled = true;
+    if(btn) btn.style.display = 'none';
     return;
   }
-  // Pipe-separated values like "Libros|Fantasía" or "Servicios|Salud · Dentista"
-  if(raw.includes('|')) {
-    sub.innerHTML = '<option value="">— Género/Especialidad seleccionada —</option>';
-    btn.style.display = 'inline-flex';
-    return;
+  const opts = PUB_SUBCATS[cat] || [];
+  if(opts.length) {
+    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o=>`<option>${o}</option>`).join('');
+    sub.disabled = false;
+  } else {
+    sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
+    sub.disabled = true;
   }
-  const opts = SUBCATS[raw] || [];
-  sub.innerHTML = '<option value="">— Todas las subcategorías —</option>' + opts.map(o=>`<option>${o}</option>`).join('');
-  btn.style.display = 'inline-flex';
+  if(btn) btn.style.display = 'inline-flex';
 }
 
 // Subcategorías para formulario publicar
