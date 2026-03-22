@@ -2159,194 +2159,194 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="view" id="view-publish">
   <div class="wrap page-pad">
     <div class="publish-wrap">
-      <div style="margin-bottom:32px">
-        <h2 style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.9rem;letter-spacing:-.02em;margin-bottom:8px">Publicar objeto</h2>
-        <p style="color:var(--muted);font-size:14px;line-height:1.7">Rellena los datos y el sistema buscará matches automáticamente entre todos los usuarios.</p>
-      </div>
 
-      <div class="card step-card">
-        <div class="step-head"><div class="step-num">1</div><div class="step-title">Tu objeto</div></div>
-        <div class="field">
-          <label>Fotos del objeto <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(hasta 5 imágenes)</span></label>
-          <div class="img-upload-area" id="img-upload-area" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" ondrop="imgDrop(event)">
-            <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)">
-            <div class="img-upload-icon">🖼️</div>
-            <div class="img-upload-hint">Arrastra fotos aquí o <strong>haz clic para subir</strong><br><span style="font-size:11px">JPG, PNG, WEBP · Máx. 5MB por imagen</span></div>
-          </div>
-          <div class="img-previews" id="img-previews"></div>
+      <!-- Indicador de pasos -->
+      <div style="display:flex;align-items:center;gap:0;margin-bottom:28px">
+        <div id="pub-step-ind-1" style="flex:1;text-align:center;padding:10px;border-bottom:3px solid var(--accent);color:var(--accent);font-weight:700;font-size:13px">
+          1 · Lo esencial
         </div>
-        <div class="field"><label>Nombre del objeto</label><input id="pub-name" placeholder="Ej: Guitarra Fender Stratocaster 2019" oninput="clearTimeout(demandTimer);demandTimer=setTimeout(()=>triggerDemandPanel(),500)"></div>
-        <div class="form-row">
-          <div class="field"><label>Categoría</label>
-            <select id="pub-cat" onchange="updatePubSubcat()">
-              <option value="">— Selecciona categoría —</option>
-              <option>Electrónica</option>
-              <option>Música</option>
-              <option>Deporte</option>
-              <option>Ropa</option>
-              <option>Hogar</option>
-              <option>Libros</option>
-              <option>Servicios</option>
-              <option>Juguetes</option>
-              <option>Cartas</option>
-              <option>Juegos de mesa</option>
-              <option>Otro</option>
-            </select>
-          </div>
-          <div class="field"><label>Subcategoría <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(opcional)</span></label>
-            <select id="pub-subcat">
-              <option value="">— Selecciona categoría primero —</option>
-            </select>
-          </div>
-          <div id="pub-service-hint" style="display:none;grid-column:1/-1;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;font-weight:600">
-            🤝 Estás publicando un <strong>servicio profesional</strong>. Describe bien tu experiencia, disponibilidad horaria y zona de actuación.
-          </div>
-          <div id="pub-book-hint" style="display:none;grid-column:1/-1;padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:10px;font-size:12px;color:#92400e;font-weight:600">
-            📚 Estás publicando <strong>libros</strong>. Indica el título, autor, número de volúmenes y estado de las páginas.
-          </div>
-          <!-- Ubicación por geolocalización -->
-          <div class="field" style="grid-column:1/-1">
-            <label>Tu ubicación</label>
-            <div id="geo-status" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer" onclick="requestGeoLocation()">
-              <span style="font-size:1.2rem">📍</span>
-              <div style="flex:1">
-                <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2)">Detectar mi ubicación automáticamente</div>
-                <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:2px">Haz clic para usar tu ubicación actual</div>
-              </div>
-              <button type="button" id="geo-btn" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Detectar</button>
-            </div>
-            <input type="hidden" id="pub-loc" value="Barcelona">
-            <input type="hidden" id="pub-lat" value="">
-            <input type="hidden" id="pub-lng" value="">
-          </div>
-        </div>
-        <div class="field"><label>Descripción</label><textarea id="pub-desc" placeholder="Estado, accesorios incluidos, años de uso, detalles importantes..."></textarea></div>
-      </div>
-
-      <!-- ══ LIVE DEMAND PANEL ══ -->
-      <div id="demand-panel" class="card demand-panel" style="display:none">
-        <div class="demand-header">
-          <div class="demand-header-left">
-            <div class="demand-pulse"></div>
-            <div>
-              <div class="demand-title">Gente que ya querría tu objeto</div>
-              <div class="demand-sub">Usuarios con objetos para intercambiar ahora mismo</div>
-            </div>
-          </div>
-          <div class="demand-count-badge" id="demand-count-badge">0 personas</div>
-        </div>
-        <div id="demand-body">
-          <div class="demand-loading">
-            <div class="demand-loading-dots">
-              <div class="demand-loading-dot"></div>
-              <div class="demand-loading-dot"></div>
-              <div class="demand-loading-dot"></div>
-            </div>
-            <div style="font-size:12px;color:var(--muted);margin-top:10px">Buscando coincidencias…</div>
-          </div>
-        </div>
-        <div id="demand-selected-list" class="demand-selected-list" style="display:none"></div>
-        <div class="demand-footer" id="demand-footer" style="display:none">
-          <div class="demand-footer-tip" id="demand-footer-tip"></div>
-          <button class="btn btn-ghost btn-sm" onclick="skipDemandPanel()">Añadir manualmente →</button>
+        <div id="pub-step-ind-2" style="flex:1;text-align:center;padding:10px;border-bottom:3px solid var(--border2);color:var(--muted);font-weight:500;font-size:13px">
+          2 · Detalles
         </div>
       </div>
 
-            <div class="card step-card">
-        <div class="step-head"><div class="step-num">2</div><div class="step-title">Precio estimado del objeto</div></div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Indica el valor aproximado de tu objeto para encontrar matches de importe similar.</p>
-        <div class="form-row" style="align-items:flex-end;gap:12px">
-          <div class="field" style="flex:1;margin-bottom:0">
-            <label>Precio estimado (€)</label>
-            <div style="position:relative">
-              <input id="pub-price" type="number" min="0" placeholder="Ej: 150" style="padding-left:36px">
-              <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);font-weight:700;pointer-events:none">€</span>
+      <!-- ══ PASO 1 ══ -->
+      <div id="pub-step-1">
+
+        <!-- Foto -->
+        <div class="card step-card">
+          <div class="step-head"><div class="step-num">1</div><div class="step-title">Foto y nombre</div></div>
+          <div class="field">
+            <label>Fotos <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(hasta 5)</span></label>
+            <div class="img-upload-area" id="img-upload-area" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" ondrop="imgDrop(event)">
+              <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)">
+              <div class="img-upload-icon">🖼️</div>
+              <div class="img-upload-hint">Arrastra fotos aquí o <strong>haz clic para subir</strong><br><span style="font-size:11px">JPG, PNG, WEBP · Máx. 5MB</span></div>
             </div>
+            <div class="img-previews" id="img-previews"></div>
           </div>
-          <div class="field" style="flex:1;margin-bottom:0">
-            <label>Rango de valor aceptado</label>
-            <select id="pub-price-range">
-              <option value="exact">Valor similar (±10%)</option>
-              <option value="flexible">Algo flexible (±25%)</option>
-              <option value="open">Abierto a negociar</option>
-            </select>
+          <div class="field" style="margin-bottom:0">
+            <label>Nombre del objeto</label>
+            <input id="pub-name" placeholder="Ej: Guitarra Fender Stratocaster 2019" oninput="clearTimeout(demandTimer);demandTimer=setTimeout(()=>triggerDemandPanel(),500)">
           </div>
         </div>
-        <div id="price-hint" style="margin-top:10px;padding:10px 14px;background:var(--accent-l);border-radius:10px;font-size:12px;color:var(--accent);font-weight:600;display:none">
-          💡 Con este valor buscaremos objetos entre <span id="price-min">—</span> y <span id="price-max">—</span> €
-        </div>
-      </div>
 
-      <div class="card step-card">
-        <div class="step-head"><div class="step-num">3</div><div class="step-title">¿Qué aceptas a cambio? <span id="demand-prefilled-badge" style="display:none;font-size:10px;font-weight:700;background:var(--green-l);color:var(--green);padding:3px 8px;border-radius:99px;border:1px solid #c6eeda;margin-left:6px">✓ Pre-rellenado</span></div></div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6" id="step3-sub">
-          Puedes aceptar <strong>múltiples tipos de cambio</strong>. Hemos añadido automáticamente los objetos que seleccionaste arriba — puedes ajustarlos o añadir más.
-        </p>
-
-        <!-- Exchange options list -->
-        <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px"></div>
-
-        <!-- Add new exchange option -->
-        <div style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg)">
-          <div style="font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">➕ Nueva opción de cambio</div>
-          <div class="form-row" style="margin-bottom:10px">
+        <!-- Categoría -->
+        <div class="card step-card">
+          <div class="step-head"><div class="step-num">2</div><div class="step-title">Categoría</div></div>
+          <div class="form-row">
             <div class="field" style="margin-bottom:0">
               <label>Categoría</label>
-              <select id="wants-cat" onchange="updateSubcat()">
-                <option value="">— Cualquier categoría —</option>
-                <option>Electrónica</option>
-                <option>Música</option>
-                <option>Deporte</option>
-                <option>Ropa</option>
-                <option>Hogar</option>
-                <option>Libros</option>
-                <option>Servicios</option>
-                <option>Juguetes</option>
-                <option>Cartas</option>
-                <option>Juegos de mesa</option>
-                <option>Otro</option>
+              <select id="pub-cat" onchange="updatePubSubcat()">
+                <option value="">— Selecciona —</option>
+                <option>Electrónica</option><option>Música</option><option>Deporte</option>
+                <option>Ropa</option><option>Hogar</option><option>Libros</option>
+                <option>Servicios</option><option>Juguetes</option>
+                <option>Cartas</option><option>Juegos de mesa</option><option>Otro</option>
               </select>
             </div>
             <div class="field" style="margin-bottom:0">
-              <label>Subcategoría</label>
-              <select id="wants-subcat"><option value="">— Selecciona categoría primero —</option></select>
+              <label>Subcategoría <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(opcional)</span></label>
+              <select id="pub-subcat"><option value="">— Selecciona categoría primero —</option></select>
             </div>
           </div>
-          <div class="wants-input-row" style="margin-bottom:10px">
-            <input id="wants-input" placeholder="Nombre concreto del objeto (ej: Canon EOS 90D)">
+          <div id="pub-service-hint" style="display:none;margin-top:12px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;font-weight:600">
+            🤝 Servicio profesional — describe tu experiencia y disponibilidad en los detalles.
           </div>
-          <!-- Bundle items (item 2 and 3) -->
-          <div id="bundle-extra" style="display:none;flex-direction:column;gap:8px;margin-bottom:10px">
-            <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px">Artículos adicionales del bundle:</div>
-            <input id="bundle-item2" placeholder="Artículo 2 (ej: Funda + tarjeta SD)" style="width:100%;background:var(--white);border:1.5px solid var(--border);color:var(--text);font-size:13px;padding:9px 13px;border-radius:10px;outline:none;transition:border-color .18s">
-            <input id="bundle-item3" placeholder="Artículo 3 opcional (ej: Trípode)" style="width:100%;background:var(--white);border:1.5px solid var(--border);color:var(--text);font-size:13px;padding:9px 13px;border-radius:10px;outline:none;transition:border-color .18s">
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text2)">
-              <input type="checkbox" id="bundle-toggle" onchange="toggleBundle(this)" style="width:auto;accent-color:var(--accent)">
-              Acepto bundle (2–3 objetos a cambio de uno mío)
-            </label>
-            <button class="btn btn-primary btn-sm" onclick="addExchangeOption()" style="margin-left:auto">+ Añadir opción</button>
+          <div id="pub-book-hint" style="display:none;margin-top:12px;padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:10px;font-size:12px;color:#92400e;font-weight:600">
+            📚 Libros — indica título, autor y estado de las páginas en los detalles.
           </div>
         </div>
 
-        <div id="btn-add-cat" style="display:none"></div><!-- kept for JS compat -->
-        <div id="wants-chips" style="display:none"></div><!-- kept for JS compat -->
-      </div>
-
-      <div class="card step-card">
-        <div class="step-head"><div class="step-num">4</div><div class="step-title">Encuentro</div></div>
-        <div style="background:var(--accent-l);border:1px solid rgba(78,143,186,.2);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:center;">
-          <span style="font-size:1.5rem">🤝</span>
-          <div>
-            <div style="font-weight:700;font-size:13px;color:var(--text)">Solo en persona</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">Los trueques se realizan en un punto de encuentro acordado entre ambas partes</div>
+        <!-- Qué aceptas -->
+        <div class="card step-card">
+          <div class="step-head"><div class="step-num">3</div><div class="step-title">¿Qué aceptas a cambio? <span id="demand-prefilled-badge" style="display:none;font-size:10px;font-weight:700;background:var(--green-l);color:var(--green);padding:3px 8px;border-radius:99px;border:1px solid #c6eeda;margin-left:6px">✓ Pre-rellenado</span></div></div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6" id="step3-sub">
+            Añade una o más opciones de lo que aceptarías a cambio.
+          </p>
+          <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px"></div>
+          <div style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg)">
+            <div style="font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">➕ Añadir opción</div>
+            <div class="form-row" style="margin-bottom:10px">
+              <div class="field" style="margin-bottom:0">
+                <label>Categoría</label>
+                <select id="wants-cat" onchange="updateSubcat()">
+                  <option value="">— Cualquier categoría —</option>
+                  <option>Electrónica</option><option>Música</option><option>Deporte</option>
+                  <option>Ropa</option><option>Hogar</option><option>Libros</option>
+                  <option>Servicios</option><option>Juguetes</option>
+                  <option>Cartas</option><option>Juegos de mesa</option><option>Otro</option>
+                </select>
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label>Subcategoría</label>
+                <select id="wants-subcat"><option value="">— Selecciona categoría primero —</option></select>
+              </div>
+            </div>
+            <div class="wants-input-row" style="margin-bottom:10px">
+              <input id="wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D)">
+            </div>
+            <div style="display:flex;justify-content:flex-end">
+              <button class="btn btn-primary btn-sm" onclick="addExchangeOption()">+ Añadir</button>
+            </div>
           </div>
+          <div id="btn-add-cat" style="display:none"></div>
+          <div id="wants-chips" style="display:none"></div>
+        </div>
+
+        <!-- Live demand panel -->
+        <div id="demand-panel" class="card demand-panel" style="display:none">
+          <div class="demand-header">
+            <div class="demand-header-left">
+              <div class="demand-pulse"></div>
+              <div>
+                <div class="demand-title">Gente que ya querría tu objeto</div>
+                <div class="demand-sub">Usuarios con objetos para intercambiar ahora mismo</div>
+              </div>
+            </div>
+            <div class="demand-count-badge" id="demand-count-badge">0 personas</div>
+          </div>
+          <div id="demand-body">
+            <div class="demand-loading">
+              <div class="demand-loading-dots">
+                <div class="demand-loading-dot"></div><div class="demand-loading-dot"></div><div class="demand-loading-dot"></div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);margin-top:10px">Buscando coincidencias…</div>
+            </div>
+          </div>
+          <div id="demand-selected-list" class="demand-selected-list" style="display:none"></div>
+          <div class="demand-footer" id="demand-footer" style="display:none">
+            <div class="demand-footer-tip" id="demand-footer-tip"></div>
+            <button class="btn btn-ghost btn-sm" onclick="skipDemandPanel()">Añadir manualmente →</button>
+          </div>
+        </div>
+
+        <!-- Botones paso 1 -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button class="btn btn-primary btn-lg btn-r" style="flex:2;box-shadow:0 4px 16px rgba(78,143,186,.25)" onclick="publishItem()">🚀 Publicar</button>
+          <button class="btn btn-ghost btn-lg btn-r" style="flex:1" onclick="goToPubStep2()">Añadir detalles →</button>
         </div>
 
       </div>
 
-      <button class="btn btn-primary btn-lg btn-full btn-r" onclick="publishItem()" style="box-shadow:0 4px 16px rgba(78,143,186,.25)">🚀 Publicar y buscar matches</button>
+      <!-- ══ PASO 2 ══ -->
+      <div id="pub-step-2" style="display:none">
+
+        <div class="card step-card">
+          <div class="step-head"><div class="step-num">4</div><div class="step-title">Descripción</div></div>
+          <div class="field" style="margin-bottom:0">
+            <textarea id="pub-desc" placeholder="Estado, accesorios incluidos, años de uso, detalles importantes..." style="min-height:110px"></textarea>
+          </div>
+        </div>
+
+        <div class="card step-card">
+          <div class="step-head"><div class="step-num">5</div><div class="step-title">Precio estimado</div></div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Ayuda a encontrar matches de valor similar.</p>
+          <div class="form-row" style="align-items:flex-end;gap:12px">
+            <div class="field" style="flex:1;margin-bottom:0">
+              <label>Precio estimado (€)</label>
+              <div style="position:relative">
+                <input id="pub-price" type="number" min="0" placeholder="Ej: 150" style="padding-left:36px">
+                <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);font-weight:700;pointer-events:none">€</span>
+              </div>
+            </div>
+            <div class="field" style="flex:1;margin-bottom:0">
+              <label>Flexibilidad</label>
+              <select id="pub-price-range">
+                <option value="exact">Valor similar (±10%)</option>
+                <option value="flexible">Algo flexible (±25%)</option>
+                <option value="open">Abierto a negociar</option>
+              </select>
+            </div>
+          </div>
+          <div id="price-hint" style="margin-top:10px;padding:10px 14px;background:var(--accent-l);border-radius:10px;font-size:12px;color:var(--accent);font-weight:600;display:none">
+            💡 Buscaremos objetos entre <span id="price-min">—</span> y <span id="price-max">—</span> €
+          </div>
+        </div>
+
+        <div class="card step-card">
+          <div class="step-head"><div class="step-num">6</div><div class="step-title">Ubicación</div></div>
+          <div id="geo-status" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer" onclick="requestGeoLocation()">
+            <span style="font-size:1.2rem">📍</span>
+            <div style="flex:1">
+              <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2)">Detectar mi ubicación automáticamente</div>
+              <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:2px">Haz clic para usar tu ubicación actual</div>
+            </div>
+            <button type="button" id="geo-btn" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Detectar</button>
+          </div>
+          <input type="hidden" id="pub-loc" value="Barcelona">
+          <input type="hidden" id="pub-lat" value="">
+          <input type="hidden" id="pub-lng" value="">
+        </div>
+
+        <!-- Botones paso 2 -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button class="btn btn-ghost btn-lg btn-r" style="flex:1" onclick="goToPubStep1()">← Atrás</button>
+          <button class="btn btn-primary btn-lg btn-r" style="flex:2;box-shadow:0 4px 16px rgba(78,143,186,.25)" onclick="publishItem()">🚀 Publicar</button>
+        </div>
+
+      </div>
+
     </div>
   </div>
 </div>
@@ -4453,7 +4453,34 @@ const CITY_COORDS = {
 let userCoords = null;
 let sortByDistance = false;
 
-// ═══ GEOLOCALIZACIÓN FORMULARIO PUBLICAR ═══
+function goToPubStep2() {
+  const name = document.getElementById('pub-name').value.trim();
+  if(!name) { showToast('⚠️ Escribe el nombre del objeto primero'); return; }
+  if(!exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
+  document.getElementById('pub-step-1').style.display = 'none';
+  document.getElementById('pub-step-2').style.display = '';
+  document.getElementById('pub-step-ind-1').style.borderBottomColor = 'var(--border2)';
+  document.getElementById('pub-step-ind-1').style.color = 'var(--muted)';
+  document.getElementById('pub-step-ind-1').style.fontWeight = '500';
+  document.getElementById('pub-step-ind-2').style.borderBottomColor = 'var(--accent)';
+  document.getElementById('pub-step-ind-2').style.color = 'var(--accent)';
+  document.getElementById('pub-step-ind-2').style.fontWeight = '700';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goToPubStep1() {
+  document.getElementById('pub-step-2').style.display = 'none';
+  document.getElementById('pub-step-1').style.display = '';
+  document.getElementById('pub-step-ind-1').style.borderBottomColor = 'var(--accent)';
+  document.getElementById('pub-step-ind-1').style.color = 'var(--accent)';
+  document.getElementById('pub-step-ind-1').style.fontWeight = '700';
+  document.getElementById('pub-step-ind-2').style.borderBottomColor = 'var(--border2)';
+  document.getElementById('pub-step-ind-2').style.color = 'var(--muted)';
+  document.getElementById('pub-step-ind-2').style.fontWeight = '500';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+
 function requestGeoLocation() {
   const label = document.getElementById('geo-label');
   const sub = document.getElementById('geo-sub');
@@ -5210,6 +5237,7 @@ async function publishItem() {
   document.getElementById('pub-book-hint').style.display = 'none';
   if(btn) { btn.textContent = originalText; btn.disabled = false; }
 
+  goToPubStep1();
   renderExplore(items);
   renderProfile();
   document.getElementById('prof-stat-items').textContent = myItems.length;
