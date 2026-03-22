@@ -2477,6 +2477,8 @@ window._enterApp = function() {
   }
 
   navTo('explore');
+  // Pre-cargar objetos del usuario para el perfil
+  if(currentUser) setTimeout(() => loadMyItems(), 300);
 }
 
 function scrollToHow() {
@@ -4262,9 +4264,15 @@ function renderProfile() {
   if(progressLabel) progressLabel.textContent = myTrustScore + ' / 100 pts';
 
   // My active items — se cargan desde Supabase en loadMyItems()
-  document.getElementById('my-items-grid').innerHTML =
-    '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando tus objetos...</div>';
-  loadMyItems();
+  const myItemsGrid = document.getElementById('my-items-grid');
+  if(myItemsGrid) {
+    if(currentUser) {
+      myItemsGrid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando tus objetos...</div>';
+      loadMyItems();
+    } else {
+      myItemsGrid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no has publicado nada.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="navTo(\'publish\')">Publicar ahora →</button></div>';
+    }
+  }
 
   // Completed trades with rating
   const completedTrades = [
