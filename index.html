@@ -4483,6 +4483,19 @@ function editImgDrop(e) {
   if (files.length) editImgSelected({ files });
 }
 
+function updateEditSubcat() {
+  const cat = document.getElementById('edit-item-cat').value;
+  const sub = document.getElementById('edit-item-subcat');
+  const opts = PUB_SUBCATS[cat] || [];
+  if (opts.length) {
+    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
+    sub.disabled = false;
+  } else {
+    sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
+    sub.disabled = true;
+  }
+}
+
 function closeEditItemModal() {
   document.getElementById('edit-item-modal').classList.remove('open');
   editItemNewPhotos = [];
