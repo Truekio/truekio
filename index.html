@@ -4770,8 +4770,8 @@ function updateSubcat() {
   btn.style.display = 'inline-flex';
 }
 
-// Subcategorías por categoría
-const SUBCATS = {
+// Subcategorías para formulario publicar
+const PUB_SUBCATS = {
   'Electrónica': ['Móviles','Portátiles','Tablets','Consolas','Cámaras','Audio','TV y vídeo','Wearables','Componentes','Otro'],
   'Música': ['Guitarras','Teclados y pianos','Percusión','Viento','Cuerdas','DJ y electrónica','Estudio y grabación','Otro'],
   'Deporte': ['Ciclismo','Fitness','Deportes de equipo','Deportes de agua','Montaña','Raqueta','Artes marciales','Otro'],
@@ -4792,7 +4792,7 @@ function updatePubSubcat() {
   serviceHint.style.display = cat === 'Servicios' ? 'block' : 'none';
   bookHint.style.display = cat === 'Libros' ? 'block' : 'none';
 
-  const subs = SUBCATS[cat] || [];
+  const subs = PUB_SUBCATS[cat] || [];
   if(subs.length) {
     subEl.innerHTML = '<option value="">— Opcional —</option>' +
       subs.map(s => `<option>${s}</option>`).join('');
