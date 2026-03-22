@@ -1484,50 +1484,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="proximity-stack" id="proximity-stack"></div>
 
 <!-- MODAL -->
-<!-- MODAL DETALLE OBJETO -->
-<div class="modal-overlay" id="detail-modal-overlay" onclick="closeDetailModalBg(event)">
-  <div class="modal-box" style="max-width:560px;padding:0;overflow:hidden">
-    <!-- Carrusel de fotos -->
-    <div id="detail-carousel-wrap" style="position:relative;height:280px;background:var(--bg2)"></div>
-    <!-- Cerrar -->
-    <button class="modal-close" onclick="closeDetailModal()" style="position:absolute;top:12px;right:12px;z-index:10;background:rgba(255,255,255,.9)">×</button>
-    <!-- Contenido -->
-    <div style="padding:22px 24px 24px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">
-        <div>
-          <h3 id="detail-name" style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;letter-spacing:-.02em;margin-bottom:4px"></h3>
-          <div id="detail-meta" style="font-size:12px;color:var(--muted)"></div>
-        </div>
-        <div id="detail-price" style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;color:var(--accent);white-space:nowrap"></div>
-      </div>
-
-      <!-- Usuario -->
-      <div id="detail-user" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border-radius:var(--r);margin-bottom:14px"></div>
-
-      <!-- Descripción -->
-      <div id="detail-desc-wrap" style="display:none;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Descripción</div>
-        <div id="detail-desc" style="font-size:13px;color:var(--text2);line-height:1.7"></div>
-      </div>
-
-      <!-- Acepta a cambio -->
-      <div style="margin-bottom:18px">
-        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Acepta a cambio</div>
-        <div id="detail-wants" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-      </div>
-
-      <!-- Info extra -->
-      <div id="detail-extras" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px"></div>
-
-      <!-- Botón proponer -->
-      <button class="btn btn-primary btn-lg btn-full btn-r" id="detail-propose-btn" onclick="proposeFromDetail()">
-        🤝 Proponer trueque
-      </button>
-    </div>
-  </div>
-</div>
-
-
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalBg(event)">
   <div class="modal-box">
     <div class="modal-head">
       <div><div class="modal-title">Proponer trueque</div><div class="modal-sub">Elige tu objeto y envía una propuesta</div></div>
@@ -3108,7 +3065,7 @@ function itemCardHTML(item, isPremiumView=false) {
     : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
-  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
+  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}" onclick_disabled="">
     <div class="item-img" style="background:transparent">
       ${imgContent}
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
@@ -3136,8 +3093,8 @@ function itemCardHTML(item, isPremiumView=false) {
         ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
       </div>
       <div class="item-actions">
-        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openDetail(${item.id})">
-          ${isMatch ? '⚡ Ver y proponer' : '👁 Ver objeto'}
+        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openModal(${item.id})">
+          ${isMatch ? '⚡ Proponer match' : 'Proponer trueque'}
         </button>
         <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
       </div>
@@ -3384,7 +3341,7 @@ function itemCardHTML(item, isPremiumView=false) {
     : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
-  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
+  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}" onclick_disabled="">
     <div class="item-img" style="background:transparent">
       ${imgContent}
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
@@ -3412,8 +3369,8 @@ function itemCardHTML(item, isPremiumView=false) {
         ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
       </div>
       <div class="item-actions">
-        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openDetail(${item.id})">
-          ${isMatch ? '⚡ Ver y proponer' : '👁 Ver objeto'}
+        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openModal(${item.id})">
+          ${isMatch ? '⚡ Proponer match' : 'Proponer trueque'}
         </button>
         <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
       </div>
@@ -4174,114 +4131,6 @@ function sendMessage() {
 function scrollMsgs() { const el=document.getElementById('chat-msgs'); if(el) el.scrollTop=el.scrollHeight; }
 
 // ═══ MODAL ═══
-// ═══ DETALLE DE OBJETO ═══
-let detailItem = null;
-
-async function openDetail(itemId) {
-  // Buscar primero en el array local
-  let item = items.find(i => String(i.id) === String(itemId));
-
-  // Si no está (ej: desde "Mis objetos"), cargar desde Supabase
-  if (!item) {
-    const { data, error } = await db.from('items').select('*').eq('id', itemId).single();
-    if (error || !data) { showToast('⚠️ No se pudo cargar el objeto'); return; }
-    item = {
-      id: data.id,
-      name: data.title,
-      description: data.description,
-      cat: data.category,
-      emoji: data.emoji || '📦',
-      condition: data.condition,
-      price: data.estimated_value ? String(data.estimated_value) : '',
-      wants: data.wants ? data.wants.split(',').map(w => w.trim()) : [],
-      photos: data.photo_urls && data.photo_urls.length ? data.photo_urls : (data.photos ? [data.photos] : []),
-      user: data.user_name || 'Usuario',
-      userEmoji: '👤',
-      location: 'Barcelona',
-    };
-  }
-
-  detailItem = item;
-
-  // Carrusel de fotos
-  const carouselWrap = document.getElementById('detail-carousel-wrap');
-  const photos = item.photos && item.photos.length ? item.photos : [];
-  const cid = 'detail-car';
-  if (photos.length > 0) {
-    const slides = photos.map((src, i) =>
-      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" style="width:100%;height:100%;object-fit:cover"></div>`
-    ).join('');
-    const dots = photos.length > 1 ? `<div class="carousel-dots" id="${cid}-dots">${photos.map((_,i)=>`<div class="carousel-dot${i===0?' active':''}"></div>`).join('')}</div>` : '';
-    const arrows = photos.length > 1 ? `
-      <button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button>
-      <button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
-    const count = photos.length > 1 ? `<div class="carousel-count" id="${cid}-count">1 / ${photos.length}</div>` : '';
-    carouselWrap.innerHTML = `<div class="card-carousel" id="${cid}" data-idx="0" data-total="${photos.length}"
-      ontouchstart="carouselTouchStart(event,'${cid}')"
-      ontouchmove="carouselTouchMove(event,'${cid}')"
-      ontouchend="carouselTouchEnd(event,'${cid}')"
-      style="position:absolute;inset:0">
-      <div class="carousel-track" id="${cid}-track">${slides}</div>
-      ${dots}${arrows}${count}
-    </div>`;
-  } else {
-    carouselWrap.innerHTML = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5rem">${item.emoji}</div>`;
-  }
-
-  // Nombre y meta
-  document.getElementById('detail-name').textContent = item.name;
-  document.getElementById('detail-meta').textContent = [item.cat, item.condition, item.location].filter(Boolean).join(' · ');
-  document.getElementById('detail-price').textContent = item.price ? '~' + item.price + '€' : '';
-
-  // Usuario
-  const userBg = `hsl(${strHash(item.user)%360},55%,70%)`;
-  document.getElementById('detail-user').innerHTML = `
-    <div style="width:40px;height:40px;border-radius:50%;background:${userBg};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">${item.userEmoji}</div>
-    <div>
-      <div style="font-weight:700;font-size:13px">${item.user}</div>
-      <div style="font-size:11px;color:var(--muted)">📍 ${item.location || 'Barcelona'}</div>
-    </div>`;
-
-  // Descripción
-  const descWrap = document.getElementById('detail-desc-wrap');
-  const descEl = document.getElementById('detail-desc');
-  if (item.description) {
-    descEl.textContent = item.description;
-    descWrap.style.display = '';
-  } else {
-    descWrap.style.display = 'none';
-  }
-
-  // Acepta a cambio
-  const wantsEl = document.getElementById('detail-wants');
-  const wants = item.wants && item.wants.length ? item.wants : [];
-  wantsEl.innerHTML = wants.length
-    ? wants.map(w => `<span style="background:var(--accent-l);color:var(--accent);font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px">${w}</span>`).join('')
-    : '<span style="font-size:12px;color:var(--muted)">No especificado</span>';
-
-  // Extras (condición, trueque en persona)
-  document.getElementById('detail-extras').innerHTML = [
-    item.condition ? `<span style="background:var(--bg2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;color:var(--text2)">📦 ${item.condition}</span>` : '',
-    `<span style="background:var(--bg2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;color:var(--text2)">🤝 En persona</span>`,
-  ].join('');
-
-  document.getElementById('detail-modal-overlay').classList.add('open');
-}
-
-function closeDetailModal() {
-  document.getElementById('detail-modal-overlay').classList.remove('open');
-  detailItem = null;
-}
-
-function closeDetailModalBg(e) {
-  if (e.target === document.getElementById('detail-modal-overlay')) closeDetailModal();
-}
-
-function proposeFromDetail() {
-  if (!detailItem) return;
-  closeDetailModal();
-  setTimeout(() => openModal(detailItem.id), 200);
-}
 function openModal(itemId) {
   const item = items.find(i=>i.id===itemId);
   if(!item) return;
