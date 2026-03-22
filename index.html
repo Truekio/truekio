@@ -1513,6 +1513,87 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- ONBOARDING eliminado del MVP v1 -->
 
+<!-- MODAL EDITAR OBJETO -->
+<div class="modal-overlay" id="edit-item-modal" onclick="closeEditModal(event)">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Editar objeto</div>
+        <div class="modal-sub" id="edit-item-subtitle">Modifica los datos de tu publicación</div>
+      </div>
+      <button class="modal-close" onclick="closeEditItemModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-item-id">
+
+      <!-- Fotos -->
+      <div class="field">
+        <label>Foto principal</label>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+          <div id="edit-item-photo-preview" style="width:80px;height:80px;border-radius:var(--r);overflow:hidden;background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:2rem"></div>
+          <div style="flex:1;min-width:160px">
+            <div class="img-upload-area" id="edit-img-upload" style="padding:14px" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" ondrop="editImgDrop(event)">
+              <input type="file" accept="image/*" onchange="editImgSelected(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+              <div style="font-size:12px;color:var(--muted)">Haz clic o arrastra para cambiar la foto</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nombre -->
+      <div class="field">
+        <label>Nombre del objeto</label>
+        <input id="edit-item-name" placeholder="Nombre del objeto">
+      </div>
+
+      <!-- Categoría -->
+      <div class="form-row">
+        <div class="field" style="margin-bottom:0">
+          <label>Categoría</label>
+          <select id="edit-item-cat" onchange="updateEditSubcat()">
+            <option value="">— Selecciona —</option>
+            <option>Electrónica</option><option>Música</option><option>Deporte</option>
+            <option>Ropa</option><option>Hogar</option><option>Libros</option>
+            <option>Servicios</option><option>Juguetes</option>
+            <option>Cartas</option><option>Juegos de mesa</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Subcategoría</label>
+          <select id="edit-item-subcat"><option value="">— Opcional —</option></select>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="field">
+        <label>Descripción</label>
+        <textarea id="edit-item-desc" placeholder="Estado, accesorios incluidos, detalles..."></textarea>
+      </div>
+
+      <!-- Qué acepta -->
+      <div class="field">
+        <label>Qué acepta a cambio</label>
+        <input id="edit-item-wants" placeholder="Ej: Cámara, Tablet, Guitarra (separados por comas)">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Separa las opciones con comas</div>
+      </div>
+
+      <!-- Precio -->
+      <div class="field" style="margin-bottom:0">
+        <label>Precio estimado (€)</label>
+        <input id="edit-item-price" type="number" min="0" placeholder="Ej: 150">
+      </div>
+
+      <div id="edit-item-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r);padding:10px 14px;font-size:13px;color:#991b1b;margin-top:12px"></div>
+
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-secondary btn-md" style="flex:1" onclick="closeEditItemModal()">Cancelar</button>
+        <button class="btn btn-primary btn-md" style="flex:2" id="edit-item-save-btn" onclick="saveEditItem()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 <!-- ═══ AUTH VIEW ═══ -->
 <div class="view" id="view-auth" style="display:none">
@@ -4293,21 +4374,158 @@ async function loadMyItems() {
     const photo = item.photos || '';
     const emoji = item.emoji || '📦';
     return `
-    <div class="card my-item-card" style="cursor:pointer" onclick="openDetail(${item.id})">
-      <div class="my-item-emoji" style="background:var(--bg2);overflow:hidden;padding:0">
+    <div class="card my-item-card" style="flex-direction:column;gap:0;padding:0;overflow:hidden">
+      <div style="height:120px;background:var(--bg2);position:relative;overflow:hidden;cursor:pointer" onclick="openDetail(${item.id})">
         ${photo
           ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`
-          : `<span style="font-size:1.6rem;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${emoji}</span>`
+          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem">${emoji}</div>`
         }
       </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.85rem;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.title}</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${item.category || ''}</div>
-        <span class="badge badge-green badge-sm">● Activo</span>
+      <div style="padding:12px">
+        <div style="font-weight:700;font-size:.85rem;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${item.category || ''}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" style="flex:1;font-size:11px" onclick="openEditItem(${item.id})">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" style="font-size:11px" onclick="deleteItem(${item.id}, this)">🗑</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
+// ═══ EDITAR OBJETO ═══
+let editItemNewPhoto = null; // nueva foto seleccionada
+
+async function openEditItem(itemId) {
+  const { data, error } = await db.from('items').select('*').eq('id', itemId).single();
+  if (error || !data) { showToast('⚠️ No se pudo cargar el objeto'); return; }
+
+  document.getElementById('edit-item-id').value = itemId;
+  document.getElementById('edit-item-name').value = data.title || '';
+  document.getElementById('edit-item-desc').value = data.description || '';
+  document.getElementById('edit-item-price').value = data.estimated_value || '';
+  document.getElementById('edit-item-wants').value = data.wants || '';
+  document.getElementById('edit-item-subtitle').textContent = data.title;
+  document.getElementById('edit-item-error').style.display = 'none';
+  editItemNewPhoto = null;
+
+  // Foto preview
+  const preview = document.getElementById('edit-item-photo-preview');
+  if (data.photos) {
+    preview.innerHTML = `<img src="${data.photos}" style="width:100%;height:100%;object-fit:cover">`;
+  } else {
+    preview.innerHTML = data.emoji || '📦';
+  }
+
+  // Categoría
+  const catEl = document.getElementById('edit-item-cat');
+  catEl.value = data.category || '';
+  updateEditSubcat();
+  // Pequeño delay para que el select se actualice antes de setear subcat
+  setTimeout(() => {
+    document.getElementById('edit-item-subcat').value = '';
+  }, 50);
+
+  document.getElementById('edit-item-modal').classList.add('open');
+}
+
+function closeEditItemModal() {
+  document.getElementById('edit-item-modal').classList.remove('open');
+  editItemNewPhoto = null;
+}
+
+function closeEditModal(e) {
+  if (e.target === document.getElementById('edit-item-modal')) closeEditItemModal();
+}
+
+function updateEditSubcat() {
+  const cat = document.getElementById('edit-item-cat').value;
+  const sub = document.getElementById('edit-item-subcat');
+  const opts = PUB_SUBCATS[cat] || [];
+  if (opts.length) {
+    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
+    sub.disabled = false;
+  } else {
+    sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
+    sub.disabled = true;
+  }
+}
+
+function editImgSelected(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 5*1024*1024) { showToast('Imagen demasiado grande (max 5MB)'); return; }
+  editItemNewPhoto = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('edit-item-photo-preview').innerHTML =
+      `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function editImgDrop(e) {
+  e.preventDefault();
+  document.getElementById('edit-img-upload').classList.remove('dragover');
+  const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
+  if (file) { editImgSelected({ files: [file] }); }
+}
+
+async function saveEditItem() {
+  const id = document.getElementById('edit-item-id').value;
+  const name = document.getElementById('edit-item-name').value.trim();
+  const errEl = document.getElementById('edit-item-error');
+  const btn = document.getElementById('edit-item-save-btn');
+
+  if (!name) { errEl.textContent = 'El nombre no puede estar vacío.'; errEl.style.display = ''; return; }
+
+  btn.textContent = 'Guardando...'; btn.disabled = true; errEl.style.display = 'none';
+
+  // Subir nueva foto si hay
+  let photoUrl = null;
+  if (editItemNewPhoto) {
+    const userId = currentUser ? currentUser.id : 'anon';
+    const ext = editItemNewPhoto.type.split('/')[1] || 'jpg';
+    const fileName = `${userId}_${Date.now()}.${ext}`;
+    const { error: upErr } = await db.storage.from('photos').upload(fileName, editItemNewPhoto, { contentType: editItemNewPhoto.type });
+    if (!upErr) {
+      const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
+      photoUrl = urlData.publicUrl;
+    }
+  }
+
+  const updates = {
+    title: name,
+    description: document.getElementById('edit-item-desc').value,
+    category: document.getElementById('edit-item-cat').value,
+    estimated_value: parseInt(document.getElementById('edit-item-price').value) || null,
+    wants: document.getElementById('edit-item-wants').value,
+  };
+  if (photoUrl) updates.photos = photoUrl;
+
+  const { error } = await db.from('items').update(updates).eq('id', id);
+
+  if (error) {
+    errEl.textContent = 'Error al guardar: ' + error.message;
+    errEl.style.display = '';
+    btn.textContent = 'Guardar cambios'; btn.disabled = false;
+    return;
+  }
+
+  btn.textContent = 'Guardar cambios'; btn.disabled = false;
+  closeEditItemModal();
+  showToast('✓ Objeto actualizado correctamente');
+  loadMyItems(); // recargar la lista
+}
+
+async function deleteItem(itemId, btnEl) {
+  if (!confirm('¿Seguro que quieres eliminar este objeto? Esta acción no se puede deshacer.')) return;
+  btnEl.textContent = '⏳'; btnEl.disabled = true;
+  const { error } = await db.from('items').delete().eq('id', itemId);
+  if (error) { showToast('⚠️ Error al eliminar'); btnEl.textContent = '🗑'; btnEl.disabled = false; return; }
+  showToast('✓ Objeto eliminado');
+  loadMyItems();
+}
+
 function switchPTab(tab) {
   ['items','done','reviews','config'].forEach(t => {
     const btn = document.getElementById('ptab-btn-'+t);
