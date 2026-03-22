@@ -1412,6 +1412,10 @@ function switchAuthTab(tab) {
   document.getElementById('auth-tab-register').style.color = isLogin ? 'var(--muted)' : 'var(--accent)';
   document.getElementById('auth-tab-register').style.fontWeight = isLogin ? '500' : '700';
 }
+function handleLogin() { if(window._handleLogin) window._handleLogin(); }
+function handleRegister() { if(window._handleRegister) window._handleRegister(); }
+function enterApp() { if(window._enterApp) window._enterApp(); }
+function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2405,7 +2409,7 @@ function showAuthScreen() {
   if (bn) bn.style.display = 'none';
 }
 
-function enterApp() {
+window._enterApp = function() {
   document.getElementById('view-landing').style.display = 'none';
   document.getElementById('view-landing').classList.remove('active');
   document.getElementById('view-auth').style.display = 'none';
@@ -2436,7 +2440,7 @@ function scrollToHow() {
   document.getElementById('lp-how').scrollIntoView({ behavior: 'smooth' });
 }
 
-async function handleLogout() {
+window._handleLogout = async function() {
   await db.auth.signOut();
   currentUser = null;
   document.getElementById('main-nav').style.display = 'none';
@@ -2448,7 +2452,7 @@ async function handleLogout() {
   showToast('Sesión cerrada');
 }
 
-async function handleLogin() {
+window._handleLogin = async function() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
@@ -2458,11 +2462,11 @@ async function handleLogin() {
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error) { errEl.textContent = 'Email o contraseña incorrectos.'; errEl.style.display = ''; btn.textContent = 'Entrar →'; btn.disabled = false; return; }
   currentUser = data.user;
-  enterApp();
+  window._enterApp();
   showToast('✓ Bienvenido de nuevo');
 }
 
-async function handleRegister() {
+window._handleRegister = async function() {
   const name = document.getElementById('register-name').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
@@ -2474,7 +2478,7 @@ async function handleRegister() {
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { name } } });
   if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = ''; btn.textContent = 'Crear cuenta →'; btn.disabled = false; return; }
   currentUser = data.user;
-  enterApp();
+  window._enterApp();
   showToast('✦ Cuenta creada — ¡bienvenido a Truekio!');
 }
 
@@ -2772,7 +2776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     currentUser = session.user;
-    enterApp();
+    window._enterApp();
   }
 
   const wi = document.getElementById('wants-input');
