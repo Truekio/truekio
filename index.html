@@ -2555,7 +2555,7 @@ async function loadItemsFromSupabase() {
     condition: row.condition,
     price: row.estimated_value ? String(row.estimated_value) : '',
     wants: row.wants ? row.wants.split(',').map(w => w.trim()) : [],
-    photos: row.photos ? [row.photos] : [],
+    photos: row.photo_urls && row.photo_urls.length ? row.photo_urls : (row.photos ? [row.photos] : []),
     user: row.user_name || 'Usuario',
     userEmoji: '👤',
     location: 'Barcelona',
@@ -4388,7 +4388,7 @@ async function loadMyItems() {
   if (statEl) statEl.textContent = data.length;
 
   grid.innerHTML = data.map(item => {
-    const photo = item.photos || '';
+    const photo = (item.photo_urls && item.photo_urls[0]) || item.photos || '';
     const emoji = item.emoji || '📦';
     return `
     <div class="card my-item-card" style="flex-direction:column;gap:0;padding:0;overflow:hidden">
@@ -4410,7 +4410,7 @@ async function loadMyItems() {
   }).join('');
 }
 // ═══ EDITAR OBJETO ═══
-let editItemNewPhoto = null; // nueva foto seleccionada
+let editItemNewPhotos = []; // nuevas fotos seleccionadas
 
 async function openEditItem(itemId) {
   const { data, error } = await db.from('items').select('*').eq('id', itemId).single();
@@ -4423,68 +4423,73 @@ async function openEditItem(itemId) {
   document.getElementById('edit-item-wants').value = data.wants || '';
   document.getElementById('edit-item-subtitle').textContent = data.title;
   document.getElementById('edit-item-error').style.display = 'none';
-  editItemNewPhoto = null;
+  editItemNewPhotos = [];
 
-  // Foto preview
+  // Fotos existentes
   const preview = document.getElementById('edit-item-photo-preview');
-  if (data.photos) {
-    preview.innerHTML = `<img src="${data.photos}" style="width:100%;height:100%;object-fit:cover">`;
-  } else {
-    preview.innerHTML = data.emoji || '📦';
-  }
+  const existingPhotos = data.photo_urls && data.photo_urls.length ? data.photo_urls : (data.photos ? [data.photos] : []);
+  preview.dataset.existingPhotos = JSON.stringify(existingPhotos);
+  renderEditPhotoPreviews(existingPhotos);
 
   // Categoría
   const catEl = document.getElementById('edit-item-cat');
   catEl.value = data.category || '';
   updateEditSubcat();
-  // Pequeño delay para que el select se actualice antes de setear subcat
-  setTimeout(() => {
-    document.getElementById('edit-item-subcat').value = '';
-  }, 50);
 
   document.getElementById('edit-item-modal').classList.add('open');
 }
 
-function closeEditItemModal() {
-  document.getElementById('edit-item-modal').classList.remove('open');
-  editItemNewPhoto = null;
-}
-
-function closeEditModal(e) {
-  if (e.target === document.getElementById('edit-item-modal')) closeEditItemModal();
-}
-
-function updateEditSubcat() {
-  const cat = document.getElementById('edit-item-cat').value;
-  const sub = document.getElementById('edit-item-subcat');
-  const opts = PUB_SUBCATS[cat] || [];
-  if (opts.length) {
-    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
-    sub.disabled = false;
+function renderEditPhotoPreviews(existingPhotos) {
+  const preview = document.getElementById('edit-item-photo-preview');
+  if (existingPhotos.length) {
+    preview.innerHTML = existingPhotos.map((url, i) =>
+      `<div style="position:relative;width:60px;height:60px;border-radius:8px;overflow:hidden;flex-shrink:0">
+        <img src="${url}" style="width:100%;height:100%;object-fit:cover">
+        <button onclick="removeExistingPhoto(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+      </div>`
+    ).join('');
+    preview.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;width:auto;height:auto;border-radius:0;background:none';
   } else {
-    sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
-    sub.disabled = true;
+    preview.innerHTML = '<div style="width:80px;height:80px;border-radius:var(--r);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:2rem">📦</div>';
+    preview.style.cssText = 'display:block;width:auto;height:auto;background:none';
   }
+}
+
+function removeExistingPhoto(idx) {
+  const preview = document.getElementById('edit-item-photo-preview');
+  let existing = [];
+  try { existing = JSON.parse(preview.dataset.existingPhotos || '[]'); } catch(e) {}
+  existing.splice(idx, 1);
+  preview.dataset.existingPhotos = JSON.stringify(existing);
+  renderEditPhotoPreviews(existing);
 }
 
 function editImgSelected(input) {
   if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  if (file.size > 5*1024*1024) { showToast('Imagen demasiado grande (max 5MB)'); return; }
-  editItemNewPhoto = file;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('edit-item-photo-preview').innerHTML =
-      `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(input.files);
+  const remaining = 5 - (editItemNewPhotos.length + JSON.parse(document.getElementById('edit-item-photo-preview').dataset.existingPhotos || '[]').length);
+  if (remaining <= 0) { showToast('Máximo 5 imágenes en total'); return; }
+  files.slice(0, remaining).forEach(file => {
+    if (file.size > 5*1024*1024) { showToast('Imagen demasiado grande (max 5MB)'); return; }
+    editItemNewPhotos.push(file);
+  });
+  showToast(`✓ ${Math.min(files.length, remaining)} foto(s) añadida(s)`);
 }
 
 function editImgDrop(e) {
   e.preventDefault();
   document.getElementById('edit-img-upload').classList.remove('dragover');
-  const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
-  if (file) { editImgSelected({ files: [file] }); }
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (files.length) editImgSelected({ files });
+}
+
+function closeEditItemModal() {
+  document.getElementById('edit-item-modal').classList.remove('open');
+  editItemNewPhotos = [];
+}
+
+function closeEditModal(e) {
+  if (e.target === document.getElementById('edit-item-modal')) closeEditItemModal();
 }
 
 async function saveEditItem() {
@@ -4497,18 +4502,27 @@ async function saveEditItem() {
 
   btn.textContent = 'Guardando...'; btn.disabled = true; errEl.style.display = 'none';
 
-  // Subir nueva foto si hay
-  let photoUrl = null;
-  if (editItemNewPhoto) {
+  // Fotos existentes
+  const preview = document.getElementById('edit-item-photo-preview');
+  let existingPhotos = [];
+  try { existingPhotos = JSON.parse(preview.dataset.existingPhotos || '[]'); } catch(e) {}
+
+  // Subir fotos nuevas
+  const newPhotoUrls = [];
+  for(let i = 0; i < editItemNewPhotos.length; i++) {
+    const file = editItemNewPhotos[i];
     const userId = currentUser ? currentUser.id : 'anon';
-    const ext = editItemNewPhoto.type.split('/')[1] || 'jpg';
-    const fileName = `${userId}_${Date.now()}.${ext}`;
-    const { error: upErr } = await db.storage.from('photos').upload(fileName, editItemNewPhoto, { contentType: editItemNewPhoto.type });
+    const ext = file.type.split('/')[1] || 'jpg';
+    const fileName = `${userId}_${Date.now()}_${i}.${ext}`;
+    const { error: upErr } = await db.storage.from('photos').upload(fileName, file, { contentType: file.type });
     if (!upErr) {
       const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
-      photoUrl = urlData.publicUrl;
+      newPhotoUrls.push(urlData.publicUrl);
     }
   }
+
+  // Combinar fotos existentes + nuevas
+  const allPhotos = [...existingPhotos, ...newPhotoUrls];
 
   const updates = {
     title: name,
@@ -4517,7 +4531,10 @@ async function saveEditItem() {
     estimated_value: parseInt(document.getElementById('edit-item-price').value) || null,
     wants: document.getElementById('edit-item-wants').value,
   };
-  if (photoUrl) updates.photos = photoUrl;
+  if (allPhotos.length) {
+    updates.photos = allPhotos[0];
+    updates.photo_urls = allPhotos;
+  }
 
   const { error } = await db.from('items').update(updates).eq('id', id).eq('user_id', currentUser.id);
 
@@ -4531,7 +4548,7 @@ async function saveEditItem() {
   btn.textContent = 'Guardar cambios'; btn.disabled = false;
   closeEditItemModal();
   showToast('✓ Objeto actualizado correctamente');
-  loadMyItems(); // recargar la lista
+  loadMyItems();
 }
 
 async function deleteItem(itemId, btnEl) {
@@ -5445,6 +5462,7 @@ async function publishItem() {
     estimated_value: parseInt(document.getElementById('pub-price').value) || null,
     wants: wantsFlat.join(', '),
     photos: photoUrls.length ? photoUrls[0] : '',
+    photo_urls: photoUrls.length ? photoUrls : null,
     user_name: userName,
     user_id: currentUser ? currentUser.id : null,
   };
@@ -5470,6 +5488,7 @@ async function publishItem() {
     desc: row.description,
     wants: wantsFlat,
     photos: photoUrls.length ? photoUrls : [],
+    photo_urls: photoUrls.length ? photoUrls : [],
     shipping: 'persona',
     verified: false,
     user: userName,
