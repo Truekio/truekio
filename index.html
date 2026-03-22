@@ -2135,9 +2135,6 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 
       <div class="card step-card">
         <div class="step-head"><div class="step-num">1</div><div class="step-title">Tu objeto</div></div>
-        <div class="field"><label>Emoji representativo</label>
-          <div class="emoji-picker" id="emoji-picker"></div>
-        </div>
         <div class="field">
           <label>Fotos del objeto <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(hasta 5 imágenes)</span></label>
           <div class="img-upload-area" id="img-upload-area" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" ondrop="imgDrop(event)">
@@ -2152,54 +2149,20 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
           <div class="field"><label>Categoría</label>
             <select id="pub-cat" onchange="updatePubSubcat()">
               <option value="">— Selecciona categoría —</option>
-              <optgroup label="Objetos">
-                <option>Electrónica</option><option>Música</option><option>Deporte</option><option>Ropa</option><option>Hogar</option><option>Juguetes</option><option>Otro</option>
-              </optgroup>
-              <optgroup label="📚 Libros (por género)">
-                <option value="Libros|Ficción">Libros · Ficción</option>
-                <option value="Libros|Ciencia ficción">Libros · Ciencia ficción</option>
-                <option value="Libros|Fantasía">Libros · Fantasía</option>
-                <option value="Libros|Thriller y suspense">Libros · Thriller y suspense</option>
-                <option value="Libros|Romance">Libros · Romance</option>
-                <option value="Libros|Terror">Libros · Terror</option>
-                <option value="Libros|Historia">Libros · Historia</option>
-                <option value="Libros|Biografías">Libros · Biografías</option>
-                <option value="Libros|Autoayuda">Libros · Autoayuda</option>
-                <option value="Libros|Ciencia">Libros · Ciencia</option>
-                <option value="Libros|Filosofía">Libros · Filosofía</option>
-                <option value="Libros|Infantil y juvenil">Libros · Infantil y juvenil</option>
-                <option value="Libros|Cómics y manga">Libros · Cómics y manga</option>
-                <option value="Libros|Poesía">Libros · Poesía</option>
-                <option value="Libros|Arte y fotografía">Libros · Arte y fotografía</option>
-                <option value="Libros|Cocina">Libros · Cocina</option>
-                <option value="Libros|Economía">Libros · Economía</option>
-              </optgroup>
-              <optgroup label="🤝 Servicios profesionales">
-                <option value="Servicios|Salud · Dentista">Servicios · Dentista</option>
-                <option value="Servicios|Salud · Médico general">Servicios · Médico general</option>
-                <option value="Servicios|Salud · Fisioterapeuta">Servicios · Fisioterapeuta</option>
-                <option value="Servicios|Salud · Psicólogo">Servicios · Psicólogo</option>
-                <option value="Servicios|Salud · Nutricionista">Servicios · Nutricionista</option>
-                <option value="Servicios|Salud · Veterinario">Servicios · Veterinario</option>
-                <option value="Servicios|Construcción · Carpintero">Servicios · Carpintero</option>
-                <option value="Servicios|Construcción · Electricista">Servicios · Electricista</option>
-                <option value="Servicios|Construcción · Fontanero">Servicios · Fontanero</option>
-                <option value="Servicios|Construcción · Pintor">Servicios · Pintor</option>
-                <option value="Servicios|Construcción · Albañil">Servicios · Albañil</option>
-                <option value="Servicios|Educación · Profesor idiomas">Servicios · Clases de idiomas</option>
-                <option value="Servicios|Educación · Música / instrumento">Servicios · Clases de música</option>
-                <option value="Servicios|Educación · Apoyo escolar">Servicios · Apoyo escolar</option>
-                <option value="Servicios|Tecnología · Diseño web">Servicios · Diseño web</option>
-                <option value="Servicios|Tecnología · Reparación ordenadores">Servicios · Reparación ordenadores</option>
-                <option value="Servicios|Tecnología · Fotografía">Servicios · Fotografía</option>
-                <option value="Servicios|Belleza · Peluquería">Servicios · Peluquería</option>
-                <option value="Servicios|Belleza · Masajes">Servicios · Masajes</option>
-                <option value="Servicios|Legal · Abogado">Servicios · Abogado</option>
-                <option value="Servicios|Legal · Gestoría / asesoría">Servicios · Gestoría</option>
-                <option value="Servicios|Hogar · Limpieza">Servicios · Limpieza del hogar</option>
-                <option value="Servicios|Hogar · Jardinería">Servicios · Jardinería</option>
-                <option value="Servicios|Transporte · Mecánico">Servicios · Mecánico</option>
-              </optgroup>
+              <option>Electrónica</option>
+              <option>Música</option>
+              <option>Deporte</option>
+              <option>Ropa</option>
+              <option>Hogar</option>
+              <option>Libros</option>
+              <option>Servicios</option>
+              <option>Juguetes</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="field"><label>Subcategoría <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(opcional)</span></label>
+            <select id="pub-subcat">
+              <option value="">— Selecciona categoría primero —</option>
             </select>
           </div>
           <div id="pub-service-hint" style="display:none;grid-column:1/-1;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;font-weight:600">
@@ -2208,28 +2171,20 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
           <div id="pub-book-hint" style="display:none;grid-column:1/-1;padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:10px;font-size:12px;color:#92400e;font-weight:600">
             📚 Estás publicando <strong>libros</strong>. Indica el título, autor, número de volúmenes y estado de las páginas.
           </div>
-          <div class="field"><label>Ciudad</label>
-            <select id="pub-loc">
-              <option value="">— Selecciona tu ciudad —</option>
-              <optgroup label="Comunidad de Madrid"><option>Madrid</option><option>Alcalá de Henares</option><option>Alcobendas</option><option>Alcorcón</option><option>Algete</option><option>Aranjuez</option><option>Arganda del Rey</option><option>Boadilla del Monte</option><option>Ciempozuelos</option><option>Collado Villalba</option><option>Colmenar Viejo</option><option>Coslada</option><option>El Escorial</option><option>Fuenlabrada</option><option>Galapagar</option><option>Getafe</option><option>Las Rozas de Madrid</option><option>Leganés</option><option>Majadahonda</option><option>Mejorada del Campo</option><option>Móstoles</option><option>Parla</option><option>Pinto</option><option>Pozuelo de Alarcón</option><option>Rivas-Vaciamadrid</option><option>San Fernando de Henares</option><option>San Sebastián de los Reyes</option><option>Torrejón de Ardoz</option><option>Tres Cantos</option><option>Valdemoro</option><option>Velilla de San Antonio</option><option>Villanueva de la Cañada</option></optgroup>
-              <optgroup label="Cataluña"><option>Badalona</option><option>Barberà del Vallès</option><option>Barcelona</option><option>Castelldefels</option><option>Cerdanyola del Vallès</option><option>Cornellà de Llobregat</option><option>El Prat de Llobregat</option><option>Esplugues de Llobregat</option><option>Gavà</option><option>Girona</option><option>Granollers</option><option>Hospitalet de Llobregat</option><option>Igualada</option><option>Lleida</option><option>Manresa</option><option>Mataró</option><option>Mollet del Vallès</option><option>Montcada i Reixac</option><option>Olesa de Montserrat</option><option>Premià de Mar</option><option>Reus</option><option>Ripollet</option><option>Rubí</option><option>Sabadell</option><option>Sant Boi de Llobregat</option><option>Sant Cugat del Vallès</option><option>Sant Feliu de Llobregat</option><option>Sant Joan Despí</option><option>Santa Coloma de Gramenet</option><option>Tarragona</option><option>Terrassa</option><option>Vic</option><option>Viladecans</option><option>Vilafranca del Penedès</option><option>Vilanova i la Geltrú</option></optgroup>
-              <optgroup label="Comunitat Valenciana"><option>Alicante</option><option>Alzira</option><option>Benidorm</option><option>Burjassot</option><option>Castellón de la Plana</option><option>Crevillent</option><option>Dénia</option><option>El Campello</option><option>Elche</option><option>Elda</option><option>Gandia</option><option>Mislata</option><option>Ontinyent</option><option>Orihuela</option><option>Paterna</option><option>Petrer</option><option>Quart de Poblet</option><option>Riba-roja de Túria</option><option>Sagunto</option><option>San Vicente del Raspeig</option><option>Sant Joan d'Alacant</option><option>Torrent</option><option>Torrevieja</option><option>Valencia</option><option>Vila-real</option><option>Villena</option><option>Xàtiva</option></optgroup>
-              <optgroup label="Andalucía"><option>Alcalá de Guadaíra</option><option>Algeciras</option><option>Almería</option><option>Antequera</option><option>Benalmádena</option><option>Carmona</option><option>Chiclana de la Frontera</option><option>Cádiz</option><option>Córdoba</option><option>Dos Hermanas</option><option>El Puerto de Santa María</option><option>Estepona</option><option>Fuengirola</option><option>Granada</option><option>Huelva</option><option>Jaén</option><option>Jerez de la Frontera</option><option>La Línea de la Concepción</option><option>Linares</option><option>Lucena</option><option>Málaga</option><option>Marbella</option><option>Mijas</option><option>Motril</option><option>Roquetas de Mar</option><option>Ronda</option><option>San Fernando</option><option>Sanlúcar de Barrameda</option><option>Sevilla</option><option>Torremolinos</option><option>Utrera</option><option>Vélez-Málaga</option></optgroup>
-              <optgroup label="País Vasco"><option>Barakaldo</option><option>Basauri</option><option>Bilbao</option><option>Donostia-San Sebastián</option><option>Eibar</option><option>Errenteria</option><option>Getxo</option><option>Irun</option><option>Leioa</option><option>Portugalete</option><option>Santurtzi</option><option>Sestao</option><option>Vitoria-Gasteiz</option></optgroup>
-              <optgroup label="Castilla y León"><option>Aranda de Duero</option><option>Ávila</option><option>Burgos</option><option>León</option><option>Miranda de Ebro</option><option>Palencia</option><option>Ponferrada</option><option>Salamanca</option><option>San Andrés del Rabanedo</option><option>Segovia</option><option>Soria</option><option>Valladolid</option><option>Zamora</option></optgroup>
-              <optgroup label="Galicia"><option>A Coruña</option><option>Ferrol</option><option>Lugo</option><option>Ourense</option><option>Pontevedra</option><option>Santiago de Compostela</option><option>Vigo</option></optgroup>
-              <optgroup label="Aragón"><option>Calatayud</option><option>Huesca</option><option>Teruel</option><option>Zaragoza</option></optgroup>
-              <optgroup label="Castilla-La Mancha"><option>Albacete</option><option>Almansa</option><option>Ciudad Real</option><option>Cuenca</option><option>Guadalajara</option><option>Hellín</option><option>Puertollano</option><option>Talavera de la Reina</option><option>Toledo</option></optgroup>
-              <optgroup label="Canarias"><option>Arona</option><option>Arrecife</option><option>Granadilla de Abona</option><option>La Laguna</option><option>La Oliva</option><option>Las Palmas de Gran Canaria</option><option>Puerto del Rosario</option><option>San Bartolomé de Tirajana</option><option>Santa Cruz de Tenerife</option><option>Santa Lucía de Tirajana</option><option>Telde</option></optgroup>
-              <optgroup label="Murcia"><option>Cartagena</option><option>Cieza</option><option>Jumilla</option><option>Lorca</option><option>Molina de Segura</option><option>Murcia</option><option>San Javier</option><option>Torre-Pacheco</option><option>Yecla</option></optgroup>
-              <optgroup label="Extremadura"><option>Badajoz</option><option>Cáceres</option><option>Don Benito</option><option>Mérida</option><option>Plasencia</option></optgroup>
-              <optgroup label="Asturias"><option>Avilés</option><option>Gijón</option><option>Langreo</option><option>Mieres</option><option>Oviedo</option><option>Siero</option></optgroup>
-              <optgroup label="Navarra"><option>Barañáin</option><option>Burlada</option><option>Pamplona</option><option>Tudela</option></optgroup>
-              <optgroup label="Cantabria"><option>Santander</option><option>Torrelavega</option></optgroup>
-              <optgroup label="La Rioja"><option>Calahorra</option><option>Logroño</option></optgroup>
-              <optgroup label="Baleares"><option>Calvià</option><option>Eivissa (Ibiza)</option><option>Llucmajor</option><option>Maó (Mahón)</option><option>Manacor</option><option>Marratxí</option><option>Palma</option></optgroup>
-              <optgroup label="Ceuta y Melilla"><option>Ceuta</option><option>Melilla</option></optgroup>
-            </select>
+          <!-- Ubicación por geolocalización -->
+          <div class="field" style="grid-column:1/-1">
+            <label>Tu ubicación</label>
+            <div id="geo-status" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer" onclick="requestGeoLocation()">
+              <span style="font-size:1.2rem">📍</span>
+              <div style="flex:1">
+                <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2)">Detectar mi ubicación automáticamente</div>
+                <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:2px">Haz clic para usar tu ubicación actual</div>
+              </div>
+              <button type="button" id="geo-btn" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Detectar</button>
+            </div>
+            <input type="hidden" id="pub-loc" value="Barcelona">
+            <input type="hidden" id="pub-lat" value="">
+            <input type="hidden" id="pub-lng" value="">
           </div>
         </div>
         <div class="field"><label>Descripción</label><textarea id="pub-desc" placeholder="Estado, accesorios incluidos, años de uso, detalles importantes..."></textarea></div>
@@ -2404,7 +2359,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 
 // ═══ SUPABASE ═══
 const SUPABASE_URL = 'https://qljhvzqeijkmaeftaqem.supabase.co';
@@ -2650,7 +2605,15 @@ let activeConvId = null;
 let selectedOfferIdx = null;
 let activeModalItem = null;
 let shippingMode = 'persona';
-let selectedEmoji = '🎸';
+// Emoji automático por categoría
+const CAT_EMOJI = {
+  'Electrónica':'📱','Música':'🎵','Deporte':'⚽','Ropa':'👗',
+  'Hogar':'🏠','Libros':'📚','Servicios':'🤝','Juguetes':'🧸','Otro':'📦'
+};
+function getEmojiForCat(cat) {
+  const base = cat ? cat.split('|')[0] : 'Otro';
+  return CAT_EMOJI[base] || '📦';
+}
 let wantsList = [];  // legacy compat
 let exchangeOptions = [];
 let pubImages = [];
@@ -4399,6 +4362,51 @@ const CITY_COORDS = {
 let userCoords = null;
 let sortByDistance = false;
 
+// ═══ GEOLOCALIZACIÓN FORMULARIO PUBLICAR ═══
+function requestGeoLocation() {
+  const label = document.getElementById('geo-label');
+  const sub = document.getElementById('geo-sub');
+  const btn = document.getElementById('geo-btn');
+  if(!navigator.geolocation) {
+    sub.textContent = 'Tu navegador no soporta geolocalización';
+    return;
+  }
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  label.textContent = 'Detectando ubicación...';
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      document.getElementById('pub-lat').value = lat;
+      document.getElementById('pub-lng').value = lng;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const geo = await res.json();
+        const city = geo.address.city || geo.address.town || geo.address.village || geo.address.municipality || 'Barcelona';
+        document.getElementById('pub-loc').value = city;
+        label.textContent = '📍 ' + city;
+        sub.textContent = 'Ubicación detectada correctamente';
+        btn.textContent = '✓';
+        btn.style.background = 'var(--green)';
+      } catch(e) {
+        document.getElementById('pub-loc').value = 'Barcelona';
+        label.textContent = '📍 Barcelona (por defecto)';
+        sub.textContent = 'No se pudo obtener la ciudad exacta';
+        btn.textContent = '✓';
+      }
+      btn.disabled = false;
+    },
+    () => {
+      label.textContent = 'No se pudo detectar la ubicación';
+      sub.textContent = 'Usaremos Barcelona por defecto';
+      document.getElementById('pub-loc').value = 'Barcelona';
+      btn.textContent = 'Reintentar';
+      btn.disabled = false;
+    }
+  );
+}
+
+
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = (lat2-lat1)*Math.PI/180;
@@ -4634,16 +4642,38 @@ function updateSubcat() {
   btn.style.display = 'inline-flex';
 }
 
+// Subcategorías por categoría
+const SUBCATS = {
+  'Electrónica': ['Móviles','Portátiles','Tablets','Consolas','Cámaras','Audio','TV y vídeo','Wearables','Componentes','Otro'],
+  'Música': ['Guitarras','Teclados y pianos','Percusión','Viento','Cuerdas','DJ y electrónica','Estudio y grabación','Otro'],
+  'Deporte': ['Ciclismo','Fitness','Deportes de equipo','Deportes de agua','Montaña','Raqueta','Artes marciales','Otro'],
+  'Ropa': ['Hombre','Mujer','Niños','Calzado','Complementos','Deportiva','Otro'],
+  'Hogar': ['Muebles','Decoración','Electrodomésticos','Jardín','Cocina','Iluminación','Otro'],
+  'Libros': ['Ficción','Ciencia ficción','Fantasía','Thriller','Romance','Terror','Historia','Biografías','Autoayuda','Ciencia','Filosofía','Infantil','Cómics y manga','Cocina','Economía','Otro'],
+  'Servicios': ['Salud · Dentista','Salud · Fisioterapeuta','Salud · Psicólogo','Salud · Nutricionista','Salud · Veterinario','Construcción · Electricista','Construcción · Fontanero','Construcción · Carpintero','Construcción · Pintor','Educación · Idiomas','Educación · Música','Educación · Apoyo escolar','Tecnología · Diseño web','Tecnología · Ordenadores','Tecnología · Fotografía','Belleza · Peluquería','Belleza · Masajes','Legal · Abogado','Legal · Gestoría','Hogar · Limpieza','Hogar · Jardinería','Otro'],
+  'Juguetes': ['Bebés','Juegos de mesa','Figuras y coleccionables','Construcción','Electrónicos','Exterior','Otro'],
+  'Otro': [],
+};
+
 function updatePubSubcat() {
-  const raw = document.getElementById('pub-cat').value;
+  const cat = document.getElementById('pub-cat').value;
+  const subEl = document.getElementById('pub-subcat');
   const serviceHint = document.getElementById('pub-service-hint');
   const bookHint = document.getElementById('pub-book-hint');
-  serviceHint.style.display = 'none';
-  bookHint.style.display = 'none';
-  if(!raw) return;
-  if(raw.startsWith('Servicios|')) { serviceHint.style.display = 'block'; }
-  else if(raw.startsWith('Libros|')) { bookHint.style.display = 'block'; }
-  // Trigger demand panel update
+
+  serviceHint.style.display = cat === 'Servicios' ? 'block' : 'none';
+  bookHint.style.display = cat === 'Libros' ? 'block' : 'none';
+
+  const subs = SUBCATS[cat] || [];
+  if(subs.length) {
+    subEl.innerHTML = '<option value="">— Opcional —</option>' +
+      subs.map(s => `<option>${s}</option>`).join('');
+    subEl.disabled = false;
+  } else {
+    subEl.innerHTML = '<option value="">— Sin subcategoría —</option>';
+    subEl.disabled = true;
+  }
+
   triggerDemandPanel();
 }
 
@@ -4955,13 +4985,10 @@ function addCatWant() {
 
 
 function buildEmojiPicker() {
-  document.getElementById('emoji-picker').innerHTML = EMOJIS.map(e=>`
-    <div class="emoji-opt${e===selectedEmoji?' selected':''}" onclick="selectEmoji(this,'${e}')">${e}</div>`).join('');
+  // Eliminado — emoji asignado automáticamente por categoría
 }
 function selectEmoji(el, e) {
-  document.querySelectorAll('.emoji-opt').forEach(x=>x.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedEmoji = e;
+  // Eliminado
 }
 function selectShip(el, mode) {
   document.querySelectorAll('.ship-opt').forEach(x=>x.classList.remove('selected'));
@@ -4973,11 +5000,12 @@ async function publishItem() {
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
   if(!exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
 
-  // Parse category
-  const rawCat = document.getElementById('pub-cat').value || 'Otro';
-  let pubCat = rawCat, pubSubcat = '';
-  if(rawCat.includes('|')) { const p = rawCat.split('|'); pubCat = p[0]; pubSubcat = p[1]; }
+  // Parse category — ahora son dos campos separados
+  const pubCat = document.getElementById('pub-cat').value || 'Otro';
+  const pubSubcat = document.getElementById('pub-subcat')?.value || '';
+  const rawCat = pubSubcat ? pubCat + '|' + pubSubcat : pubCat;
   const isService = pubCat === 'Servicios';
+  const autoEmoji = getEmojiForCat(rawCat);
 
   // Flatten wants
   const wantsFlat = [...new Set(exchangeOptions.flatMap(o => o.items))];
@@ -4986,24 +5014,51 @@ async function publishItem() {
   const userName = currentUser
     ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0])
     : 'Anónimo';
+  const userId = currentUser ? currentUser.id : null;
+
+  // Mostrar estado de carga
+  const btn = document.querySelector('[onclick="publishItem()"]');
+  const originalText = btn ? btn.textContent : '';
+  if(btn) { btn.textContent = '⏳ Subiendo fotos...'; btn.disabled = true; }
+
+  // Subir fotos a Supabase Storage
+  let photoUrls = [];
+  for(let i = 0; i < pubImages.length; i++) {
+    const img = pubImages[i];
+    // Convertir dataUrl a Blob
+    const res = await fetch(img.dataUrl);
+    const blob = await res.blob();
+    const ext = blob.type.split('/')[1] || 'jpg';
+    const fileName = `${userId || 'anon'}_${Date.now()}_${i}.${ext}`;
+
+    const { error: uploadError } = await db.storage
+      .from('photos')
+      .upload(fileName, blob, { contentType: blob.type });
+
+    if(uploadError) {
+      console.error('Error subiendo foto:', uploadError);
+      continue;
+    }
+
+    // Obtener URL pública
+    const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
+    photoUrls.push(urlData.publicUrl);
+  }
+
+  if(btn) { btn.textContent = '⏳ Publicando...'; }
 
   // Preparar fila para Supabase
   const row = {
     title: name,
     description: document.getElementById('pub-desc').value || '',
     category: pubCat,
-    emoji: selectedEmoji,
+    emoji: autoEmoji,
     condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
     estimated_value: parseInt(document.getElementById('pub-price').value) || null,
     wants: wantsFlat.join(', '),
-    photos: pubImages.length ? pubImages[0].dataUrl : '',
+    photos: photoUrls.length ? photoUrls[0] : '',
     user_name: userName,
   };
-
-  // Mostrar estado de carga
-  const btn = document.querySelector('[onclick="publishItem()"]');
-  const originalText = btn ? btn.textContent : '';
-  if(btn) { btn.textContent = '⏳ Publicando...'; btn.disabled = true; }
 
   // Guardar en Supabase
   const { data, error } = await db.from('items').insert([row]).select();
@@ -5017,7 +5072,7 @@ async function publishItem() {
   // Añadir al estado local con el id real de Supabase
   const newItem = {
     id: data[0].id,
-    emoji: selectedEmoji,
+    emoji: autoEmoji,
     name,
     cat: pubCat,
     subcat: pubSubcat,
@@ -5025,7 +5080,7 @@ async function publishItem() {
     price: row.estimated_value ? String(row.estimated_value) : null,
     desc: row.description,
     wants: wantsFlat,
-    photos: row.photos ? [row.photos] : [],
+    photos: photoUrls.length ? photoUrls : [],
     shipping: 'persona',
     verified: false,
     user: userName,
@@ -5033,7 +5088,7 @@ async function publishItem() {
     condition: row.condition,
   };
   items.unshift(newItem);
-  myItems.push({id: newItem.id, emoji: selectedEmoji, name, cat: pubCat});
+  myItems.push({id: newItem.id, emoji: autoEmoji, name, cat: pubCat});
 
   // Reset formulario
   exchangeOptions = [];
@@ -5045,8 +5100,17 @@ async function publishItem() {
   renderImgPreviews();
   document.getElementById('pub-name').value = '';
   document.getElementById('pub-desc').value = '';
-  document.getElementById('pub-loc').value = '';
+  if(document.getElementById('pub-subcat')) document.getElementById('pub-subcat').innerHTML = '<option value="">— Selecciona categoría primero —</option>';
+  document.getElementById('pub-cat').value = '';
   document.getElementById('pub-price').value = '';
+  document.getElementById('pub-loc').value = 'Barcelona';
+  // Reset geo
+  const geoLabel = document.getElementById('geo-label');
+  const geoSub = document.getElementById('geo-sub');
+  const geoBtn = document.getElementById('geo-btn');
+  if(geoLabel) geoLabel.textContent = 'Detectar mi ubicación automáticamente';
+  if(geoSub) geoSub.textContent = 'Haz clic para usar tu ubicación actual';
+  if(geoBtn) { geoBtn.textContent = 'Detectar'; geoBtn.style.background = 'var(--accent)'; geoBtn.disabled = false; }
   document.getElementById('price-hint').style.display = 'none';
   document.getElementById('pub-service-hint').style.display = 'none';
   document.getElementById('pub-book-hint').style.display = 'none';
