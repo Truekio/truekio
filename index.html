@@ -1484,7 +1484,33 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="proximity-stack" id="proximity-stack"></div>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModalBg(event)">
+<!-- MODAL DETALLE OBJETO -->
+<div class="modal-overlay" id="detail-overlay" style="display:none" onclick="if(event.target===this)closeDetail()">
+  <div class="modal-box" style="max-width:560px;padding:0;overflow:hidden;position:relative">
+    <button class="modal-close" onclick="closeDetail()" style="position:absolute;top:12px;right:12px;z-index:10;background:rgba(255,255,255,.9)">×</button>
+    <div id="detail-carousel" style="height:260px;background:var(--bg2);position:relative;overflow:hidden"></div>
+    <div style="padding:20px 24px 24px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <h3 id="detail-title" style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;letter-spacing:-.02em"></h3>
+        <span id="detail-price" style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--accent);white-space:nowrap"></span>
+      </div>
+      <div id="detail-meta" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
+      <div id="detail-user-row" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg);border-radius:var(--r);margin-bottom:14px"></div>
+      <div id="detail-desc-block" style="display:none;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Descripción</div>
+        <div id="detail-desc" style="font-size:13px;color:var(--text2);line-height:1.7"></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Acepta a cambio</div>
+        <div id="detail-wants" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <div id="detail-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
+      <button class="btn btn-primary btn-lg btn-full btn-r" onclick="proposeFromDetail()">🤝 Proponer trueque</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" style="display:none" onclick="closeModalBg(event)">
   <div class="modal-box">
     <div class="modal-head">
       <div><div class="modal-title">Proponer trueque</div><div class="modal-sub">Elige tu objeto y envía una propuesta</div></div>
@@ -3093,8 +3119,8 @@ function itemCardHTML(item, isPremiumView=false) {
         ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
       </div>
       <div class="item-actions">
-        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openModal(${item.id})">
-          ${isMatch ? '⚡ Proponer match' : 'Proponer trueque'}
+        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openDetail(${item.id})">
+          ${isMatch ? '⚡ Ver y proponer' : '👁 Ver objeto'}
         </button>
         <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
       </div>
@@ -3369,8 +3395,8 @@ function itemCardHTML(item, isPremiumView=false) {
         ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
       </div>
       <div class="item-actions">
-        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openModal(${item.id})">
-          ${isMatch ? '⚡ Proponer match' : 'Proponer trueque'}
+        <button class="btn btn-sm btn-r" style="flex:1;${isMatch?'background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(78,143,186,.2)':'background:#1a2a3a;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)'}" onclick="openDetail(${item.id})">
+          ${isMatch ? '⚡ Ver y proponer' : '👁 Ver objeto'}
         </button>
         <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
       </div>
@@ -4131,6 +4157,84 @@ function sendMessage() {
 function scrollMsgs() { const el=document.getElementById('chat-msgs'); if(el) el.scrollTop=el.scrollHeight; }
 
 // ═══ MODAL ═══
+// ═══ DETALLE DE OBJETO ═══
+let detailCurrentItem = null;
+
+function openDetail(itemId) {
+  const item = items.find(i => String(i.id) === String(itemId));
+  if (!item) { openModal(itemId); return; }
+  detailCurrentItem = item;
+
+  // Carrusel de fotos
+  const photos = (item.photos && item.photos.length) ? item.photos : [];
+  const cid = 'dtl';
+  const wrap = document.getElementById('detail-carousel');
+  if (photos.length) {
+    const slides = photos.map((src,i) =>
+      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" style="width:100%;height:100%;object-fit:cover"></div>`
+    ).join('');
+    const dots = photos.length > 1 ? `<div class="carousel-dots" id="${cid}-dots">${photos.map((_,i)=>`<div class="carousel-dot${i===0?' active':''}"></div>`).join('')}</div>` : '';
+    const arrows = photos.length > 1 ? `<button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button><button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
+    const count = photos.length > 1 ? `<div class="carousel-count" id="${cid}-count">1 / ${photos.length}</div>` : '';
+    wrap.innerHTML = `<div class="card-carousel" id="${cid}" data-idx="0" data-total="${photos.length}"
+      ontouchstart="carouselTouchStart(event,'${cid}')" ontouchmove="carouselTouchMove(event,'${cid}')" ontouchend="carouselTouchEnd(event,'${cid}')"
+      style="position:absolute;inset:0">
+      <div class="carousel-track" id="${cid}-track">${slides}</div>
+      ${dots}${arrows}${count}
+    </div>`;
+  } else {
+    wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:5rem">${item.emoji}</div>`;
+  }
+
+  // Datos
+  document.getElementById('detail-title').textContent = item.name;
+  document.getElementById('detail-price').textContent = item.price ? '~' + item.price + '€' : '';
+  document.getElementById('detail-meta').textContent = [item.cat, item.condition, item.location].filter(Boolean).join(' · ');
+
+  // Usuario
+  const uBg = `hsl(${strHash(item.user)%360},55%,70%)`;
+  document.getElementById('detail-user-row').innerHTML = `
+    <div style="width:38px;height:38px;border-radius:50%;background:${uBg};display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0">${item.userEmoji}</div>
+    <div><div style="font-weight:700;font-size:13px">${item.user}</div><div style="font-size:11px;color:var(--muted)">📍 ${item.location||'Barcelona'}</div></div>`;
+
+  // Descripción
+  const descBlock = document.getElementById('detail-desc-block');
+  if (item.description) {
+    document.getElementById('detail-desc').textContent = item.description;
+    descBlock.style.display = '';
+  } else {
+    descBlock.style.display = 'none';
+  }
+
+  // Acepta a cambio
+  const wants = item.wants && item.wants.length ? item.wants : [];
+  document.getElementById('detail-wants').innerHTML = wants.length
+    ? wants.map(w=>`<span style="background:var(--accent-l);color:var(--accent);font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px">${w}</span>`).join('')
+    : '<span style="font-size:12px;color:var(--muted)">No especificado</span>';
+
+  // Badges
+  document.getElementById('detail-badges').innerHTML = [
+    item.condition ? `<span style="background:var(--bg2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px">📦 ${item.condition}</span>` : '',
+    `<span style="background:var(--bg2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px">🤝 En persona</span>`,
+  ].join('');
+
+  // Mostrar con display:flex en vez de clase open
+  const overlay = document.getElementById('detail-overlay');
+  overlay.style.display = 'flex';
+}
+
+function closeDetail() {
+  document.getElementById('detail-overlay').style.display = 'none';
+  detailCurrentItem = null;
+}
+
+function proposeFromDetail() {
+  if (!detailCurrentItem) return;
+  const id = detailCurrentItem.id;
+  closeDetail();
+  setTimeout(() => openModal(id), 200);
+}
+
 function openModal(itemId) {
   const item = items.find(i=>i.id===itemId);
   if(!item) return;
@@ -4159,7 +4263,7 @@ function openModal(itemId) {
     </div>`).join('');
 
   document.getElementById('modal-msg-txt').value = '';
-  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('modal-overlay').style.display = 'flex';
 }
 
 function selectOffer(el, idx) {
@@ -4168,7 +4272,7 @@ function selectOffer(el, idx) {
   selectedOfferIdx = idx;
 }
 
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 function closeModalBg(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 
 function sendOffer() {
