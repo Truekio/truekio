@@ -5020,37 +5020,24 @@ function addExchangeOption() {
   const inp = document.getElementById('wants-input');
   const rawCat = document.getElementById('wants-cat').value;
   const subcat = document.getElementById('wants-subcat').value;
-  const isBundle = document.getElementById('bundle-toggle').checked;
-  const item2 = document.getElementById('bundle-item2').value.trim();
-  const item3 = document.getElementById('bundle-item3').value.trim();
   const mainName = inp.value.trim();
 
-  // Parse pipe-separated values: "Libros|Fantasía" → cat=Libros, subcat=Fantasía
   let cat = rawCat, parsedSubcat = subcat;
   if(rawCat && rawCat.includes('|')) {
     const parts = rawCat.split('|');
     cat = parts[0]; parsedSubcat = parts[1];
   }
 
-  // Build label
-  let label = mainName || (parsedSubcat && parsedSubcat !== '' ? cat + ' › ' + parsedSubcat : cat) || '';
+  let label = mainName || (parsedSubcat ? cat + ' › ' + parsedSubcat : cat) || '';
   if(!label) { showToast('⚠️ Escribe o selecciona qué aceptas'); return; }
 
-  const wantItems = [label];
-  if(isBundle && item2) wantItems.push(item2);
-  if(isBundle && item3) wantItems.push(item3);
-
-  exchangeOptions.push({label, items:wantItems, isBundle, cat, subcat:parsedSubcat});
+  exchangeOptions.push({label, items:[label], isBundle:false, cat, subcat:parsedSubcat});
   renderExchangeOptions();
 
   // Reset
   inp.value = '';
   document.getElementById('wants-cat').value = '';
   document.getElementById('wants-subcat').innerHTML = '<option value="">— Selecciona categoría primero —</option>';
-  document.getElementById('bundle-toggle').checked = false;
-  document.getElementById('bundle-extra').style.display = 'none';
-  document.getElementById('bundle-item2').value = '';
-  document.getElementById('bundle-item3').value = '';
 }
 
 function renderExchangeOptions() {
