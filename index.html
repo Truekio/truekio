@@ -3882,7 +3882,7 @@ function renderMatches() {
     </div>`).join('');
   }
   renderChains();
-  renderConfirmations();
+  renderConfirmations(); // async, fire and forget
 }
 
 function discardMatch(id) {
@@ -4049,143 +4049,186 @@ function closeChainModal() { document.getElementById('chain-modal-overlay').clas
 function closeChainModalBg(e) { if(e.target===document.getElementById('chain-modal-overlay')) closeChainModal(); }
 
 // ═══ CONFIRMATIONS ═══
-function renderConfirmations() {
+async function renderConfirmations() {
   const list = document.getElementById('confirmations-list');
-  if(!confirmations.length) {
-    list.innerHTML = emptyState({
-      icon:'📦', title:'Nada pendiente de confirmar',
-      body:'Cuando acuerdes un trueque con alguien aparecerá aquí. Ambas partes debéis confirmar la recepción antes de cerrar el intercambio.',
-      cta:'Ver mis matches', ctaAction:"switchMatchTab('direct')",
-      ctaSecondary:'Explorar objetos', ctaSecondaryAction:"navTo('explore')",
-    });
+  if (!list) return;
+  if (!currentUser) {
+    list.innerHTML = emptyState({ icon:'📦', title:'Inicia sesión para ver tus confirmaciones', body:'', cta:'', ctaAction:'' });
     return;
   }
-  list.innerHTML = confirmations.map(cf => {
-    const statusMap = {
-      pending_me:{label:'⚠️ Tú debes confirmar',cls:'pending'},
-      pending_them:{label:'⏳ Esperando a '+cf.user,cls:'waiting'},
-      done:{label:'✅ Completado',cls:'done'},
-      issue:{label:'🚨 Incidencia abierta',cls:'pending'},
-    };
-    const st = statusMap[cf.status] || {label:'—',cls:'pending'};
-    const myCheckCls = cf.myConfirmed ? 'done' : 'pending-me';
-    const theirCheckCls = cf.theirConfirmed ? 'done' : '';
+
+  list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
+
+  // Cargar conversaciones aceptadas (= trueques en curso)
+  const { data: convs, error } = await db
+    .from('conversations')
+    .select('*')
+    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
+    .order('created_at', { ascending: false });
+
+  if (error || !convs || !convs.length) {
+    list.innerHTML = emptyState({
+      icon:'📦', title:'Nada pendiente de confirmar',
+      body:'Cuando acuerdes un trueque con alguien aparecerá aquí. Ambas partes debéis confirmar antes de cerrar el intercambio.',
+      cta:'Ver matches', ctaAction:"switchMatchTab('direct')",
+      ctaSecondary:'Explorar objetos', ctaSecondaryAction:"navTo('explore')",
+    });
+    // Limpiar badge
+    const confCount = document.getElementById('mtab-confirm-count');
+    if (confCount) confCount.style.display = 'none';
+    return;
+  }
+
+  const isUser1 = c => c.user1_id === currentUser.id;
+  // confirmed_by es array de user_ids que ya confirmaron, guardado como texto JSON
+  const getConfirmed = c => { try { return JSON.parse(c.confirmed_by || '[]'); } catch(e) { return []; } };
+
+  const pendingMe = convs.filter(c => {
+    const confirmed = getConfirmed(c);
+    return !confirmed.includes(currentUser.id);
+  });
+
+  // Actualizar badge
+  const confCount = document.getElementById('mtab-confirm-count');
+  if (confCount) {
+    if (pendingMe.length > 0) { confCount.style.display = ''; confCount.textContent = pendingMe.length; }
+    else confCount.style.display = 'none';
+  }
+
+  list.innerHTML = convs.map(c => {
+    const confirmed = getConfirmed(c);
+    const myConfirmed = confirmed.includes(currentUser.id);
+    const otherUserId = isUser1(c) ? c.user2_id : c.user1_id;
+    const otherConfirmed = confirmed.includes(otherUserId);
+    const otherName = isUser1(c) ? c.user2_name : c.user1_name;
+    const myItemTitle = isUser1(c) ? c.item1_title : c.item2_title;
+    const theirItemTitle = isUser1(c) ? c.item2_title : c.item1_title;
+    const done = myConfirmed && otherConfirmed;
+    const date = new Date(c.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
+    const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
+    const initial = (otherName||'?').charAt(0).toUpperCase();
+
+    let statusLabel, statusCls;
+    if (done) { statusLabel = '✅ Completado'; statusCls = 'done'; }
+    else if (!myConfirmed) { statusLabel = '⚠️ Tú debes confirmar'; statusCls = 'pending'; }
+    else { statusLabel = `⏳ Esperando a ${otherName}`; statusCls = 'waiting'; }
 
     return `
     <div class="card confirm-card">
       <div class="confirm-header">
-        <div>
-          <div class="confirm-title">${cf.isChain?'🔗 Cadena · ':''}Trueque con ${cf.userEmoji} ${cf.user}</div>
-          <div style="font-size:12px;color:#15803d;margin-top:2px">Acordado: ${cf.agreedDate}${cf.isChain?' · '+cf.chainParticipants+' participantes':''}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.95rem;flex-shrink:0">${initial}</div>
+          <div>
+            <div class="confirm-title">Trueque con ${otherName}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Acordado: ${date}</div>
+          </div>
         </div>
-        <span class="confirm-status ${st.cls}">${st.label}</span>
+        <span class="confirm-status ${statusCls}">${statusLabel}</span>
       </div>
       <div class="confirm-body">
         <div class="confirm-items">
           <div class="confirm-item-box">
-            <div class="confirm-item-emoji">${cf.myItem.emoji}</div>
-            <div class="confirm-item-name">${cf.myItem.name}</div>
-            <div class="confirm-item-user">Tú envías</div>
+            <div class="confirm-item-emoji">📦</div>
+            <div class="confirm-item-name">${myItemTitle}</div>
+            <div class="confirm-item-user">Tú ofreces</div>
           </div>
           <div class="confirm-arrow">⇄</div>
           <div class="confirm-item-box">
-            <div class="confirm-item-emoji">${cf.theirItem.emoji}</div>
-            <div class="confirm-item-name">${cf.theirItem.name}</div>
-            <div class="confirm-item-user">${cf.userEmoji} ${cf.user} envía</div>
+            <div class="confirm-item-emoji">📦</div>
+            <div class="confirm-item-name">${theirItemTitle}</div>
+            <div class="confirm-item-user">${otherName} ofrece</div>
           </div>
         </div>
 
-        ${cf.trackingCode ? `<div style="padding:10px 14px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:10px;font-size:12px;margin-bottom:14px">
-          📦 <strong>Envío ${cf.shipping}</strong> · Tracking: <code style="background:#ede9fe;padding:2px 7px;border-radius:5px;font-size:11px">${cf.trackingCode}</code>
-        </div>` : ''}
-
-        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Estado de recepción</div>
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Estado de confirmación</div>
         <div class="confirm-checks">
-          <div class="confirm-check ${myCheckCls}">
-            <div class="confirm-check-icon">${cf.myConfirmed?'✅':'📦'}</div>
+          <div class="confirm-check ${myConfirmed ? 'done' : 'pending-me'}">
+            <div class="confirm-check-icon">${myConfirmed ? '✅' : '📦'}</div>
             <div class="confirm-check-info">
               <div class="confirm-check-name">Tú</div>
-              <div class="confirm-check-status">${cf.myConfirmed?'Confirmaste la recepción':'Pendiente de confirmar'}</div>
+              <div class="confirm-check-status">${myConfirmed ? 'Confirmaste el trueque' : 'Pendiente de confirmar'}</div>
             </div>
           </div>
-          <div class="confirm-check ${theirCheckCls}">
-            <div class="confirm-check-icon">${cf.theirConfirmed?'✅':'⏳'}</div>
+          <div class="confirm-check ${otherConfirmed ? 'done' : ''}">
+            <div class="confirm-check-icon">${otherConfirmed ? '✅' : '⏳'}</div>
             <div class="confirm-check-info">
-              <div class="confirm-check-name">${cf.user}</div>
-              <div class="confirm-check-status">${cf.theirConfirmed?'Confirmó la recepción':'Aún no confirmó'}</div>
+              <div class="confirm-check-name">${otherName}</div>
+              <div class="confirm-check-status">${otherConfirmed ? 'Confirmó el trueque' : 'Aún no confirmó'}</div>
             </div>
           </div>
         </div>
 
-        ${cf.status==='pending_me' ? `
+        ${!myConfirmed ? `
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r);padding:12px 14px;font-size:12px;color:#92400e;margin-bottom:14px;line-height:1.6">
-          📬 <strong>Acción requerida:</strong> ¿Has recibido <strong>${cf.theirItem.emoji} ${cf.theirItem.name}</strong> de ${cf.userEmoji} ${cf.user}? Confirma la recepción para cerrar el trueque.
+          📬 <strong>¿El trueque se completó?</strong> Confirma que realizaste el intercambio con ${otherName} para cerrarlo oficialmente.
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-md" style="flex:1" onclick="openConfirmModal('${cf.id}','ok')">✅ Sí, lo recibí en buen estado</button>
-          <button class="btn btn-danger btn-sm" onclick="openConfirmModal('${cf.id}','issue')">⚠️ Hay un problema</button>
+          <button class="btn btn-primary btn-md" style="flex:1" onclick="openConfirmModal('${c.id}','ok','${otherName}','${myItemTitle}','${theirItemTitle}')">✅ Sí, el trueque se completó</button>
+          <button class="btn btn-danger btn-sm" onclick="openConfirmModal('${c.id}','issue','${otherName}','${myItemTitle}','${theirItemTitle}')">⚠️ Hay un problema</button>
         </div>` : ''}
 
-        ${cf.status==='pending_them' ? `
+        ${myConfirmed && !otherConfirmed ? `
         <div style="padding:12px 14px;background:var(--blue-l);border:1px solid #bfdbfe;border-radius:var(--r);font-size:12px;color:#1e40af;line-height:1.6">
-          ⏳ Esperando que ${cf.userEmoji} ${cf.user} confirme que recibió tu objeto. Te avisaremos cuando lo haga.
+          ⏳ Esperando que ${otherName} también confirme. Te avisaremos cuando lo haga.
         </div>` : ''}
 
-        ${cf.status==='done' ? `
+        ${done ? `
         <div style="padding:12px 14px;background:var(--green-l);border:1px solid #86efac;border-radius:var(--r);font-size:13px;color:#166534;font-weight:700;text-align:center;margin-bottom:10px">
-          🎉 ¡Trueque completado con éxito! Ambas partes confirmaron la recepción.
+          🎉 ¡Trueque completado! Ambas partes confirmaron.
         </div>
-        <div style="text-align:center"><button class="btn btn-secondary btn-md" onclick="openReviewModal('${cf.id}')">⭐ Valorar a ${cf.user}</button></div>` : ''}
+        <div style="text-align:center"><button class="btn btn-secondary btn-md" onclick="openReviewModal('${c.id}')">⭐ Valorar a ${otherName}</button></div>` : ''}
       </div>
     </div>`;
   }).join('');
 }
 
-function openConfirmModal(cfId, type) {
-  const cf = confirmations.find(c=>c.id===cfId);
-  if(!cf) return;
-  document.getElementById('confirm-modal-title').textContent = type==='ok' ? '✅ Confirmar recepción' : '⚠️ Reportar problema';
+function openConfirmModal(cfId, type, otherName, myItemTitle, theirItemTitle) {
+  // Guardar contexto en el modal para usarlo al confirmar
+  document.getElementById('confirm-modal-overlay').dataset.convId = cfId;
+  document.getElementById('confirm-modal-overlay').dataset.otherName = otherName || '';
+  document.getElementById('confirm-modal-title').textContent = type==='ok' ? '✅ Confirmar trueque' : '⚠️ Reportar problema';
   document.getElementById('confirm-modal-sub').textContent = type==='ok'
-    ? 'Confirma que recibiste el objeto en el estado acordado'
+    ? 'Confirma que el intercambio se realizó correctamente'
     : 'Describe qué ha ido mal para abrir una mediación';
 
+  const otherNameSafe = (otherName||'').replace(/'/g,"\'");
   document.getElementById('confirm-modal-body').innerHTML = type==='ok' ? `
     <div style="padding:16px;background:var(--green-l);border:1px solid #86efac;border-radius:var(--r);display:flex;align-items:center;gap:14px;margin-bottom:18px">
-      <div style="font-size:2rem">${cf.theirItem.emoji}</div>
+      <div style="font-size:2rem">🔄</div>
       <div>
-        <div style="font-weight:700">${cf.theirItem.name}</div>
-        <div style="font-size:12px;color:var(--muted)">de ${cf.userEmoji} ${cf.user}</div>
+        <div style="font-weight:700">${myItemTitle || 'Tu objeto'} ⇄ ${theirItemTitle || 'Su objeto'}</div>
+        <div style="font-size:12px;color:var(--muted)">Trueque con ${otherName}</div>
       </div>
     </div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:18px">
-      Al confirmar, el trueque quedará <strong>oficialmente cerrado</strong>. Se notificará a ${cf.user} y se añadirá a tu historial de trueques completados.
+      Al confirmar, el trueque quedará <strong>oficialmente cerrado</strong>. Cuando ${otherName} también confirme, aparecerá en tu historial de completados.
     </div>
     <div class="field" style="margin-bottom:18px">
-      <label>Valoración del objeto (1–5 ⭐)</label>
+      <label>Valoración del intercambio (1–5 ⭐)</label>
       <div id="star-rating" style="display:flex;gap:6px;margin-top:4px">
-        ${[1,2,3,4,5].map(n=>`<button onclick="setStars(${n},this)" style="font-size:1.6rem;background:none;border:none;cursor:pointer;filter:grayscale(1);transition:filter .15s" data-star="${n}">⭐</button>`).join('')}
+        ${[1,2,3,4,5].map(n=>`<button onclick="setStars(${n},this)" style="font-size:1.6rem;background:none;border:none;cursor:pointer;filter:grayscale(1);transition:filter .15s">⭐</button>`).join('')}
       </div>
     </div>
     <div class="field">
       <label>Comentario (opcional)</label>
-      <textarea id="confirm-comment" placeholder="¿Todo perfecto? ¿Algún detalle que destacar?" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;resize:vertical;min-height:80px;transition:border-color .18s"></textarea>
+      <textarea id="confirm-comment" placeholder="¿Todo perfecto? ¿Algún detalle que destacar?" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;resize:vertical;min-height:80px"></textarea>
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-secondary btn-md" style="flex:1" onclick="closeConfirmModal()">Cancelar</button>
-      <button class="btn btn-primary btn-md" style="flex:1" onclick="confirmReceipt('${cfId}')">✅ Confirmar recepción</button>
+      <button class="btn btn-primary btn-md" style="flex:1" onclick="confirmReceipt('${cfId}')">✅ Confirmar trueque</button>
     </div>` : `
     <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r);margin-bottom:18px">
       <div style="font-weight:700;margin-bottom:4px;color:#991b1b">¿Qué tipo de problema es?</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px" id="issue-type">
-      ${['No recibí el objeto','El objeto no coincide con la descripción','El objeto llegó dañado','El otro usuario no responde'].map((opt,i)=>`
-        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600;transition:border-color .18s" onclick="selectIssue(this)">
+      ${['El intercambio no se realizó','El objeto no coincide con la descripción','El objeto estaba en mal estado','El otro usuario no responde'].map((opt,i)=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600" onclick="selectIssue(this)">
           <input type="radio" name="issue" value="${i}" style="accent-color:#ef4444"> ${opt}
         </label>`).join('')}
     </div>
     <div class="field">
       <label>Descripción del problema</label>
-      <textarea id="issue-desc" placeholder="Explica con detalle qué ha ocurrido..." style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;resize:vertical;min-height:90px;transition:border-color .18s"></textarea>
+      <textarea id="issue-desc" placeholder="Explica con detalle qué ha ocurrido..." style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;resize:vertical;min-height:90px"></textarea>
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-secondary btn-md" style="flex:1" onclick="closeConfirmModal()">Cancelar</button>
@@ -4207,52 +4250,47 @@ function selectIssue(el) {
   el.style.borderColor = '#ef4444';
 }
 
-function confirmReceipt(cfId) {
-  const cf = confirmations.find(c=>c.id===cfId);
-  if(!cf) return;
-  cf.myConfirmed = true;
-  cf.status = cf.theirConfirmed ? 'done' : 'pending_them';
+async function confirmReceipt(cfId) {
+  if (!currentUser) return;
+  const btn = event?.target;
+  if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+
+  // Leer confirmed_by actual
+  const { data: conv } = await db.from('conversations').select('confirmed_by,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title').eq('id', cfId).single();
+  if (!conv) { showToast('⚠️ Error al confirmar'); return; }
+
+  let confirmed = [];
+  try { confirmed = JSON.parse(conv.confirmed_by || '[]'); } catch(e) {}
+
+  if (!confirmed.includes(currentUser.id)) confirmed.push(currentUser.id);
+
+  const { error } = await db.from('conversations').update({ confirmed_by: JSON.stringify(confirmed) }).eq('id', cfId);
+  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+
+  const otherUserId = conv.user1_id === currentUser.id ? conv.user2_id : conv.user1_id;
+  const otherName = conv.user1_id === currentUser.id ? conv.user2_name : conv.user1_name;
+  const bothConfirmed = confirmed.includes(otherUserId);
+
   closeConfirmModal();
-  renderConfirmations();
-  if(cf.status==='done') {
+  renderConfirmations(); // async, fire and forget
+
+  if (bothConfirmed) {
     showToast('🎉 ¡Trueque completado con éxito!');
-    addNotification('🎉','#f0fdf4','Trueque completado','Ambas partes confirmaron. Se añade a tus completados.');
+    mySavings += 200; myCompletedTrades++;
+    renderProfile();
+    setTimeout(() => openReviewModal(cfId), 1500);
   } else {
-    showToast('✅ Recepción confirmada · Esperando a '+ cf.user);
-    addNotification('📬','#fef9c3','Recepción confirmada','Ahora esperamos que '+cf.user+' también confirme.');
-    // Simulate other side confirming after 4s
-    setTimeout(()=>{
-      cf.theirConfirmed = true;
-      cf.status = 'done';
-      renderConfirmations();
-      showToast('🎉 ¡'+cf.user+' también confirmó! Trueque completado.');
-      addNotification('🎉','#dcfce7','¡Trueque completado!',cf.user+' confirmó la recepción. ¡Enhorabuena!');
-      // Add to stories feed
-      STORIES_DATA.unshift({
-        type:'direct', user1:'Tú', u1e:'😎', user2:cf.user, u2e:cf.userEmoji,
-        item1:cf.myItem, item2:cf.theirItem,
-        city1:'España', city2:'España',
-        value: Math.round(150 + Math.random()*400), time:'Ahora mismo'
-      });
-      renderStories();
-      // Update savings
-      mySavings += Math.round(150 + Math.random()*300);
-      myCompletedTrades++;
-      renderProfile();
-      // Trigger review modal after 1.5s
-      setTimeout(()=>openReviewModal(cf.id), 1500);
-    }, 4000);
+    showToast('✅ Confirmado · Esperando a ' + otherName);
   }
 }
 
-function reportIssue(cfId) {
-  const cf = confirmations.find(c=>c.id===cfId);
-  if(!cf) return;
-  cf.status = 'issue';
+async function reportIssue(cfId) {
+  if (!currentUser) return;
+  const desc = document.getElementById('issue-desc')?.value?.trim() || '';
+  const { error } = await db.from('conversations').update({ confirmed_by: JSON.stringify(['issue_' + currentUser.id]) }).eq('id', cfId);
   closeConfirmModal();
-  renderConfirmations();
-  showToast('🚨 Incidencia registrada · Mediación en proceso');
-  addNotification('🚨','#fef2f2','Incidencia abierta','Hemos notificado a '+cf.user+'. Un mediador revisará el caso.');
+  renderConfirmations(); // async, fire and forget
+  showToast('🚨 Incidencia registrada · Te contactaremos pronto');
 }
 
 function closeConfirmModal() { document.getElementById('confirm-modal-overlay').classList.remove('open'); }
@@ -5321,12 +5359,12 @@ let reviewAnswers = {};
 let activeReviewCfId = null;
 
 function openReviewModal(cfId) {
-  const cf = confirmations.find(c=>c.id===cfId);
-  if(!cf) return;
+  // Funciona con convId de Supabase o con id del array local de demo
+  const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===cfId) : null;
   activeReviewCfId = cfId;
   reviewStep = 0;
   reviewAnswers = {};
-  renderReviewStep(cf);
+  renderReviewStep(cf || { user: 'el otro usuario', userEmoji: '👤', myItem: {emoji:'📦', name:'Tu objeto'}, theirItem: {emoji:'📦', name:'Su objeto'} });
   document.getElementById('review-modal-overlay').classList.add('open');
 }
 
@@ -5412,26 +5450,25 @@ function setReviewStars(n) {
 }
 function reviewBack() {
   reviewStep = Math.max(0, reviewStep-1);
-  const cf = confirmations.find(c=>c.id===activeReviewCfId);
-  if(cf) renderReviewStep(cf);
+  const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===activeReviewCfId) : null;
+  renderReviewStep(cf || { user:'el otro usuario', userEmoji:'👤', myItem:{emoji:'📦',name:'Tu objeto'}, theirItem:{emoji:'📦',name:'Su objeto'} });
 }
 function reviewNext(stepId, type) {
   if(type==='text') reviewAnswers.comment = document.getElementById('review-comment-text')?.value || '';
   const steps = ['accuracy','communication','recommend','stars','comment'];
   if(reviewStep < steps.length-1) {
     reviewStep++;
-    const cf = confirmations.find(c=>c.id===activeReviewCfId);
-    if(cf) renderReviewStep(cf);
+    const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===activeReviewCfId) : null;
+    renderReviewStep(cf || { user:'el otro usuario', userEmoji:'👤', myItem:{emoji:'📦',name:'Tu objeto'}, theirItem:{emoji:'📦',name:'Su objeto'} });
   } else {
     submitReview();
   }
 }
 function submitReview() {
-  const cf = confirmations.find(c=>c.id===activeReviewCfId);
-  if(!cf) return;
+  const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===activeReviewCfId) : null;
   const stars = reviewAnswers.stars || 5;
   const newReview = {
-    user: cf.user, userEmoji: cf.userEmoji,
+    user: cf?.user || 'Usuario', userEmoji: cf?.userEmoji || '👤',
     stars, text: reviewAnswers.comment || 'Trueque perfecto, muy recomendable.',
     date: 'Ahora mismo',
     q1: reviewAnswers.accuracy || 'Sí, exactamente como describió',
