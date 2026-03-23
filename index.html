@@ -3723,6 +3723,7 @@ async function loadProposals() {
     .from('proposals')
     .select('*')
     .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
+    .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
   if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
