@@ -1481,7 +1481,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
     <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
-    <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')"><span>💬</span><span class="bnav-label">Mensajes</span></button>
+    <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
     <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
   </div>
 </div>
@@ -2592,6 +2592,8 @@ window._handleLogin = async function() {
   currentUser = data.user;
   window._enterApp();
   showToast('✓ Bienvenido de nuevo');
+  requestNotifPermission();
+  startBgPolling();
 }
 
 window._handleRegister = async function() {
@@ -2608,6 +2610,8 @@ window._handleRegister = async function() {
   currentUser = data.user;
   window._enterApp();
   showToast('✦ Cuenta creada — ¡bienvenido a Truquo!');
+  requestNotifPermission();
+  startBgPolling();
 }
 
 function switchAuthTab(tab) {
@@ -2905,6 +2909,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (session) {
     currentUser = session.user;
     window._enterApp();
+    requestNotifPermission();
+    startBgPolling();
   }
 
   const wi = document.getElementById('wants-input');
@@ -2942,7 +2948,7 @@ function navTo(v) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
 function navToActivity(tab) {
@@ -2959,7 +2965,7 @@ function navToActivity(tab) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3224,7 +3230,7 @@ function navTo(v) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
 function navToActivity(tab) {
@@ -3241,7 +3247,7 @@ function navToActivity(tab) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4208,6 +4214,119 @@ function reportIssue(cfId) {
 
 function closeConfirmModal() { document.getElementById('confirm-modal-overlay').classList.remove('open'); }
 function closeConfirmModalBg(e) { if(e.target===document.getElementById('confirm-modal-overlay')) closeConfirmModal(); }
+
+// ═══ NOTIFICACIONES ═══
+let notifPermission = 'default';
+let bgPollingInterval = null;
+let lastMsgCount = {};      // convId -> último nº de mensajes visto
+let lastProposalCount = 0;  // nº de propuestas pendientes visto
+
+// Pedir permiso al usuario la primera vez que entra a la app
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { notifPermission = 'granted'; return; }
+  if (Notification.permission === 'denied') { notifPermission = 'denied'; return; }
+  const result = await Notification.requestPermission();
+  notifPermission = result;
+}
+
+// Mostrar notificación nativa del sistema
+function pushNotif(title, body, icon) {
+  if (notifPermission !== 'granted') return;
+  if (document.visibilityState === 'visible') return; // solo si app en segundo plano
+  const n = new Notification(title, {
+    body,
+    icon: icon || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔄</text></svg>',
+    badge: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔄</text></svg>',
+    tag: 'truquo',
+    renotify: true,
+  });
+  n.onclick = () => { window.focus(); n.close(); };
+}
+
+// Sonido suave de notificación (sin archivo externo)
+function playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.35);
+  } catch(e) {}
+}
+
+// Actualizar badge rojo de mensajes en nav
+function updateMsgBadge(count) {
+  const badges = document.querySelectorAll('#msg-badge-nav, .bnav-badge-msg');
+  badges.forEach(b => {
+    if (!b) return;
+    b.style.display = count > 0 ? 'inline-flex' : 'none';
+    b.textContent = count > 9 ? '9+' : count;
+  });
+}
+
+// Polling en background: comprueba nuevos mensajes y propuestas cada 15s
+async function startBgPolling() {
+  if (bgPollingInterval) clearInterval(bgPollingInterval);
+  bgPollingInterval = setInterval(async () => {
+    if (!currentUser) return;
+    await checkNewMessages();
+    await checkNewProposals();
+  }, 15000);
+}
+
+async function checkNewMessages() {
+  const { data: convs } = await db
+    .from('conversations')
+    .select('id, last_message, last_message_at, user1_id, user2_id, user1_name, user2_name, item1_title, item2_title')
+    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
+    .order('last_message_at', { ascending: false });
+  if (!convs) return;
+
+  let totalUnread = 0;
+  for (const conv of convs) {
+    const { count } = await db
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversation_id', conv.id)
+      .neq('sender_id', currentUser.id);
+    const n = count || 0;
+    const prev = lastMsgCount[conv.id] ?? n;
+    if (n > prev) {
+      const otherName = conv.user1_id === currentUser.id ? conv.user2_name : conv.user1_name;
+      // Notificación sistema (si app en bg)
+      pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
+      // Sonido + badge (si app abierta)
+      if (document.visibilityState === 'visible') playNotifSound();
+      totalUnread += (n - prev);
+    }
+    lastMsgCount[conv.id] = n;
+  }
+  if (totalUnread > 0) updateMsgBadge(totalUnread);
+}
+
+async function checkNewProposals() {
+  const { data } = await db
+    .from('proposals')
+    .select('id')
+    .eq('owner_id', currentUser.id)
+    .eq('status', 'pending');
+  const n = data ? data.length : 0;
+  if (n > lastProposalCount) {
+    pushNotif('🤝 Nueva propuesta de trueque', 'Alguien quiere intercambiar contigo');
+    if (document.visibilityState === 'visible') playNotifSound();
+    // Actualizar badge de actividad
+    const ab = document.getElementById('activity-badge-nav');
+    if (ab) { ab.style.display = 'inline-flex'; ab.textContent = n > 9 ? '9+' : n; }
+  }
+  lastProposalCount = n;
+}
 
 // ═══ CONVERSATIONS ═══
 // ═══ CHAT REAL CON SUPABASE ═══
