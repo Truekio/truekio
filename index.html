@@ -4031,6 +4031,52 @@ window.loadMatches = async function loadMatches() {
     }
   }
 
+  // ── Tipo C: cruzar campo "wants" de mis items con items de otros ──
+  // Mi item dice qué acepta → buscar items de otros que coincidan
+  const { data: allOthersItems } = await db.from('items').select('*').neq('user_id', currentUser.id);
+  if (allOthersItems && myItems.length) {
+    for (const myItem of myItems) {
+      if (!myItem.wants) continue;
+      const myWants = myItem.wants.toLowerCase();
+
+      for (const theirItem of allOthersItems) {
+        const pairKey = `c-${myItem.id}-${theirItem.id}`;
+        if (seenPairs.has(pairKey)) continue;
+
+        // Mi item acepta la categoría o nombre del item de ellos
+        const iWantTheirs = myWants.includes(theirItem.category?.toLowerCase() || '')
+          || theirItem.title.toLowerCase().split(' ').some(w => w.length > 3 && myWants.includes(w));
+
+        // Su item acepta la categoría o nombre de mi item
+        const theyWantMine = theirItem.wants && (
+          theirItem.wants.toLowerCase().includes(myItem.category?.toLowerCase() || '')
+          || myItem.title.toLowerCase().split(' ').some(w => w.length > 3 && theirItem.wants.toLowerCase().includes(w))
+        );
+
+        if (!iWantTheirs && !theyWantMine) continue;
+        seenPairs.add(pairKey);
+
+        const score = Math.min(99, (iWantTheirs ? 50 : 0) + (theyWantMine ? 50 : 0));
+        const reasons = [];
+        if (iWantTheirs) reasons.push(`Tu ${myItem.title} acepta ${theirItem.category || theirItem.title}`);
+        if (theyWantMine) reasons.push(`${theirItem.user_name || 'Otro usuario'} busca ${myItem.category || myItem.title}`);
+
+        foundMatches.push({
+          id: `match-c-${myItem.id}-${theirItem.id}`,
+          myItem: { emoji: myItem.emoji || '📦', name: myItem.title },
+          theirItem: { emoji: theirItem.emoji || '📦', name: theirItem.title },
+          user: theirItem.user_name || 'Usuario',
+          userEmoji: '👤',
+          userAvatar: theirItem.user_avatar || null,
+          userId: theirItem.user_id,
+          score,
+          reasons,
+          location: theirItem.location || 'España',
+        });
+      }
+    }
+  }
+
   // Ordenar por score descendente, eliminar duplicados de mismo userId
   const seenUsers = new Set();
   matches = foundMatches
