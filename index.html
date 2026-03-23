@@ -2966,7 +2966,7 @@ const SUPPLY_DEMAND_DATA = [
 
 // ═══ STATE ═══
 let items = [...ITEMS_DATA];
-let matches = [...MATCHES_DATA];
+let matches = [];
 let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.otherAccepted]}));
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
@@ -3062,7 +3062,7 @@ function navTo(v) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
-  if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
@@ -3079,7 +3079,7 @@ function navToActivity(tab) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
-  if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
@@ -3348,7 +3348,7 @@ function navTo(v) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
-  if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
@@ -3365,7 +3365,7 @@ function navToActivity(tab) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
-  if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
 }
 
@@ -3870,6 +3870,7 @@ function switchMatchTab(tab) {
   if(tabContent) tabContent.style.display='block';
   if(tab === 'wishlist-act') renderActivityWishlist();
   if(tab === 'confirm') renderConfirmations();
+  if(tab === 'direct') loadMatches();
 }
 
 function renderActivityWishlist() {
@@ -3909,6 +3910,139 @@ function renderActivityWishlist() {
 }
 
 // ═══ MATCHES (DIRECT) ═══
+async function loadMatches() {
+  if (!currentUser) return;
+
+  // 1. Mis objetos publicados
+  const { data: myItems } = await db.from('items').select('*').eq('user_id', currentUser.id);
+  // 2. Mis deseos
+  const myWishNames = wishlist.map(w => w.name.toLowerCase());
+  const myWishCats = wishlist.map(w => w.cat.toLowerCase());
+
+  if (!myItems || !myItems.length) { matches = []; renderMatches(); return; }
+
+  const foundMatches = [];
+  const seenPairs = new Set();
+
+  // ── Tipo A: mis objetos coinciden con los deseos de otro usuario ──
+  const { data: othersWishes } = await db.from('wishes')
+    .select('*')
+    .neq('user_id', currentUser.id);
+
+  if (othersWishes) {
+    for (const wish of othersWishes) {
+      for (const myItem of myItems) {
+        const nameMatch = myItem.title.toLowerCase().includes(wish.name.toLowerCase().split(' ')[0])
+          || wish.name.toLowerCase().includes(myItem.title.toLowerCase().split(' ')[0]);
+        const catMatch = myItem.category?.toLowerCase() === wish.cat?.toLowerCase();
+        if (!nameMatch && !catMatch) continue;
+
+        // Buscar un objeto de ese usuario que yo desee
+        const { data: theirItems } = await db.from('items').select('*').eq('user_id', wish.user_id).neq('user_id', currentUser.id);
+        if (!theirItems?.length) continue;
+
+        const pairKey = `${myItem.id}-${wish.user_id}`;
+        if (seenPairs.has(pairKey)) continue;
+
+        // Objeto de ellos que más se acerque a mis deseos
+        let bestTheirItem = theirItems[0];
+        let bestScore = catMatch ? 70 : 60;
+
+        for (const theirItem of theirItems) {
+          const myWantMatch = myWishNames.some(wn =>
+            theirItem.title.toLowerCase().includes(wn.split(' ')[0]) || wn.includes(theirItem.title.toLowerCase().split(' ')[0])
+          ) || myWishCats.some(wc => theirItem.category?.toLowerCase() === wc);
+
+          // También comprueba el campo "wants" del item
+          const wantsMatch = myItem.wants && (
+            myItem.wants.toLowerCase().includes(theirItem.category?.toLowerCase() || '') ||
+            theirItem.title.toLowerCase().split(' ').some(w => myItem.wants.toLowerCase().includes(w))
+          );
+
+          const score = (nameMatch ? 30 : 0) + (catMatch ? 20 : 0) + (myWantMatch ? 30 : 0) + (wantsMatch ? 20 : 0);
+          if (score > bestScore) { bestScore = score; bestTheirItem = theirItem; }
+        }
+
+        seenPairs.add(pairKey);
+        const reasons = [];
+        if (nameMatch) reasons.push(`"${wish.name}" en su lista de deseos`);
+        if (catMatch) reasons.push(`Misma categoría: ${myItem.category}`);
+        if (myWishNames.some(wn => bestTheirItem.title.toLowerCase().includes(wn.split(' ')[0]))) reasons.push(`${bestTheirItem.title} en tu lista de deseos`);
+
+        foundMatches.push({
+          id: `match-${myItem.id}-${wish.user_id}`,
+          myItem: { emoji: myItem.emoji || '📦', name: myItem.title },
+          theirItem: { emoji: bestTheirItem.emoji || '📦', name: bestTheirItem.title },
+          user: wish.user_name || 'Usuario',
+          userEmoji: '👤',
+          userAvatar: bestTheirItem.user_avatar || null,
+          userId: wish.user_id,
+          score: Math.min(99, bestScore),
+          reasons: reasons.length ? reasons : ['Posible coincidencia de categorías'],
+          location: bestTheirItem.location || 'España',
+        });
+      }
+    }
+  }
+
+  // ── Tipo B: mis deseos coinciden con objetos de otros ──
+  if (wishlist.length) {
+    const { data: allItems } = await db.from('items').select('*').neq('user_id', currentUser.id);
+    if (allItems) {
+      for (const wish of wishlist) {
+        for (const item of allItems) {
+          const nameMatch = item.title.toLowerCase().includes(wish.name.toLowerCase().split(' ')[0])
+            || wish.name.toLowerCase().includes(item.title.toLowerCase().split(' ')[0]);
+          const catMatch = item.category?.toLowerCase() === wish.cat?.toLowerCase();
+          if (!nameMatch && !catMatch) continue;
+
+          const pairKey = `wish-${item.user_id}-${wish.name}`;
+          if (seenPairs.has(pairKey)) continue;
+          seenPairs.add(pairKey);
+
+          // Buscar mi objeto que más quieran
+          const wantsMatch = myItems.find(mi =>
+            item.wants && (item.wants.toLowerCase().includes(mi.category?.toLowerCase() || '')
+            || mi.title.toLowerCase().split(' ').some(w => item.wants.toLowerCase().includes(w)))
+          );
+          const myBestItem = wantsMatch || myItems[0];
+
+          const score = Math.min(99, (nameMatch ? 40 : 0) + (catMatch ? 25 : 0) + (wantsMatch ? 35 : 0));
+          const reasons = [];
+          if (nameMatch) reasons.push(`"${wish.name}" en tu lista de deseos`);
+          if (catMatch) reasons.push(`${item.category} — coincide con tu deseo`);
+          if (wantsMatch) reasons.push(`Tu ${myBestItem.title} es lo que buscan`);
+
+          foundMatches.push({
+            id: `match-wish-${item.id}-${wish.name}`,
+            myItem: { emoji: myBestItem?.emoji || '📦', name: myBestItem?.title || 'Tu objeto' },
+            theirItem: { emoji: item.emoji || '📦', name: item.title },
+            user: item.user_name || 'Usuario',
+            userEmoji: '👤',
+            userAvatar: item.user_avatar || null,
+            userId: item.user_id,
+            score,
+            reasons: reasons.length ? reasons : ['Coincide con tu lista de deseos'],
+            location: item.location || 'España',
+          });
+        }
+      }
+    }
+  }
+
+  // Ordenar por score descendente, eliminar duplicados de mismo userId
+  const seenUsers = new Set();
+  matches = foundMatches
+    .sort((a, b) => b.score - a.score)
+    .filter(m => {
+      if (seenUsers.has(m.userId + m.myItem.name)) return false;
+      seenUsers.add(m.userId + m.myItem.name);
+      return true;
+    });
+
+  renderMatches();
+}
+
 function renderMatches() {
   const list = document.getElementById('matches-list');
   if(!list) return;
@@ -3939,7 +4073,12 @@ function renderMatches() {
       tip: 'Los usuarios con 3+ opciones de cambio tienen un 4× más de probabilidad de encontrar match en las primeras 24h.'
     });
   } else {
-    list.innerHTML = matches.map(m => `
+    list.innerHTML = matches.map(m => {
+      const avatarHtml = m.userAvatar
+        ? `<img src="${m.userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+        : `<span style="font-size:.8rem;font-weight:700;color:#fff">${(m.user||'?').charAt(0).toUpperCase()}</span>`;
+      const avatarBg = `hsl(${strHash(m.user||'')%360},55%,65%)`;
+      return `
     <div class="card match-card">
       <div class="match-inner">
         <div class="match-side">
@@ -3959,7 +4098,10 @@ function renderMatches() {
           <div style="text-align:right">
             <div style="font-weight:700;font-size:.9rem;margin-bottom:3px">${m.theirItem.name}</div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:2px">📍 ${m.location}</div>
-            <div style="font-size:11px;color:var(--muted)">${m.userEmoji} ${m.user}</div>
+            <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">
+              <div style="width:20px;height:20px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">${avatarHtml}</div>
+              <span style="font-size:11px;color:var(--muted)">${m.user}</span>
+            </div>
           </div>
           <div class="match-emoji-box" style="background:var(--bg2)">${m.theirItem.emoji}</div>
         </div>
@@ -3971,7 +4113,7 @@ function renderMatches() {
           <button class="btn btn-primary btn-sm" onclick="navTo('messages')">💬 Contactar</button>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;\n    }).join('');
   }
   renderChains();
   renderConfirmations(); // async, fire and forget
