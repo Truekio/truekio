@@ -2591,6 +2591,18 @@ window._enterApp = function() {
   }
 
   navTo('explore');
+  // Recargar explorador ya con currentUser para filtrar los propios
+  setTimeout(async () => {
+    const grid = document.getElementById('explore-grid');
+    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-size:14px">⏳ Cargando objetos...</div>';
+    const fresh = await loadItemsFromSupabase();
+    if (fresh) {
+      items = fresh;
+      const countEl = document.getElementById('items-count');
+      if (countEl) countEl.textContent = items.length + ' objetos disponibles';
+      renderExplore(items);
+    }
+  }, 100);
   // Pre-cargar objetos del usuario para el perfil
   if(currentUser) setTimeout(() => loadMyItems(), 300);
 }
