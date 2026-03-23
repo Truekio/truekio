@@ -2658,7 +2658,9 @@ function switchAuthTab(tab) {
 }
 
 async function loadItemsFromSupabase() {
-  const { data, error } = await db.from('items').select('*').order('created_at', { ascending: false });
+  let query = db.from('items').select('*').order('created_at', { ascending: false });
+  if (currentUser) query = query.neq('user_id', currentUser.id);
+  const { data, error } = await query;
   if (error) {
     console.error('Error cargando items:', error);
     return null;
