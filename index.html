@@ -4551,10 +4551,14 @@ async function openEditItem(itemId) {
   preview.dataset.existingPhotos = JSON.stringify(existingPhotos);
   renderEditPhotoPreviews(existingPhotos);
 
-  // Categoría
+  // Categoría y subcategoría
   const catEl = document.getElementById('edit-item-cat');
   catEl.value = data.category || '';
   updateEditSubcat();
+  // Setear subcategoría después de que se rellenen las opciones
+  if (data.subcategory) {
+    document.getElementById('edit-item-subcat').value = data.subcategory;
+  }
 
   document.getElementById('edit-item-modal').classList.add('open');
 }
