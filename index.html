@@ -743,8 +743,13 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   .stats-grid{grid-template-columns:1fr 1fr;}
   .how-grid{grid-template-columns:1fr;}
   .items-grid{grid-template-columns:1fr 1fr;}
-  .messages-layout{grid-template-columns:1fr;}
-  .conv-list{display:none;}
+  .messages-layout{grid-template-columns:1fr;position:relative;}
+  .conv-list{display:flex;}
+  .chat-main{display:none;}
+  .chat-main.mobile-open{display:flex;}
+  .conv-list.mobile-hidden{display:none;}
+  .mobile-back-btn{display:flex;align-items:center;gap:8px;background:none;border:none;font-size:14px;font-weight:600;color:var(--accent);cursor:pointer;padding:0 0 12px 0;}
+  .mobile-back-btn::before{content:'←';font-size:18px;}
   .match-inner{grid-template-columns:1fr;}
   .match-side-r{border-left:none;border-top:1px solid var(--border);}
   .match-center{border-left:none;border-right:none;border-top:1px solid var(--border);flex-direction:row;padding:12px 20px;}
@@ -895,8 +900,13 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   .stats-grid{grid-template-columns:1fr 1fr;}
   .how-grid{grid-template-columns:1fr;}
   .items-grid{grid-template-columns:1fr 1fr;gap:12px;}
-  .messages-layout{grid-template-columns:1fr;}
-  .conv-list{display:none;}
+  .messages-layout{grid-template-columns:1fr;position:relative;}
+  .conv-list{display:flex;}
+  .chat-main{display:none;}
+  .chat-main.mobile-open{display:flex;}
+  .conv-list.mobile-hidden{display:none;}
+  .mobile-back-btn{display:flex;align-items:center;gap:8px;background:none;border:none;font-size:14px;font-weight:600;color:var(--accent);cursor:pointer;padding:0 0 12px 0;}
+  .mobile-back-btn::before{content:'←';font-size:18px;}
   .match-inner{grid-template-columns:1fr;}
   .match-side-r{border-left:none;border-top:1px solid var(--border);}
   .match-center{border-left:none;border-right:none;border-top:1px solid var(--border);flex-direction:row;padding:10px 18px;}
@@ -2932,7 +2942,7 @@ function navTo(v) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => loadConversations(), 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
 }
 
 function navToActivity(tab) {
@@ -2949,7 +2959,7 @@ function navToActivity(tab) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => loadConversations(), 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3214,7 +3224,7 @@ function navTo(v) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => loadConversations(), 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
 }
 
 function navToActivity(tab) {
@@ -3231,7 +3241,7 @@ function navToActivity(tab) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
-  if(v === 'messages') setTimeout(() => loadConversations(), 300);
+  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); loadConversations(); }, 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4247,6 +4257,23 @@ function renderConvList(data) {
   }).join('');
 }
 
+function closeMobileChat() {
+  activeConvId = null;
+  if (msgPollingInterval) { clearInterval(msgPollingInterval); msgPollingInterval = null; }
+  const convList = document.querySelector('.conv-list');
+  const main = document.getElementById('chat-main');
+  if (convList) convList.classList.remove('mobile-hidden');
+  if (main) {
+    main.classList.remove('mobile-open');
+    main.innerHTML = `<div class="chat-empty">
+  <div class="ce-icon">💬</div>
+  <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div>
+  <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p>
+</div>`;
+  }
+  loadConversations();
+}
+
 async function openConv(convId) {
   activeConvId = convId;
 
@@ -4261,8 +4288,18 @@ async function openConv(convId) {
   const subject = `${conv.item1_title} ↔ ${conv.item2_title}`;
 
   const main = document.getElementById('chat-main');
+
+  // Móvil: mostrar chat, ocultar lista
+  const isMobile = window.innerWidth < 768;
+  if (isMobile) {
+    const convList = document.querySelector('.conv-list');
+    if (convList) convList.classList.add('mobile-hidden');
+    main.classList.add('mobile-open');
+  }
+
   main.innerHTML = `
     <div class="chat-head">
+      ${isMobile ? `<button class="mobile-back-btn" onclick="closeMobileChat()">Volver</button>` : ''}
       <div class="chat-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
       <div class="chat-info">
         <h4>${otherName||'Usuario'}</h4>
