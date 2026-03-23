@@ -2079,16 +2079,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <h2>Lista de Deseos ✦</h2>
         <p>Publica lo que buscas y el sistema te avisa en cuanto alguien lo publique. Tu lista es visible para otros usuarios — si alguien tiene lo que deseas, puede proponerte el trueque directamente.</p>
         <div class="wish-stats">
-          <div class="wish-stat"><div class="wish-stat-n" id="wish-count">4</div><div class="wish-stat-l">deseos activos</div></div>
-          <div class="wish-stat"><div class="wish-stat-n" id="wish-alert-count">3</div><div class="wish-stat-l">alertas nuevas</div></div>
-          <div class="wish-stat"><div class="wish-stat-n" id="wish-match-count">2</div><div class="wish-stat-l">con oferta disponible</div></div>
+          <div class="wish-stat"><div class="wish-stat-n" id="wish-count">0</div><div class="wish-stat-l">deseos activos</div></div>
+          <div class="wish-stat"><div class="wish-stat-n" id="wish-alert-count">0</div><div class="wish-stat-l">alertas nuevas</div></div>
+          <div class="wish-stat"><div class="wish-stat-n" id="wish-match-count">0</div><div class="wish-stat-l">con oferta disponible</div></div>
         </div>
       </div>
 
       <!-- Tabs -->
       <div style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border)">
         <button class="match-tab active" id="wtab-list" onclick="switchWishTab('list')">📋 Mi lista</button>
-        <button class="match-tab" id="wtab-alerts" onclick="switchWishTab('alerts')">🔔 Alertas <span class="nav-badge" id="wtab-alert-badge" style="background:#8b5cf6">3</span></button>
+        <button class="match-tab" id="wtab-alerts" onclick="switchWishTab('alerts')">🔔 Alertas <span class="nav-badge" id="wtab-alert-badge" style="background:#8b5cf6;display:none">0</span></button>
         <button class="match-tab" id="wtab-supply" onclick="switchWishTab('supply')">📊 Demanda pública</button>
       </div>
 
@@ -2960,7 +2960,7 @@ let matches = [...MATCHES_DATA];
 let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.otherAccepted]}));
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
-let wishAlerts = WISH_ALERTS_DATA.map(a=>({...a}));
+let wishAlerts = [];
 let convs = CONVS_DATA.map(c=>({...c,messages:[...c.messages]}));
 let myItems = [
   {id:101,emoji:'🎸',name:'Guitarra Fender Stratocaster',cat:'Música'},
@@ -6530,7 +6530,8 @@ function updateWishBadges() {
   const wishBadgeNav = document.getElementById('wish-badge-nav');
   wishBadgeNav.textContent = unread;
   wishBadgeNav.style.display = unread > 0 ? 'inline' : 'none';
-  document.getElementById('wtab-alert-badge').textContent = unread;
+  const alertBadge = document.getElementById('wtab-alert-badge');
+  if (alertBadge) { alertBadge.textContent = unread; alertBadge.style.display = unread > 0 ? '' : 'none'; }
   document.getElementById('wish-count').textContent = wishlist.length;
   document.getElementById('wish-alert-count').textContent = unread;
   document.getElementById('wish-match-count').textContent = wishlist.filter(w=>w.hasMatch).length;
