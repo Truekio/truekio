@@ -4493,14 +4493,52 @@ function renderConvList(data) {
     const time = new Date(c.last_message_at).toLocaleDateString('es-ES', { day:'numeric', month:'short' });
     const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
     return `
-    <div class="conv-item${activeConvId===c.id?' active':''}" onclick="openConv('${c.id}')">
-      <div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
-      <div class="conv-info">
-        <div class="conv-name"><span>${otherName||'Usuario'}</span><span class="conv-time">${time}</span></div>
-        <div class="conv-preview">${c.last_message || subject}</div>
+    <div class="conv-item${activeConvId===c.id?' active':''}" id="conv-item-${c.id}" style="display:flex;align-items:center;gap:0">
+      <div onclick="openConv('${c.id}')" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;padding:0">
+        <div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
+        <div class="conv-info">
+          <div class="conv-name"><span>${otherName||'Usuario'}</span><span class="conv-time">${time}</span></div>
+          <div class="conv-preview">${c.last_message || subject}</div>
+        </div>
       </div>
+      <button onclick="deleteConversation('${c.id}')" style="flex-shrink:0;background:none;border:none;color:#ccc;font-size:15px;cursor:pointer;padding:6px 8px;border-radius:6px" onmouseover="this.style.color='#ef4444';this.style.background='#fef2f2'" onmouseout="this.style.color='#ccc';this.style.background='none'" title="Eliminar conversación">🗑</button>
     </div>`;
   }).join('');
+}
+
+async function deleteConversation(convId) {
+  if (!currentUser) return;
+  if (!confirm('¿Eliminar esta conversación y todos sus mensajes?')) return;
+
+  // Eliminar mensajes primero
+  await db.from('messages').delete().eq('conversation_id', convId);
+  // Eliminar conversación
+  const { error } = await db.from('conversations').delete().eq('id', convId);
+
+  if (error) { showToast('⚠️ Error al eliminar: ' + error.message); return; }
+
+  // Si era la activa, limpiar el chat
+  if (activeConvId === convId) {
+    activeConvId = null;
+    if (msgPollingInterval) { clearInterval(msgPollingInterval); msgPollingInterval = null; }
+    const main = document.getElementById('chat-main');
+    if (main) {
+      main.classList.remove('mobile-open');
+      main.innerHTML = `<div class="chat-empty">
+        <div class="ce-icon">💬</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div>
+        <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p>
+      </div>`;
+    }
+    const convList = document.querySelector('.conv-list');
+    if (convList) convList.classList.remove('mobile-hidden');
+  }
+
+  // Quitar del DOM
+  const el = document.getElementById('conv-item-' + convId);
+  if (el) el.remove();
+
+  showToast('🗑 Conversación eliminada');
 }
 
 function closeMobileChat() {
@@ -4605,7 +4643,6 @@ async function loadMessages(convId) {
 
   el.innerHTML = systemMsg + data.map(m => {
     const isOut = m.sender_id === currentUser.id;
-    console.log('MSG:', m.id, 'sender:', m.sender_id, 'me:', currentUser.id, 'isOut:', isOut);
     const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
     return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
       ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
