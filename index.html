@@ -2191,12 +2191,13 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="trust-passport" id="trust-passport">
       <div class="trust-passport-top">
         <div class="trust-avatar-wrap">
-          <div class="trust-avatar" id="trust-avatar-emoji" style="overflow:hidden;padding:0"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&q=80" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"></div>
+          <div class="trust-avatar" id="trust-avatar-emoji" style="overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--accent);background:var(--accent-l)">?</div>
           <div class="trust-level-badge trust-level-veterano" id="trust-level-badge">VETERANO</div>
         </div>
         <div class="trust-info" style="margin-top:8px">
           <div class="trust-name" id="trust-name">Alex Martínez</div>
-          <div class="trust-meta" id="trust-meta">📍 Madrid · Miembro desde enero 2024</div>
+          <div class="trust-meta" id="trust-meta">📍 España · Miembro desde enero 2024</div>
+          <div id="trust-bio" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:5px;line-height:1.5;max-width:340px;display:none"></div>
           <div class="trust-score-row">
             <div>
               <div class="trust-score-big" id="trust-score">87</div>
@@ -2273,12 +2274,27 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="ptab-content" id="ptab-config">
       <div class="card" style="padding:28px;margin-bottom:16px">
         <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;margin-bottom:20px">Datos del perfil</div>
-        <div class="form-row">
-          <div class="field"><label>Nombre</label><input id="edit-name" value="Alex Martínez"></div>
-          <div class="field"><label>Ciudad</label><input id="edit-city" value="Madrid"></div>
+
+        <!-- FOTO DE PERFIL -->
+        <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+          <div style="position:relative;flex-shrink:0">
+            <div id="profile-photo-preview" style="width:80px;height:80px;border-radius:50%;background:var(--accent-l);border:2.5px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--accent)">?</div>
+            <label for="profile-photo-input" style="position:absolute;bottom:0;right:0;width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--white);font-size:13px" title="Cambiar foto">✏️</label>
+            <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="handlePhotoChange(event)">
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">Foto de perfil</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">JPG, PNG o WebP · Máx. 2 MB<br>Se muestra en tu perfil y en los chats</div>
+            <div id="photo-upload-status" style="font-size:12px;margin-top:4px;display:none"></div>
+          </div>
         </div>
-        <div class="field"><label>Sobre mí</label><textarea id="edit-bio">Apasionado del intercambio. Cuido mucho mis objetos y busco tratos justos para ambas partes.</textarea></div>
-        <div class="field"><label>Email</label><input type="email" value="alex@email.com"></div>
+
+        <div class="form-row">
+          <div class="field"><label>Nombre</label><input id="edit-name" value=""></div>
+          <div class="field"><label>Ciudad</label><input id="edit-city" value=""></div>
+        </div>
+        <div class="field"><label>Sobre mí</label><textarea id="edit-bio" rows="3" placeholder="Cuéntale a la comunidad quién eres y qué tipo de trueques te interesan..."></textarea></div>
+        <div class="field"><label>Email</label><input type="email" id="edit-email" value="" disabled style="opacity:.6;cursor:not-allowed"></div>
         <button class="btn btn-primary btn-md" onclick="saveProfile()">Guardar cambios</button>
         <button class="btn btn-danger btn-md" onclick="handleLogout()" style="margin-top:10px">Cerrar sesión</button>
       </div>
@@ -2546,17 +2562,32 @@ window._enterApp = function() {
 
   if (currentUser) {
     const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    const city = currentUser.user_metadata?.city || '';
+    const bio  = currentUser.user_metadata?.bio  || '';
+    const photoUrl = currentUser.user_metadata?.avatar_url || '';
     const since = new Date(currentUser.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    const editName = document.getElementById('edit-name');
-    const editEmail = document.querySelector('#ptab-config input[type="email"]');
-    if (editName) editName.value = name;
+
+    const editName  = document.getElementById('edit-name');
+    const editCity  = document.getElementById('edit-city');
+    const editBio   = document.getElementById('edit-bio');
+    const editEmail = document.getElementById('edit-email');
+    if (editName)  editName.value  = name;
+    if (editCity)  editCity.value  = city;
+    if (editBio)   editBio.value   = bio;
     if (editEmail) editEmail.value = currentUser.email;
+
     const trustName = document.getElementById('trust-name');
     const trustMeta = document.getElementById('trust-meta');
     if (trustName) trustName.textContent = name;
-    if (trustMeta) trustMeta.textContent = '📍 Barcelona · Miembro desde ' + since;
-    const avatarNav = document.querySelector('.avatar-nav');
-    if (avatarNav) avatarNav.textContent = name.charAt(0).toUpperCase();
+    if (trustMeta) trustMeta.textContent = `📍 ${city || 'España'} · Miembro desde ${since}`;
+
+    const trustBio = document.getElementById('trust-bio');
+    if (trustBio) {
+      if (bio) { trustBio.textContent = bio; trustBio.style.display = ''; }
+      else { trustBio.style.display = 'none'; }
+    }
+
+    applyAvatar(photoUrl, name);
   }
 
   navTo('explore');
@@ -5157,11 +5188,106 @@ function switchPTab(tab) {
   });
 }
 
-function saveProfile() {
-  const name = document.getElementById('edit-name').value;
-  const city = document.getElementById('edit-city').value;
-  document.getElementById('trust-name').textContent = name;
-  document.getElementById('trust-meta').textContent = `📍 ${city} · Miembro desde enero 2024`;
+// ── Actualiza todos los avatares de la UI con foto o inicial
+function applyAvatar(photoUrl, name) {
+  const initial = (name || '?').charAt(0).toUpperCase();
+  // Nav avatar
+  const avatarNav = document.querySelector('.avatar-nav');
+  if (avatarNav) {
+    if (photoUrl) {
+      avatarNav.innerHTML = `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+      avatarNav.textContent = initial;
+    }
+  }
+  // Trust passport avatar
+  const trustAvatar = document.getElementById('trust-avatar-emoji');
+  if (trustAvatar) {
+    if (photoUrl) {
+      trustAvatar.innerHTML = `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    } else {
+      trustAvatar.textContent = initial;
+      trustAvatar.style.fontSize = '2rem';
+    }
+  }
+  // Config tab preview
+  const preview = document.getElementById('profile-photo-preview');
+  if (preview) {
+    if (photoUrl) {
+      preview.innerHTML = `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    } else {
+      preview.textContent = initial;
+    }
+  }
+}
+
+// ── Maneja la selección de foto y sube a Supabase Storage
+async function handlePhotoChange(event) {
+  const file = event.target.files[0];
+  if (!file || !currentUser) return;
+  if (file.size > 2 * 1024 * 1024) { showToast('⚠️ La foto no puede superar 2 MB'); return; }
+
+  const status = document.getElementById('photo-upload-status');
+  if (status) { status.textContent = '⏳ Subiendo foto...'; status.style.display = ''; status.style.color = 'var(--muted)'; }
+
+  const ext = file.name.split('.').pop();
+  const path = `avatars/${currentUser.id}.${ext}`;
+
+  const { error: upErr } = await db.storage.from('photos').upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) {
+    if (status) { status.textContent = '⚠️ Error al subir la foto'; status.style.color = '#e53e3e'; }
+    showToast('⚠️ Error al subir la foto');
+    return;
+  }
+
+  const { data: urlData } = db.storage.from('photos').getPublicUrl(path);
+  const photoUrl = urlData.publicUrl + '?t=' + Date.now();
+
+  // Guardar URL en user_metadata
+  await db.auth.updateUser({ data: { ...currentUser.user_metadata, avatar_url: photoUrl } });
+  currentUser.user_metadata = { ...currentUser.user_metadata, avatar_url: photoUrl };
+
+  applyAvatar(photoUrl, currentUser.user_metadata?.name || currentUser.email.split('@')[0]);
+
+  if (status) { status.textContent = '✓ Foto actualizada'; status.style.color = 'var(--green)'; }
+  showToast('✦ Foto de perfil actualizada');
+}
+
+async function saveProfile() {
+  if (!currentUser) return;
+  const name = document.getElementById('edit-name').value.trim();
+  const city = document.getElementById('edit-city').value.trim();
+  const bio  = document.getElementById('edit-bio').value.trim();
+
+  const btn = document.querySelector('#ptab-config .btn-primary');
+  if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+
+  const { error } = await db.auth.updateUser({
+    data: { ...currentUser.user_metadata, name, city, bio }
+  });
+
+  if (btn) { btn.textContent = 'Guardar cambios'; btn.disabled = false; }
+
+  if (error) { showToast('⚠️ Error al guardar: ' + error.message); return; }
+
+  currentUser.user_metadata = { ...currentUser.user_metadata, name, city, bio };
+
+  // Actualizar UI
+  const trustName = document.getElementById('trust-name');
+  if (trustName) trustName.textContent = name || 'Usuario';
+  const trustMeta = document.getElementById('trust-meta');
+  if (trustMeta) {
+    const since = new Date(currentUser.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    trustMeta.textContent = `📍 ${city || 'España'} · Miembro desde ${since}`;
+  }
+  const trustBio = document.getElementById('trust-bio');
+  if (trustBio) {
+    if (bio) { trustBio.textContent = bio; trustBio.style.display = ''; }
+    else { trustBio.style.display = 'none'; }
+  }
+  const avatarNav = document.querySelector('.avatar-nav');
+  if (avatarNav && !currentUser.user_metadata?.avatar_url) avatarNav.textContent = (name || '?').charAt(0).toUpperCase();
+
   showToast('✦ Perfil actualizado correctamente');
 }
 
