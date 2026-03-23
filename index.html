@@ -2847,7 +2847,6 @@ let myItems = [
   {id:102,emoji:'💻',name:'MacBook Air 2020',cat:'Electrónica'},
 ];
 let currentFilter = 'Todos';
-let activeConvId = null;
 let selectedOfferIdx = null;
 let activeModalItem = null;
 let shippingMode = 'persona';
@@ -2933,6 +2932,7 @@ function navTo(v) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'messages') setTimeout(() => loadConversations(), 300);
 }
 
 function navToActivity(tab) {
@@ -2949,6 +2949,7 @@ function navToActivity(tab) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'messages') setTimeout(() => loadConversations(), 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3213,6 +3214,7 @@ function navTo(v) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'messages') setTimeout(() => loadConversations(), 300);
 }
 
 function navToActivity(tab) {
@@ -3229,6 +3231,7 @@ function navToActivity(tab) {
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') setTimeout(() => loadProposals(), 300);
+  if(v === 'messages') setTimeout(() => loadConversations(), 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3667,7 +3670,38 @@ async function loadProposals() {
 async function respondProposal(proposalId, status) {
   const { error } = await db.from('proposals').update({ status }).eq('id', proposalId);
   if (error) { showToast('⚠️ Error: ' + error.message); return; }
-  showToast(status === 'accepted' ? '✅ Propuesta aceptada' : '❌ Propuesta rechazada');
+
+  if (status === 'accepted') {
+    // Cargar datos de la propuesta para crear la conversación
+    const { data: p } = await db.from('proposals').select('*').eq('id', proposalId).single();
+    if (p) {
+      // Crear conversación solo si no existe ya
+      const { data: existing } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
+      if (!existing) {
+      // Cargar nombre del dueño del objeto
+      const { data: ownerData } = await db.from('auth').select('id').eq('id', p.owner_id).single().catch(() => ({data:null}));
+      const ownerName = currentUser.id === p.owner_id
+        ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0])
+        : (p.item_title); // fallback
+
+      await db.from('conversations').insert([{
+          proposal_id: proposalId,
+          user1_id: p.owner_id,
+          user1_name: ownerName,
+          user2_id: p.offerer_id,
+          user2_name: p.offerer_name,
+          item1_title: p.item_title,
+          item2_title: p.offered_item_title,
+          last_message: '🤝 Trueque aceptado — ¡coordinad el encuentro!',
+          last_message_at: new Date().toISOString(),
+        }]);
+      }
+    }
+    showToast('✅ Propuesta aceptada — ya podéis chatear en Mensajes');
+  } else {
+    showToast('❌ Propuesta rechazada');
+  }
+
   loadProposals();
 }
 
@@ -4161,116 +4195,178 @@ function closeConfirmModal() { document.getElementById('confirm-modal-overlay').
 function closeConfirmModalBg(e) { if(e.target===document.getElementById('confirm-modal-overlay')) closeConfirmModal(); }
 
 // ═══ CONVERSATIONS ═══
-function renderConvList() {
-  const total = convs.reduce((a,c)=>a+c.unread,0);
+// ═══ CHAT REAL CON SUPABASE ═══
+let activeConvId = null;
+let activeConvData = null;
+let msgPollingInterval = null;
+
+async function loadConversations() {
+  if (!currentUser) return;
+  const { data, error } = await db
+    .from('conversations')
+    .select('*')
+    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
+    .order('last_message_at', { ascending: false });
+
+  if (error || !data) return;
+  renderConvList(data);
+}
+
+function renderConvList(data) {
+  const list = document.getElementById('conv-list-items');
+  if (!list) return;
+
+  // Badge en nav
   const mb = document.getElementById('msg-badge-nav');
-  mb.style.display = total>0?'inline':'none';
-  mb.textContent = total;
+  if (mb) { mb.style.display = 'none'; }
 
-  document.getElementById('conv-list-items').innerHTML = convs.map(c => `
-  <div class="conv-item${activeConvId===c.id?' active':''}" onclick="openConv('${c.id}')">
-    <div class="conv-avatar" style="background:linear-gradient(135deg,hsl(${strHash(c.user)%360},55%,70%),hsl(${strHash(c.user+'x')%360},55%,60%));overflow:hidden">${USER_PHOTOS[c.user] ? '<img src="'+USER_PHOTOS[c.user]+'" style="width:100%;height:100%;object-fit:cover">' : c.userEmoji}</div>
-    <div class="conv-info">
-      <div class="conv-name"><span>${c.user}</span><span class="conv-time">${c.time}</span></div>
-      <div class="conv-preview">${c.subject}</div>
-    </div>
-    ${c.unread>0?`<div class="conv-unread">${c.unread}</div>`:''}
-  </div>`).join('');
-}
+  if (!data || !data.length) {
+    list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando se acepte un trueque.</span></div>';
+    return;
+  }
 
-function strHash(s) { let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);return Math.abs(h); }
-
-function openConv(id) {
-  activeConvId = id;
-  const conv = convs.find(c=>c.id===id);
-  conv.unread = 0;
-  renderConvList();
-
-  const main = document.getElementById('chat-main');
-  const bg = `linear-gradient(135deg,hsl(${strHash(conv.user)%360},55%,70%),hsl(${strHash(conv.user+'x')%360},55%,60%))`;
-  main.innerHTML = `
-  <div class="chat-head">
-    <div class="chat-avatar" style="background:${bg}">${conv.userEmoji}</div>
-    <div class="chat-info">
-      <h4>${conv.user}</h4>
-      <p>${conv.subject}</p>
-    </div>
-    <button class="btn btn-secondary btn-sm" onclick="navTo('matches');switchMatchTab('confirm')">📦 Ver confirmaciones</button>
-  </div>
-  <div class="chat-messages" id="chat-msgs">${renderMessages(conv, bg)}</div>
-  <div class="chat-input-area">
-    <textarea class="chat-textarea" id="chat-input" placeholder="Escribe un mensaje... (Enter para enviar)" onkeydown="chatKeyDown(event)"></textarea>
-    <button class="chat-send" onclick="sendMessage()">➤</button>
-  </div>`;
-  scrollMsgs();
-}
-
-function renderMessages(conv, bg) {
-  return conv.messages.map((m,i) => {
-    if(m.type==='proposal') {
-      const btns = m.accepted
-        ? `<div class="proposal-accepted">✅ ¡Propuesta aceptada! Coordinad el envío en el chat.</div>`
-        : `<div class="proposal-actions">
-            <button class="btn btn-secondary btn-sm" style="flex:1" onclick="rejectProp(${i})">Rechazar</button>
-            <button class="btn btn-primary btn-sm" style="flex:1" onclick="acceptProp('${conv.id}',${i})">Aceptar ✓</button>
-           </div>`;
-      return `<div class="proposal">
-        <div class="proposal-title">⚡ Propuesta de trueque</div>
-        <div class="proposal-items">
-          <div class="proposal-item"><div class="pi-e">${m.myItem.emoji}</div><div class="pi-n">${m.myItem.name}</div></div>
-          <div class="proposal-arrow">⇄</div>
-          <div class="proposal-item"><div class="pi-e">${m.theirItem.emoji}</div><div class="pi-n">${m.theirItem.name}</div></div>
-        </div>${btns}
-      </div>`;
-    }
-    const isOut = m.from==='me';
-    return `<div class="msg ${isOut?'msg-out':'msg-in'}">
-      ${!isOut?`<div class="msg-avatar-sm" style="background:${bg}">${conv.userEmoji}</div>`:''}
-      <div>
-        <div class="bubble ${isOut?'bubble-out':'bubble-in'}">${m.text}</div>
-        <div class="msg-time" style="text-align:${isOut?'right':'left'}">${m.time}</div>
+  list.innerHTML = data.map(c => {
+    const isUser1 = c.user1_id === currentUser.id;
+    const otherName = isUser1 ? c.user2_name : c.user1_name;
+    const subject = `${c.item1_title} ↔ ${c.item2_title}`;
+    const time = new Date(c.last_message_at).toLocaleDateString('es-ES', { day:'numeric', month:'short' });
+    const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
+    return `
+    <div class="conv-item${activeConvId===c.id?' active':''}" onclick="openConv('${c.id}')">
+      <div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
+      <div class="conv-info">
+        <div class="conv-name"><span>${otherName||'Usuario'}</span><span class="conv-time">${time}</span></div>
+        <div class="conv-preview">${c.last_message || subject}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-function acceptProp(convId, idx) {
-  const conv = convs.find(c=>c.id===convId);
-  conv.messages[idx].accepted = true;
-  openConv(convId);
-  showToast('✅ ¡Trueque aceptado! Coordinad el envío en el chat.');
-  // Create confirmation entry
-  const prop = conv.messages[idx];
-  const now = new Date();
-  const dateStr = now.getDate()+' '+['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][now.getMonth()]+' '+now.getFullYear();
-  const alreadyExists = confirmations.some(c=>c.user===conv.user && c.myItem.name===prop.myItem.name);
-  if(!alreadyExists) {
-    confirmations.unshift({
-      id:'cf_'+Date.now(), myItem:prop.myItem, theirItem:prop.theirItem,
-      user:conv.user, userEmoji:conv.userEmoji,
-      agreedDate:dateStr, myConfirmed:false, theirConfirmed:false,
-      status:'pending_me', shipping:'A coordinar por chat', trackingCode:null
-    });
-    renderMatches();
-    addNotification('📦','#f0fdf4','Trueque aceptado','Se ha creado una confirmación pendiente en Matches → Confirmación.');
-  }
+async function openConv(convId) {
+  activeConvId = convId;
+
+  // Cargar datos de la conversación
+  const { data: conv } = await db.from('conversations').select('*').eq('id', convId).single();
+  if (!conv) return;
+  activeConvData = conv;
+
+  const isUser1 = conv.user1_id === currentUser.id;
+  const otherName = isUser1 ? conv.user2_name : conv.user1_name;
+  const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
+  const subject = `${conv.item1_title} ↔ ${conv.item2_title}`;
+
+  const main = document.getElementById('chat-main');
+  main.innerHTML = `
+    <div class="chat-head">
+      <div class="chat-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
+      <div class="chat-info">
+        <h4>${otherName||'Usuario'}</h4>
+        <p>${subject}</p>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-msgs">
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando mensajes...</div>
+    </div>
+    <div class="chat-input-area">
+      <textarea class="chat-textarea" id="chat-input" placeholder="Escribe un mensaje..." onkeydown="chatKeyDown(event)"></textarea>
+      <button class="chat-send" onclick="sendMessage()">➤</button>
+    </div>`;
+
+  await loadMessages(convId);
+
+  // Recargar lista para marcar activo
+  loadConversations();
+
+  // Polling cada 5 segundos para nuevos mensajes
+  if (msgPollingInterval) clearInterval(msgPollingInterval);
+  msgPollingInterval = setInterval(() => {
+    if (activeConvId === convId) loadMessages(convId);
+  }, 5000);
 }
+
+async function loadMessages(convId) {
+  const { data, error } = await db
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', convId)
+    .order('created_at', { ascending: true });
+
+  const el = document.getElementById('chat-msgs');
+  if (!el) return;
+
+  if (error) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Error al cargar mensajes.</div>'; return; }
+
+  const conv = activeConvData;
+  const isUser1 = conv && conv.user1_id === currentUser.id;
+  const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
+  const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
+
+  // Mensaje inicial del sistema
+  const systemMsg = `
+    <div style="text-align:center;padding:16px 20px;margin-bottom:8px">
+      <div style="display:inline-block;background:var(--green-l);color:var(--green);font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px">
+        🤝 Trueque aceptado — coordinad el punto de encuentro
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${conv ? conv.item1_title + ' ↔ ' + conv.item2_title : ''}</div>
+    </div>`;
+
+  if (!data || !data.length) {
+    el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
+    return;
+  }
+
+  el.innerHTML = systemMsg + data.map(m => {
+    const isOut = m.sender_id === currentUser.id;
+    const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+    return `<div class="msg ${isOut?'msg-out':'msg-in'}">
+      ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
+      <div>
+        <div class="bubble ${isOut?'bubble-out':'bubble-in'}">${m.text}</div>
+        <div class="msg-time" style="text-align:${isOut?'right':'left'}">${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  scrollMsgs();
+}
+
+async function sendMessage() {
+  if (!activeConvId || !currentUser) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const senderName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+
+  const { error } = await db.from('messages').insert([{
+    conversation_id: activeConvId,
+    sender_id: currentUser.id,
+    sender_name: senderName,
+    text,
+  }]);
+
+  if (error) { showToast('⚠️ Error al enviar'); return; }
+
+  // Actualizar last_message
+  await db.from('conversations').update({
+    last_message: text,
+    last_message_at: new Date().toISOString(),
+  }).eq('id', activeConvId);
+
+  loadMessages(activeConvId);
+  loadConversations();
+}
+
+function renderConvList_legacy() {} // kept for compat
+
+
+
+function strHash(s) { let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);return Math.abs(h); }
+
 function rejectProp(idx) { showToast('Propuesta rechazada'); }
 
 function chatKeyDown(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
-
-function sendMessage() {
-  if(!activeConvId) return;
-  const inp = document.getElementById('chat-input');
-  const text = inp.value.trim();
-  if(!text) return;
-  const now = new Date();
-  const t = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
-  const conv = convs.find(c=>c.id===activeConvId);
-  conv.messages.push({from:'me',text,time:t});
-  inp.value = '';
-  openConv(activeConvId);
-}
 
 function scrollMsgs() { const el=document.getElementById('chat-msgs'); if(el) el.scrollTop=el.scrollHeight; }
 
