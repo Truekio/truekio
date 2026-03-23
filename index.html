@@ -1997,11 +1997,15 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <!-- Activity tabs -->
     <div style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid var(--border)">
       <button class="match-tab active" id="mtab-direct" onclick="switchMatchTab('direct')">⚡ Matches <span class="nav-badge" style="background:var(--accent)" id="mtab-direct-count">3</span></button>
+      <button class="match-tab" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
       <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
       <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
       <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
     </div>
     <div id="matches-direct" class="match-tab-content active"><div id="matches-list"></div></div>
+    <div id="matches-proposals" class="match-tab-content" style="display:none">
+      <div id="proposals-list"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
+    </div>
     <div id="matches-chain" class="match-tab-content" style="display:none">
       <div style="background:var(--purple-l);border:1px solid rgba(99,68,168,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
         <div style="font-size:1.6rem;flex-shrink:0">🔗</div>
@@ -2922,6 +2926,7 @@ function navTo(v) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
+  if(v === 'activity') setTimeout(() => loadProposals(), 300);
 }
 
 function navToActivity(tab) {
@@ -2937,6 +2942,7 @@ function navToActivity(tab) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
+  if(v === 'activity') setTimeout(() => loadProposals(), 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3200,6 +3206,7 @@ function navTo(v) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
+  if(v === 'activity') setTimeout(() => loadProposals(), 300);
 }
 
 function navToActivity(tab) {
@@ -3215,6 +3222,7 @@ function navToActivity(tab) {
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
+  if(v === 'activity') setTimeout(() => loadProposals(), 300);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3590,6 +3598,73 @@ function emptyState({icon, title, body, cta, ctaAction, ctaSecondary, ctaSeconda
 }
 
 // ═══ MATCH TABS ═══
+// ═══ PROPUESTAS DE TRUEQUE ═══
+async function loadProposals() {
+  if (!currentUser) return;
+  const el = document.getElementById('proposals-list');
+  if (!el) return;
+  el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
+
+  const { data, error } = await db
+    .from('proposals')
+    .select('*')
+    .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
+    .order('created_at', { ascending: false });
+
+  if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
+
+  // Badge con pendientes recibidas
+  const pending = data.filter(p => p.owner_id === currentUser.id && p.status === 'pending');
+  const badge = document.getElementById('mtab-proposals-count');
+  if (badge) { badge.textContent = pending.length; badge.style.display = pending.length ? '' : 'none'; }
+
+  if (!data.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes propuestas.<br><span style="font-size:12px">Cuando alguien proponga un trueque contigo aparecerá aquí.</span></div>';
+    return;
+  }
+
+  el.innerHTML = data.map(p => {
+    const isOwner = p.owner_id === currentUser.id;
+    const statusLabel = { pending: '⏳ Pendiente', accepted: '✅ Aceptada', rejected: '❌ Rechazada' }[p.status] || p.status;
+    const statusColor = { pending: 'var(--accent)', accepted: 'var(--green)', rejected: 'var(--muted)' }[p.status];
+    const date = new Date(p.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+
+    return `
+    <div style="border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:14px;background:var(--white)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:${statusColor}">${statusLabel}</div>
+        <div style="font-size:11px;color:var(--muted)">${date}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${isOwner ? 'Te ofrecen' : 'Ofreces'}</div>
+          <div style="font-weight:700;font-size:13px">${p.offered_item_emoji} ${p.offered_item_title}</div>
+          <div style="font-size:11px;color:var(--muted)">de ${isOwner ? p.offerer_name : 'ti'}</div>
+        </div>
+        <div style="font-size:1.2rem;color:var(--muted)">↔</div>
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${isOwner ? 'Por tu' : 'Por'}</div>
+          <div style="font-weight:700;font-size:13px">${p.item_title}</div>
+          <div style="font-size:11px;color:var(--muted)">${isOwner ? '' : 'de ' + (p.offerer_name || '—')}</div>
+        </div>
+      </div>
+      ${p.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${p.message}"</div>` : ''}
+      ${isOwner && p.status === 'pending' ? `
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','accepted')">✅ Aceptar</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','rejected')">❌ Rechazar</button>
+        </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function respondProposal(proposalId, status) {
+  const { error } = await db.from('proposals').update({ status }).eq('id', proposalId);
+  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+  showToast(status === 'accepted' ? '✅ Propuesta aceptada' : '❌ Propuesta rechazada');
+  loadProposals();
+}
+
 function switchMatchTab(tab) {
   document.querySelectorAll('.match-tab').forEach(b=>b.classList.remove('active'));
   const tabBtn = document.getElementById('mtab-'+tab);
@@ -4272,32 +4347,54 @@ function proposeFromDetail() {
   setTimeout(() => openModal(id), 200);
 }
 
-function openModal(itemId) {
-  const item = items.find(i=>i.id===itemId);
+async function openModal(itemId) {
+  const item = items.find(i => String(i.id) === String(itemId));
   if(!item) return;
   activeModalItem = item;
   selectedOfferIdx = null;
 
-  const wantsDisplay = item.exchangeOptions && item.exchangeOptions.length
-    ? item.exchangeOptions.map(o=>(o.isBundle?'📦 ':'')+o.label+(o.items.length>1?' (x'+o.items.length+')':'')).join(' · ')
-    : item.wants.join(', ');
-  const imgHtml = item.images && item.images.length
-    ? `<img src="${item.images[0]}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;flex-shrink:0">`
+  // Preview del objeto
+  const imgHtml = item.photos && item.photos.length
+    ? `<img src="${item.photos[0]}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;flex-shrink:0">`
     : `<div class="mip-emoji">${item.emoji}</div>`;
+  const wantsDisplay = item.wants && item.wants.length ? item.wants.join(', ') : '—';
   document.getElementById('modal-preview').innerHTML = `
     ${imgHtml}
     <div class="mip-info">
       <h4>${item.name}</h4>
-      <p>📍 ${item.location} · ${item.userEmoji} ${item.user}</p>
+      <p>📍 ${item.location||'Barcelona'} · ${item.userEmoji} ${item.user}</p>
       <p style="margin-top:3px;font-size:11px">Acepta: ${wantsDisplay}</p>
     </div>`;
 
-  document.getElementById('offer-grid').innerHTML = myItems.map((o,i) => `
-    <div class="offer-opt" onclick="selectOffer(this,${i})">
-      <div class="oo-e">${o.emoji}</div>
-      <div class="oo-n">${o.name}</div>
-      <div class="oo-c">${o.cat}</div>
-    </div>`).join('');
+  // Cargar objetos reales del usuario desde Supabase
+  const offerGrid = document.getElementById('offer-grid');
+  offerGrid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando tus objetos...</div>';
+
+  let userObjects = [];
+  if (currentUser) {
+    const { data } = await db.from('items').select('id,title,category,emoji,photos,photo_urls').eq('user_id', currentUser.id);
+    userObjects = data || [];
+  }
+
+  if (!userObjects.length) {
+    offerGrid.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">
+      No tienes objetos publicados.<br>
+      <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeModal();navTo('publish')">Publicar un objeto →</button>
+    </div>`;
+  } else {
+    offerGrid.innerHTML = userObjects.map((o, i) => {
+      const photo = (o.photo_urls && o.photo_urls[0]) || o.photos || '';
+      return `<div class="offer-opt" onclick="selectOffer(this,${i})" data-id="${o.id}">
+        <div class="oo-e" style="overflow:hidden;border-radius:8px">
+          ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : (o.emoji || '📦')}
+        </div>
+        <div class="oo-n">${o.title}</div>
+        <div class="oo-c">${o.category||''}</div>
+      </div>`;
+    }).join('');
+    // Guardar referencia para sendOffer
+    window._offerObjects = userObjects;
+  }
 
   document.getElementById('modal-msg-txt').value = '';
   document.getElementById('modal-overlay').style.display = 'flex';
@@ -4312,24 +4409,40 @@ function selectOffer(el, idx) {
 function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 function closeModalBg(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 
-function sendOffer() {
-  if(selectedOfferIdx===null){showToast('⚠️ Selecciona qué ofreces a cambio');return;}
-  const offer = myItems[selectedOfferIdx];
-  const msg = document.getElementById('modal-msg-txt').value;
-  const now = new Date();
-  const t = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
-  const nc = {
-    id:'c_'+Date.now(),user:activeModalItem.user,userEmoji:activeModalItem.userEmoji,
-    subject:`${offer.name} ↔ ${activeModalItem.name}`,time:t,unread:0,
-    messages:[
-      {from:'me',text:msg||'¡Hola! Me interesa hacer un trueque contigo.',time:t},
-      {type:'proposal',myItem:{emoji:offer.emoji,name:offer.name},theirItem:{emoji:activeModalItem.emoji,name:activeModalItem.name},accepted:false,time:t},
-    ]
-  };
-  convs.unshift(nc);
+async function sendOffer() {
+  if(selectedOfferIdx === null){ showToast('⚠️ Selecciona qué ofreces a cambio'); return; }
+  if(!currentUser){ showToast('⚠️ Debes iniciar sesión'); return; }
+
+  const offeredObj = window._offerObjects[selectedOfferIdx];
+  const msg = document.getElementById('modal-msg-txt').value.trim();
+  const btn = document.querySelector('[onclick="sendOffer()"]');
+  const originalText = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = '⏳ Enviando...'; btn.disabled = true; }
+
+  // Buscar owner_id del objeto destino desde Supabase
+  const { data: itemData } = await db.from('items').select('user_id,user_name').eq('id', activeModalItem.id).single();
+  const ownerId = itemData?.user_id || null;
+
+  const { error } = await db.from('proposals').insert([{
+    item_id: activeModalItem.id,
+    item_title: activeModalItem.name,
+    offerer_id: currentUser.id,
+    offerer_name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
+    offered_item_title: offeredObj.title,
+    offered_item_emoji: offeredObj.emoji || '📦',
+    owner_id: ownerId,
+    message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
+    status: 'pending',
+  }]);
+
+  if(btn){ btn.textContent = originalText; btn.disabled = false; }
+
+  if(error){ showToast('⚠️ Error al enviar: ' + error.message); return; }
+
   closeModal();
   showToast('✦ Propuesta enviada correctamente');
-  setTimeout(()=>{navTo('messages');openConv(nc.id);},600);
+  // Recargar propuestas en actividad
+  loadProposals();
 }
 
 // ═══ TRUST SYSTEM ═══
