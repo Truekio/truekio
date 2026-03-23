@@ -4038,7 +4038,7 @@ function renderChains() {
       <div class="chain-footer">
         <div class="chain-participants">👥 ${ch.participants} participantes · ${allAccepted ? 'Cadena activa' : ch.otherAccepted.filter(Boolean).length + ch.myAccepted + '/' + ch.participants + ' aceptados'}</div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-danger btn-sm" onclick="rejectChain('${ch.id}')">Rechazar</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectChain('${ch.id}')">🗑 ${ch.myAccepted ? 'Abandonar' : 'Rechazar'}</button>
           ${ch.myAccepted
             ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:.6">✓ Ya aceptaste</button>`
             : `<button class="btn btn-sm" style="background:#8b5cf6;color:#fff;box-shadow:0 2px 8px rgba(139,92,246,.3)" onclick="openChainModal('${ch.id}')">Ver detalles y aceptar →</button>`
@@ -4050,9 +4050,14 @@ function renderChains() {
 }
 
 function rejectChain(id) {
+  const ch = chains.find(c => c.id === id);
+  const msg = ch?.myAccepted
+    ? '¿Abandonar esta cadena? Los demás participantes serán notificados.'
+    : '¿Rechazar esta cadena de trueques?';
+  if (!confirm(msg)) return;
   chains = chains.filter(c => c.id !== id);
   renderMatches();
-  showToast('Cadena rechazada');
+  showToast(ch?.myAccepted ? '🗑 Has abandonado la cadena' : '🗑 Cadena rechazada');
 }
 
 function openChainModal(chainId) {
