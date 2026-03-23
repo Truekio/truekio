@@ -3678,11 +3678,10 @@ async function respondProposal(proposalId, status) {
       // Crear conversación solo si no existe ya
       const { data: existing } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
       if (!existing) {
-      // Cargar nombre del dueño del objeto
-      const { data: ownerData } = await db.from('auth').select('id').eq('id', p.owner_id).single().catch(() => ({data:null}));
+      // Nombre del dueño
       const ownerName = currentUser.id === p.owner_id
         ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0])
-        : (p.item_title); // fallback
+        : p.offerer_name;
 
       await db.from('conversations').insert([{
           proposal_id: proposalId,
