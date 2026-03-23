@@ -4663,6 +4663,7 @@ async function saveEditItem() {
     title: name,
     description: document.getElementById('edit-item-desc').value,
     category: document.getElementById('edit-item-cat').value,
+    subcategory: document.getElementById('edit-item-subcat').value || null,
     estimated_value: parseInt(document.getElementById('edit-item-price').value) || null,
     wants: document.getElementById('edit-item-wants').value,
     location: document.getElementById('edit-item-city').value.trim(),
