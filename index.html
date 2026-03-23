@@ -1595,8 +1595,30 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <!-- Qué acepta a cambio -->
       <div class="field">
         <label>Qué acepta a cambio</label>
-        <input id="edit-item-wants" placeholder="Ej: Cámara, Tablet, Guitarra (separados por comas)">
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Separa las opciones con comas</div>
+        <div id="edit-exchange-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+        <div style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:12px;background:var(--bg)">
+          <div class="form-row" style="margin-bottom:8px">
+            <div class="field" style="margin-bottom:0">
+              <label>Categoría</label>
+              <select id="edit-wants-cat" onchange="updateEditWantsSubcat()">
+                <option value="">— Cualquier categoría —</option>
+                <option>Electrónica</option><option>Música</option><option>Deporte</option>
+                <option>Ropa</option><option>Hogar</option><option>Libros</option>
+                <option>Servicios</option><option>Juguetes</option>
+                <option>Cartas</option><option>Juegos de mesa</option><option>Otro</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>Subcategoría</label>
+              <select id="edit-wants-subcat"><option value="">— Selecciona categoría —</option></select>
+            </div>
+          </div>
+          <input id="edit-wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D)" style="width:100%;box-sizing:border-box;margin-bottom:8px">
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary btn-sm" onclick="addEditExchangeOption()">+ Añadir</button>
+          </div>
+        </div>
+        <input type="hidden" id="edit-item-wants">
       </div>
 
       <!-- Precio -->
@@ -4539,11 +4561,14 @@ async function openEditItem(itemId) {
   document.getElementById('edit-item-name').value = data.title || '';
   document.getElementById('edit-item-desc').value = data.description || '';
   document.getElementById('edit-item-price').value = data.estimated_value || '';
-  document.getElementById('edit-item-wants').value = data.wants || '';
-  document.getElementById('edit-item-subtitle').textContent = data.title;
   document.getElementById('edit-item-city').value = data.location || 'Barcelona';
+  document.getElementById('edit-item-subtitle').textContent = data.title;
   document.getElementById('edit-item-error').style.display = 'none';
   editItemNewPhotos = [];
+
+  // Cargar opciones de cambio existentes
+  editExchangeOptions = data.wants ? data.wants.split(',').map(w => w.trim()).filter(Boolean) : [];
+  renderEditExchangeList();
 
   // Fotos existentes
   const preview = document.getElementById('edit-item-photo-preview');
@@ -4607,6 +4632,51 @@ function editImgDrop(e) {
   if (files.length) editImgSelected({ files });
 }
 
+let editExchangeOptions = [];
+
+function updateEditWantsSubcat() {
+  const cat = document.getElementById('edit-wants-cat').value;
+  const sub = document.getElementById('edit-wants-subcat');
+  const opts = PUB_SUBCATS[cat] || [];
+  if (opts.length) {
+    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
+    sub.disabled = false;
+  } else {
+    sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
+    sub.disabled = true;
+  }
+}
+
+function addEditExchangeOption() {
+  const cat = document.getElementById('edit-wants-cat').value;
+  const subcat = document.getElementById('edit-wants-subcat').value;
+  const name = document.getElementById('edit-wants-input').value.trim();
+  const label = name || (subcat ? cat + ' › ' + subcat : cat) || '';
+  if (!label) { showToast('⚠️ Escribe o selecciona qué aceptas'); return; }
+  editExchangeOptions.push(label);
+  renderEditExchangeList();
+  document.getElementById('edit-wants-input').value = '';
+  document.getElementById('edit-wants-cat').value = '';
+  document.getElementById('edit-wants-subcat').innerHTML = '<option value="">— Selecciona categoría —</option>';
+}
+
+function removeEditExchangeOption(idx) {
+  editExchangeOptions.splice(idx, 1);
+  renderEditExchangeList();
+}
+
+function renderEditExchangeList() {
+  const el = document.getElementById('edit-exchange-list');
+  if (!editExchangeOptions.length) { el.innerHTML = ''; return; }
+  el.innerHTML = editExchangeOptions.map((opt, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--accent-l);border-radius:var(--r);font-size:13px;font-weight:600;color:var(--accent)">
+      <span>↔ ${opt}</span>
+      <button onclick="removeEditExchangeOption(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;padding:0 0 0 8px">×</button>
+    </div>`).join('');
+  // Sync hidden input
+  document.getElementById('edit-item-wants').value = editExchangeOptions.join(', ');
+}
+
 function updateEditSubcat() {
   const cat = document.getElementById('edit-item-cat').value;
   const sub = document.getElementById('edit-item-subcat');
@@ -4623,6 +4693,7 @@ function updateEditSubcat() {
 function closeEditItemModal() {
   document.getElementById('edit-item-modal').classList.remove('open');
   editItemNewPhotos = [];
+  editExchangeOptions = [];
 }
 
 function closeEditModal(e) {
