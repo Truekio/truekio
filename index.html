@@ -283,7 +283,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .item-value-tag{position:absolute;bottom:10px;right:10px;background:rgba(26,23,20,.82);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;}
 .item-body{padding:16px 18px;display:flex;flex-direction:column;flex:1;}
 .item-user-row{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
-.item-user-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;}
+.item-user-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;color:#fff;font-weight:700;}
 .item-user-name{font-size:11px;font-weight:600;color:var(--muted);}
 .item-name{font-weight:800;font-size:.98rem;margin-bottom:4px;line-height:1.3;color:var(--text);}
 .item-location{font-size:11px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
@@ -2721,6 +2721,7 @@ async function loadItemsFromSupabase() {
     photos: row.photo_urls && row.photo_urls.length ? row.photo_urls : (row.photos ? [row.photos] : []),
     user: row.user_name || 'Usuario',
     userEmoji: '👤',
+    userAvatar: row.user_avatar || null,
     location: row.location || 'España',
     lat: row.lat || null,
     lng: row.lng || null,
@@ -3261,7 +3262,11 @@ function itemCardHTML(item, isPremiumView=false) {
     </div>
     <div class="item-body">
       <div class="item-user-row">
-        <div class="item-user-avatar" style="background:${userBg};overflow:hidden">${(USER_PHOTOS[item.user]?`<img src="${USER_PHOTOS[item.user]}" style="width:100%;height:100%;object-fit:cover">`:item.userEmoji)}</div>
+        <div class="item-user-avatar" style="background:${userBg};overflow:hidden">${
+  item.userAvatar ? `<img src="${item.userAvatar}" style="width:100%;height:100%;object-fit:cover">` :
+  USER_PHOTOS[item.user] ? `<img src="${USER_PHOTOS[item.user]}" style="width:100%;height:100%;object-fit:cover">` :
+  `<span style="font-size:.7rem;font-weight:700;color:#fff">${(item.user||'?').charAt(0).toUpperCase()}</span>`
+}</div>
         <span class="item-user-name">${item.user}</span>
         <span class="trust-mini ${trustCls}" style="margin-left:2px">${trustLbl}</span>
       </div>
@@ -3541,7 +3546,11 @@ function itemCardHTML(item, isPremiumView=false) {
     </div>
     <div class="item-body">
       <div class="item-user-row">
-        <div class="item-user-avatar" style="background:${userBg};overflow:hidden">${(USER_PHOTOS[item.user]?`<img src="${USER_PHOTOS[item.user]}" style="width:100%;height:100%;object-fit:cover">`:item.userEmoji)}</div>
+        <div class="item-user-avatar" style="background:${userBg};overflow:hidden">${
+  item.userAvatar ? `<img src="${item.userAvatar}" style="width:100%;height:100%;object-fit:cover">` :
+  USER_PHOTOS[item.user] ? `<img src="${USER_PHOTOS[item.user]}" style="width:100%;height:100%;object-fit:cover">` :
+  `<span style="font-size:.7rem;font-weight:700;color:#fff">${(item.user||'?').charAt(0).toUpperCase()}</span>`
+}</div>
         <span class="item-user-name">${item.user}</span>
         <span class="trust-mini ${trustCls}" style="margin-left:2px">${trustLbl}</span>
       </div>
@@ -6391,6 +6400,7 @@ async function publishItem() {
     photo_urls: photoUrls.length ? photoUrls : null,
     user_name: userName,
     user_id: currentUser ? currentUser.id : null,
+    user_avatar: currentUser?.user_metadata?.avatar_url || null,
     location: city,
     lat: parseFloat(document.getElementById('pub-lat').value) || null,
     lng: parseFloat(document.getElementById('pub-lng').value) || null,
