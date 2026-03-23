@@ -4605,6 +4605,7 @@ async function loadMessages(convId) {
 
   el.innerHTML = systemMsg + data.map(m => {
     const isOut = m.sender_id === currentUser.id;
+    console.log('MSG:', m.id, 'sender:', m.sender_id, 'me:', currentUser.id, 'isOut:', isOut);
     const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
     return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
       ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
