@@ -367,9 +367,9 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .bubble{border-radius:16px 16px 16px 4px;padding:10px 14px;font-size:13px;line-height:1.6;box-shadow:var(--sh);}
 .bubble-in{background:var(--white);border:1px solid var(--border);}
 .bubble-out{background:#1a2a3a;color:#fff;border-radius:16px 16px 4px 16px;}
-.msg-delete-btn{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#fee2e2;border:1px solid #fca5a5;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;line-height:1;transition:all .15s;}
+.msg-delete-btn{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#fee2e2;border:1px solid #fca5a5;font-size:11px;cursor:pointer;opacity:0;pointer-events:none;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:opacity .15s;}
 .msg-delete-btn:hover{background:#ef4444;color:#fff;}
-.msg-out:hover .msg-delete-btn,.msg-out:focus-within .msg-delete-btn,.msg-out.show-delete .msg-delete-btn{display:flex;}
+.msg-out:hover .msg-delete-btn,.msg-out.show-delete .msg-delete-btn{opacity:1;pointer-events:auto;}
 .msg-time{font-size:10px;color:var(--muted);margin-top:3px;}
 .chat-input-area{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;background:var(--bg);}
 .chat-textarea{flex:1;background:var(--white);border:1.5px solid var(--border);color:var(--text);font-size:13px;padding:10px 14px;border-radius:12px;outline:none;resize:none;min-height:42px;max-height:100px;line-height:1.5;transition:border-color .18s;}
@@ -4607,7 +4607,7 @@ async function loadMessages(convId) {
   el.innerHTML = systemMsg + data.map(m => {
     const isOut = m.sender_id === currentUser.id;
     const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
-    return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
+    return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}" style="position:relative">
       ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
       <div style="position:relative">
         <div class="bubble ${isOut?'bubble-out':'bubble-in'}">${m.text}</div>
