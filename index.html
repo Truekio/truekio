@@ -2628,6 +2628,16 @@ window._enterApp = function() {
   }
   // Pre-cargar objetos del usuario para el perfil
   if(currentUser) setTimeout(() => loadMyItems(), 300);
+  // Cargar deseos del usuario desde Supabase
+  if (currentUser) {
+    db.from('wishes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length) {
+          wishlist = data.map(w => ({ id: w.id, emoji: w.emoji||'✦', name: w.name, cat: w.cat||'General', addedDate:'Guardado', notify: w.notify !== false, hasMatch:false, hasSupply:false, matchCount:0 }));
+          renderWishlist();
+        }
+      });
+  }
 }
 
 function scrollToHow() {
@@ -6580,47 +6590,44 @@ function renderWishItems() {
   ).join('') + (wishlist.length > 6 ? `<div class="wish-public-item" style="background:var(--bg2);color:var(--muted)">+${wishlist.length-6} más</div>` : '');
 }
 
-function addWishItem() {
+async function addWishItem() {
+  if (!currentUser) { showToast('⚠️ Inicia sesión para guardar deseos'); return; }
   const nameInput = document.getElementById('wish-name-input');
   const catInput = document.getElementById('wish-cat-input');
   const name = nameInput.value.trim();
-  if(!name) { showToast('⚠️ Escribe qué estás buscando'); return; }
-  const rawCat = catInput.value;
+  if (!name) { showToast('⚠️ Escribe qué estás buscando'); return; }
+  const cat = catInput.value || 'General';
   const catEmojis = {Electrónica:'💻',Música:'🎵',Deporte:'⚽',Ropa:'👗',Hogar:'🏠',Libros:'📚',Servicios:'🤝',General:'✦'};
-  const newWish = {
-    id:'w'+Date.now(), emoji: catEmojis[cat]||'✦', name, cat,
-    addedDate:'Ahora mismo', notify:true, hasMatch:false, hasSupply:false, matchCount:0
-  };
-  wishlist.unshift(newWish);
+  const emoji = catEmojis[cat] || '✦';
+
+  if (wishlist.some(w => w.name.toLowerCase() === name.toLowerCase())) {
+    showToast('✦ Ya está en tu lista de deseos'); return;
+  }
+
+  const { data, error } = await db.from('wishes').insert([{
+    user_id: currentUser.id, name, cat, emoji, notify: true,
+  }]).select().single();
+
+  if (error) { showToast('⚠️ Error al guardar: ' + error.message); return; }
+
+  wishlist.unshift({ id: data.id, emoji, name, cat, addedDate: 'Ahora mismo', notify: true, hasMatch: false, hasSupply: false, matchCount: 0 });
   nameInput.value = '';
   catInput.value = '';
   renderWishItems();
   updateWishBadges();
   showToast('✦ Añadido a tu lista · Te avisaremos cuando aparezca');
-  // Simulate finding a match after 2.5s
-  setTimeout(()=>{
-    const found = items.find(i => i.name.toLowerCase().includes(name.toLowerCase().split(' ')[0]) || name.toLowerCase().includes(i.cat.toLowerCase()));
-    if(found) {
-      newWish.hasMatch = true;
-      newWish.matchCount = 1;
-      renderWishItems();
-      updateWishBadges();
-      const alert = {id:'wa'+Date.now(),emoji:newWish.emoji,title:'¡Encontramos algo para "'+name+'"!',
-        desc:found.emoji+' '+found.user+' tiene algo que puede encajar con lo que buscas. ¡Échale un vistazo!',
-        time:'Ahora mismo',unread:true,itemId:found.id,cat:found.cat};
-      wishAlerts.unshift(alert);
-      updateWishBadges();
-      showToast('⚡ ¡Match encontrado para tu deseo "'+name.slice(0,20)+'"!');
-      addNotification('✦','#f5f3ff','Deseo con match','Tu deseo "'+name.slice(0,25)+'..." tiene una oferta disponible.');
-    }
-  }, 2500);
 }
-
-function removeWishItem(id) {
-  wishlist = wishlist.filter(w=>w.id!==id);
+async function removeWishItem(id) {
+  if (!currentUser) return;
+  // Si el id viene de Supabase (uuid) lo borramos; si es local (empieza por 'w') solo del array
+  if (!String(id).startsWith('w')) {
+    const { error } = await db.from('wishes').delete().eq('id', id).eq('user_id', currentUser.id);
+    if (error) { showToast('⚠️ Error al eliminar'); return; }
+  }
+  wishlist = wishlist.filter(w => w.id !== id);
   renderWishItems();
   updateWishBadges();
-  showToast('Deseo eliminado');
+  showToast('🗑 Deseo eliminado');
 }
 
 function toggleWishNotify(id) {
@@ -6631,15 +6638,19 @@ function toggleWishNotify(id) {
   showToast(w.notify ? '🔔 Alertas activadas para "'+w.name.slice(0,20)+'"' : '🔕 Alertas desactivadas');
 }
 
-function addToWishlistFromCard(name, cat, emoji, e) {
+async function addToWishlistFromCard(name, cat, emoji, e) {
   e.stopPropagation();
-  const alreadyIn = wishlist.some(w=>w.name.toLowerCase()===name.toLowerCase());
-  if(alreadyIn) { showToast('✦ Ya está en tu lista de deseos'); return; }
-  const newWish = {id:'w'+Date.now(), emoji, name, cat, addedDate:'Ahora mismo', notify:true, hasMatch:false, hasSupply:false, matchCount:0};
-  wishlist.unshift(newWish);
+  if (!currentUser) { showToast('⚠️ Inicia sesión para guardar deseos'); return; }
+  if (wishlist.some(w => w.name.toLowerCase() === name.toLowerCase())) {
+    showToast('✦ Ya está en tu lista de deseos'); return;
+  }
+  const { data, error } = await db.from('wishes').insert([{
+    user_id: currentUser.id, name, cat, emoji, notify: true,
+  }]).select().single();
+  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+  wishlist.unshift({ id: data.id, emoji, name, cat, addedDate: 'Ahora mismo', notify: true, hasMatch: false, hasSupply: false, matchCount: 0 });
   updateWishBadges();
   showToast('✦ Añadido a lista de deseos — ve a Actividad · Deseos');
-  // Animate the heart button
   const btn = e.currentTarget;
   btn.classList.add('faved');
 }
