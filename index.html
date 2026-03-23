@@ -3910,8 +3910,9 @@ function renderActivityWishlist() {
 }
 
 // ═══ MATCHES (DIRECT) ═══
-async function loadMatches() {
-  if (!currentUser) return;
+window.loadMatches = async function loadMatches() {
+  if (!currentUser) { console.log('loadMatches: no currentUser'); return; }
+  console.log('loadMatches: iniciando...');
 
   // 1. Mis objetos publicados
   const { data: myItems } = await db.from('items').select('*').eq('user_id', currentUser.id);
@@ -4113,7 +4114,8 @@ function renderMatches() {
           <button class="btn btn-primary btn-sm" onclick="navTo('messages')">💬 Contactar</button>
         </div>
       </div>
-    </div>`;\n    }).join('');
+    </div>`;
+    }).join('');
   }
   renderChains();
   renderConfirmations(); // async, fire and forget
