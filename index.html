@@ -3776,8 +3776,8 @@ function switchMatchTab(tab) {
   document.querySelectorAll('.match-tab-content').forEach(el=>el.style.display='none');
   const tabContent = document.getElementById('matches-'+tab);
   if(tabContent) tabContent.style.display='block';
-  // Render wishlist in activity tab
   if(tab === 'wishlist-act') renderActivityWishlist();
+  if(tab === 'confirm') renderConfirmations();
 }
 
 function renderActivityWishlist() {
