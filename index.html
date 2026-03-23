@@ -2591,17 +2591,39 @@ window._enterApp = function() {
   }
 
   navTo('explore');
-  // Recargar explorador ya con currentUser para filtrar los propios
-  setTimeout(async () => {
-    const grid = document.getElementById('explore-grid');
-    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-size:14px">⏳ Cargando objetos...</div>';
-    const fresh = await loadItemsFromSupabase();
-    const demoItems = ITEMS_DATA.map(i => ({...i, _isDemo: true}));
-    items = [...(fresh || []), ...demoItems];
-    const countEl = document.getElementById('items-count');
-    if (countEl) countEl.textContent = items.length + ' objetos disponibles';
-    renderExplore(items);
-  }, 100);
+  // Activar ordenación por cercanía automáticamente si el usuario da permiso
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        sortByDistance = true;
+        const city = getNearestCityName ? getNearestCityName(userCoords.lat, userCoords.lng) : null;
+        const locationBar = document.getElementById('location-bar');
+        const locateLabel = document.getElementById('locate-label');
+        const locateIcon = document.getElementById('locate-icon');
+        if (locationBar) locationBar.style.display = 'flex';
+        if (locateLabel) locateLabel.textContent = 'Cerca de ' + (city || 'ti');
+        if (locateIcon) locateIcon.textContent = '✓';
+        // Recargar explorador con orden por distancia
+        setTimeout(async () => {
+          const fresh = await loadItemsFromSupabase();
+          const demoItems = ITEMS_DATA.map(i => ({...i, _isDemo: true}));
+          // Calcular distancia para items demo usando CITY_COORDS
+          const demoWithDist = demoItems.map(item => ({
+            ...item,
+            _dist: (userCoords && CITY_COORDS && CITY_COORDS[item.location])
+              ? distanceKm(userCoords.lat, userCoords.lng, CITY_COORDS[item.location].lat, CITY_COORDS[item.location].lng)
+              : 9999
+          }));
+          items = [...(fresh || []), ...demoWithDist].sort((a, b) => (a._dist||9999) - (b._dist||9999));
+          const countEl = document.getElementById('items-count');
+          if (countEl) countEl.textContent = items.length + ' objetos disponibles';
+          renderExplore(items);
+        }, 150);
+      },
+      () => {} // Sin permiso, no pasa nada
+    );
+  }
   // Pre-cargar objetos del usuario para el perfil
   if(currentUser) setTimeout(() => loadMyItems(), 300);
 }
@@ -2668,6 +2690,15 @@ function switchAuthTab(tab) {
   document.getElementById('auth-tab-register').style.fontWeight = isLogin ? '500' : '700';
 }
 
+// Distancia en km entre dos coordenadas (fórmula Haversine)
+function distanceKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 async function loadItemsFromSupabase() {
   let query = db.from('items').select('*').order('created_at', { ascending: false });
   if (currentUser) query = query.neq('user_id', currentUser.id);
@@ -2676,8 +2707,7 @@ async function loadItemsFromSupabase() {
     console.error('Error cargando items:', error);
     return null;
   }
-  // Convertir formato Supabase → formato que espera el prototipo
-  return data.map(row => ({
+  let mapped = data.map(row => ({
     id: row.id,
     name: row.title,
     description: row.description,
@@ -2689,10 +2719,24 @@ async function loadItemsFromSupabase() {
     photos: row.photo_urls && row.photo_urls.length ? row.photo_urls : (row.photos ? [row.photos] : []),
     user: row.user_name || 'Usuario',
     userEmoji: '👤',
-    location: 'Barcelona',
+    location: row.location || 'España',
+    lat: row.lat || null,
+    lng: row.lng || null,
     shipping: 'persona',
     verified: false,
   }));
+
+  // Ordenar por cercanía si tenemos coordenadas del usuario
+  if (userCoords) {
+    mapped = mapped.map(item => ({
+      ...item,
+      _dist: (item.lat && item.lng)
+        ? distanceKm(userCoords.lat, userCoords.lng, item.lat, item.lng)
+        : 9999
+    })).sort((a, b) => a._dist - b._dist);
+  }
+
+  return mapped;
 }
 // ═══ DATA ═══
 
@@ -6273,6 +6317,9 @@ async function publishItem() {
     photo_urls: photoUrls.length ? photoUrls : null,
     user_name: userName,
     user_id: currentUser ? currentUser.id : null,
+    location: city,
+    lat: parseFloat(document.getElementById('pub-lat').value) || null,
+    lng: parseFloat(document.getElementById('pub-lng').value) || null,
   };
 
   // Guardar en Supabase
