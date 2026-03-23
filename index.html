@@ -3696,7 +3696,13 @@ async function respondProposal(proposalId, status) {
         }]);
       }
     }
-    showToast('✅ Propuesta aceptada — ya podéis chatear en Mensajes');
+    showToast('✅ Trueque aceptado — abriendo chat...');
+    setTimeout(async () => {
+      navTo('messages');
+      // Buscar la conversación recién creada y abrirla
+      const { data: convs } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
+      if (convs) setTimeout(() => openConv(convs.id), 400);
+    }, 600);
   } else {
     showToast('❌ Propuesta rechazada');
   }
