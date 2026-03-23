@@ -2709,6 +2709,21 @@ async function loadItemsFromSupabase() {
     console.error('Error cargando items:', error);
     return null;
   }
+
+  // Obtener avatares desde la tabla profiles (si existe) o usar user_avatar del item
+  // Construir mapa user_id → avatar_url desde los propios items
+  const avatarMap = {};
+  data.forEach(row => {
+    if (row.user_id && row.user_avatar) avatarMap[row.user_id] = row.user_avatar;
+  });
+
+  // Si hay items sin avatar, intentar cargar desde tabla profiles
+  const missingIds = [...new Set(data.filter(r => r.user_id && !avatarMap[r.user_id]).map(r => r.user_id))];
+  if (missingIds.length) {
+    const { data: profiles } = await db.from('profiles').select('id, avatar_url').in('id', missingIds);
+    if (profiles) profiles.forEach(p => { if (p.avatar_url) avatarMap[p.id] = p.avatar_url; });
+  }
+
   let mapped = data.map(row => ({
     id: row.id,
     name: row.title,
@@ -2721,7 +2736,7 @@ async function loadItemsFromSupabase() {
     photos: row.photo_urls && row.photo_urls.length ? row.photo_urls : (row.photos ? [row.photos] : []),
     user: row.user_name || 'Usuario',
     userEmoji: '👤',
-    userAvatar: row.user_avatar || null,
+    userAvatar: (row.user_id && avatarMap[row.user_id]) || row.user_avatar || null,
     location: row.location || 'España',
     lat: row.lat || null,
     lng: row.lng || null,
@@ -3773,13 +3788,24 @@ async function loadProposals() {
         </div>
       </div>
       ${p.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${p.message}"</div>` : ''}
-      ${isOwner && p.status === 'pending' ? `
-        <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;margin-top:${isOwner && p.status === 'pending' ? '0' : '6px'}">
+        ${isOwner && p.status === 'pending' ? `
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','accepted')">✅ Aceptar</button>
           <button class="btn btn-secondary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','rejected')">❌ Rechazar</button>
-        </div>` : ''}
+        ` : ''}
+        ${!isOwner ? `<button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="deleteProposal('${p.id}')">🗑 Retirar propuesta</button>` : ''}
+      </div>
     </div>`;
   }).join('');
+}
+
+async function deleteProposal(proposalId) {
+  if (!currentUser) return;
+  if (!confirm('¿Retirar esta propuesta?')) return;
+  const { error } = await db.from('proposals').delete().eq('id', proposalId).eq('offerer_id', currentUser.id);
+  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+  showToast('🗑 Propuesta retirada');
+  loadProposals();
 }
 
 async function respondProposal(proposalId, status) {
@@ -5425,6 +5451,9 @@ async function handlePhotoChange(event) {
   currentUser.user_metadata = { ...currentUser.user_metadata, avatar_url: photoUrl };
 
   applyAvatar(photoUrl, currentUser.user_metadata?.name || currentUser.email.split('@')[0]);
+
+  // Actualizar user_avatar en todos los items del usuario
+  await db.from('items').update({ user_avatar: photoUrl }).eq('user_id', currentUser.id);
 
   if (status) { status.textContent = '✓ Foto actualizada'; status.style.color = 'var(--green)'; }
   showToast('✦ Foto de perfil actualizada');
