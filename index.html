@@ -284,11 +284,11 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .item-match-badge{position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
 @keyframes matchPulse{0%,100%{box-shadow:0 2px 8px rgba(78,143,186,.3);}50%{box-shadow:0 2px 16px rgba(78,143,186,.8);}}
 .item-premium-badge{position:absolute;top:8px;right:8px;background:var(--elite-1);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
-.item-verified{position:absolute;bottom:8px;left:8px;background:rgba(255,255,255,.9);color:var(--green);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;}
-.item-value-tag{position:absolute;bottom:8px;right:8px;background:rgba(26,23,20,.78);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;}
+.item-verified{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.9);color:var(--green);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;}
+.item-value-tag{position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,.78);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;}
 
 /* Botón corazón flotante sobre foto */
-.fav-btn{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.fav-btn{position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 .fav-btn:hover{background:#fff;transform:scale(1.1);}
 .fav-btn:hover svg{stroke:var(--accent);}
 .fav-btn.faved svg{stroke:#e53e3e;fill:#e53e3e;}
@@ -3291,9 +3291,8 @@ function itemCardHTML(item, isPremiumView=false) {
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
     <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
-      <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
+      <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
-      ${item.verified ? '<div class="item-verified">✓</div>' : ''}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
       <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
@@ -3557,9 +3556,8 @@ function itemCardHTML(item, isPremiumView=false) {
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
     <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
-      <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
+      <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
-      ${item.verified ? '<div class="item-verified">✓</div>' : ''}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
       <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
