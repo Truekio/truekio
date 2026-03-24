@@ -4844,11 +4844,31 @@ async function openConv(convId) {
   // Recargar lista para marcar activo
   loadConversations();
 
-  // Polling cada 5 segundos para nuevos mensajes
+  // Polling dinámico cada 3 segundos — solo añade mensajes nuevos
   if (msgPollingInterval) clearInterval(msgPollingInterval);
   msgPollingInterval = setInterval(() => {
-    if (activeConvId === convId) loadMessages(convId);
-  }, 5000);
+    if (activeConvId === convId) pollNewMessages(convId);
+  }, 3000);
+}
+
+// IDs de mensajes ya renderizados para no volver a pintarlos
+let _renderedMsgIds = new Set();
+// Último timestamp de mensaje visto (para polling incremental)
+let _lastMsgTimestamp = null;
+
+function _buildMsgHtml(m, otherName, bg) {
+  const isOut = m.sender_id === currentUser.id;
+  const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+  return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
+    ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
+    <div>
+      ${isOut ? `<div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
+        <button onclick="deleteMessage('${m.id}')" class="msg-delete-btn" title="Eliminar">🗑</button>
+        <div class="bubble bubble-out">${m.text}</div>
+      </div>` : `<div class="bubble bubble-in">${m.text}</div>`}
+      <div class="msg-time" style="text-align:${isOut?'right':'left'}">${time}</div>
+    </div>
+  </div>`;
 }
 
 async function loadMessages(convId) {
@@ -4868,36 +4888,96 @@ async function loadMessages(convId) {
   const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
 
-  // Mensaje inicial del sistema
   const systemMsg = `
-    <div style="text-align:center;padding:16px 20px;margin-bottom:8px">
+    <div id="chat-system-msg" style="text-align:center;padding:16px 20px;margin-bottom:8px">
       <div style="display:inline-block;background:var(--green-l);color:var(--green);font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px">
         🤝 Trueque aceptado — coordinad el punto de encuentro
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${conv ? conv.item1_title + ' ↔ ' + conv.item2_title : ''}</div>
     </div>`;
 
+  _renderedMsgIds = new Set();
+  _lastMsgTimestamp = null;
+
   if (!data || !data.length) {
-    el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
+    el.innerHTML = systemMsg + '<div id="chat-empty-hint" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
     return;
   }
 
   el.innerHTML = systemMsg + data.map(m => {
-    const isOut = m.sender_id === currentUser.id;
-    const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
-    return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
-      ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
-      <div>
-        ${isOut ? `<div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
-          <button onclick="deleteMessage('${m.id}')" class="msg-delete-btn" title="Eliminar">🗑</button>
-          <div class="bubble bubble-out">${m.text}</div>
-        </div>` : `<div class="bubble bubble-in">${m.text}</div>`}
-        <div class="msg-time" style="text-align:${isOut?'right':'left'}">${time}</div>
-      </div>
-    </div>`;
+    _renderedMsgIds.add(m.id);
+    return _buildMsgHtml(m, otherName, bg);
   }).join('');
 
+  // Guardar el timestamp del último mensaje
+  if (data.length) _lastMsgTimestamp = data[data.length - 1].created_at;
+
   scrollMsgs();
+}
+
+// ── Polling incremental: solo añade mensajes nuevos al DOM ──
+async function pollNewMessages(convId) {
+  if (!currentUser || !activeConvData) return;
+  const el = document.getElementById('chat-msgs');
+  if (!el) return;
+
+  let query = db.from('messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+  if (_lastMsgTimestamp) query = query.gt('created_at', _lastMsgTimestamp);
+
+  const { data } = await query;
+  if (!data || !data.length) return;
+
+  const newMsgs = data.filter(m => !_renderedMsgIds.has(m.id));
+  if (!newMsgs.length) return;
+
+  const conv = activeConvData;
+  const isUser1 = conv.user1_id === currentUser.id;
+  const otherName = isUser1 ? conv.user2_name : conv.user1_name;
+  const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
+
+  const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  const hasIncoming = newMsgs.some(m => m.sender_id !== currentUser.id);
+
+  const hint = document.getElementById('chat-empty-hint');
+  if (hint) hint.remove();
+
+  newMsgs.forEach(m => {
+    _renderedMsgIds.add(m.id);
+    const div = document.createElement('div');
+    div.innerHTML = _buildMsgHtml(m, otherName, bg);
+    el.appendChild(div.firstElementChild);
+  });
+
+  _lastMsgTimestamp = newMsgs[newMsgs.length - 1].created_at;
+
+  if (isAtBottom) {
+    scrollMsgs();
+  } else if (hasIncoming) {
+    showNewMsgPill(el, otherName);
+  }
+
+  loadConversations();
+
+  if (hasIncoming && document.visibilityState === 'visible') {
+    playNotifSound();
+  }
+}
+
+function showNewMsgPill(container, senderName) {
+  if (document.getElementById('new-msg-pill')) return;
+  const pill = document.createElement('button');
+  pill.id = 'new-msg-pill';
+  pill.innerHTML = `↓ Nuevo mensaje de ${senderName}`;
+  pill.style.cssText = `position:sticky;bottom:8px;left:50%;transform:translateX(-50%);display:block;margin:0 auto;background:#1a2a3a;color:#fff;border:none;padding:8px 20px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);font-family:'Plus Jakarta Sans',sans-serif;animation:toastIn .22s ease both;z-index:10;white-space:nowrap;`;
+  pill.onclick = () => { scrollMsgs(); pill.remove(); };
+  container.appendChild(pill);
+  const onScroll = () => {
+    if (container.scrollHeight - container.scrollTop - container.clientHeight < 60) {
+      pill.remove();
+      container.removeEventListener('scroll', onScroll);
+    }
+  };
+  container.addEventListener('scroll', onScroll);
 }
 
 async function deleteMessage(msgId) {
@@ -4939,22 +5019,41 @@ async function sendMessage() {
 
   const senderName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
 
-  const { error } = await db.from('messages').insert([{
+  const { data: insertedRows, error } = await db.from('messages').insert([{
     conversation_id: activeConvId,
     sender_id: currentUser.id,
     sender_name: senderName,
     text,
-  }]);
+  }]).select();
 
-  if (error) { showToast('⚠️ Error al enviar'); return; }
+  if (error) { showToast('⚠️ Error al enviar'); input.value = text; return; }
 
-  // Actualizar last_message
-  await db.from('conversations').update({
+  // Actualizar last_message en background
+  db.from('conversations').update({
     last_message: text,
     last_message_at: new Date().toISOString(),
   }).eq('id', activeConvId);
 
-  loadMessages(activeConvId);
+  // Añadir el mensaje al DOM de forma instantánea (sin recargar nada)
+  const el = document.getElementById('chat-msgs');
+  if (el && insertedRows && insertedRows.length) {
+    const hint = document.getElementById('chat-empty-hint');
+    if (hint) hint.remove();
+    const conv = activeConvData;
+    const isUser1 = conv && conv.user1_id === currentUser.id;
+    const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
+    const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
+    const newMsg = insertedRows[0];
+    if (!_renderedMsgIds.has(newMsg.id)) {
+      _renderedMsgIds.add(newMsg.id);
+      _lastMsgTimestamp = newMsg.created_at;
+      const div = document.createElement('div');
+      div.innerHTML = _buildMsgHtml(newMsg, otherName, bg);
+      el.appendChild(div.firstElementChild);
+      scrollMsgs();
+    }
+  }
+
   loadConversations();
 }
 
