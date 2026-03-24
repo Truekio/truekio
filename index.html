@@ -2936,11 +2936,7 @@ const CONVS_DATA = [
   ]},
 ];
 
-const REVIEWS_DATA = [
-  {user:'Pedro V.',userEmoji:'🧔',stars:5,text:'Alex es excelente. Muy bien embalado, comunicación perfecta y entrega rápida. 100% recomendable.',date:'Hace 2 días'},
-  {user:'Laura G.',userEmoji:'👩‍🎨',stars:5,text:'Trueque muy ágil. El objeto estaba exactamente como describió. ¡Repetiría sin dudar!',date:'Hace 1 semana'},
-  {user:'María S.',userEmoji:'👩‍🦱',stars:4,text:'Todo correcto, muy amable. El objeto en perfecto estado como lo describió.',date:'Hace 2 semanas'},
-];
+const REVIEWS_DATA = []; // Se rellena desde Supabase en loadReviews()
 
 const CATS = ['Todos','Electrónica','Música','Deporte','Ropa','Hogar','Libros','Servicios'];
 const CAT_ICONS = {Todos:'✦',Electrónica:'📱',Música:'🎵',Deporte:'⚽',Ropa:'👗',Hogar:'🏠',Libros:'📚',Servicios:'🤝'};
@@ -5266,27 +5262,30 @@ function renderProfile() {
       </div>`).join('')}
     </div>`;
 
-  // Reviews — mezcla reales + demo
-  const allReviews = REVIEWS_DATA.length > 0 ? REVIEWS_DATA : [
-    {user:'Carmen R.',userEmoji:'👩‍💻',stars:5,text:'Muy buen trato y el objeto en perfectas condiciones. Responde rápido y es muy flexible con los tiempos.',date:'Hace 3 semanas',q1:'Sí, exactamente como describió',q2:'Excelente',q3:'100%'},
-    {user:'Luis P.',userEmoji:'🎵',stars:5,text:'Trueque impecable. El iPhone llegó perfecto, sin un arañazo. Repetiría sin dudar.',date:'Hace 1 mes',q1:'Sí, exactamente como describió',q2:'Muy buena',q3:'100%'},
-  ];
-  const avgStars = allReviews.length ? (allReviews.reduce((s,r)=>s+r.stars,0)/allReviews.length).toFixed(1) : '4.9';
-  document.getElementById('reviews-list').innerHTML = `
+  // Reviews — solo reales
+  const allReviews = REVIEWS_DATA.filter(r => r.fromSupabase);
+  const avgStars = allReviews.length ? (allReviews.reduce((s,r)=>s+r.stars,0)/allReviews.length).toFixed(1) : null;
+  document.getElementById('reviews-list').innerHTML = allReviews.length === 0
+    ? `<div style="text-align:center;padding:50px 20px;color:var(--muted)">
+        <div style="font-size:2.5rem;margin-bottom:12px">⭐</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:6px;color:var(--text)">Aún no tienes valoraciones</div>
+        <div style="font-size:13px;line-height:1.6">Completa tu primer trueque para recibir la primera valoración de la comunidad.</div>
+      </div>`
+    : `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:16px 20px;background:var(--bg2);border-radius:var(--r-lg);flex-wrap:wrap">
       <div style="text-align:center;flex-shrink:0">
         <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:2.8rem;line-height:1">${avgStars}</div>
         <div style="color:var(--gold);font-size:1rem;margin:4px 0">${'⭐'.repeat(Math.round(parseFloat(avgStars)))}</div>
-        <div style="font-size:11px;color:var(--muted)">${allReviews.length} valoraciones</div>
+        <div style="font-size:11px;color:var(--muted)">${allReviews.length} valoracion${allReviews.length!==1?'es':''}</div>
       </div>
       <div style="flex:1;min-width:160px">
         ${[5,4,3,2,1].map(n=>{
           const cnt = allReviews.filter(r=>r.stars===n).length;
-          const pct = Math.round((cnt/allReviews.length)*100);
+          const pct = allReviews.length ? Math.round((cnt/allReviews.length)*100) : 0;
           return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
             <span style="font-size:11px;color:var(--muted);width:12px">${n}</span>
             <div style="flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--gold);border-radius:99px"></div></div>
-            <span style="font-size:11px;color:var(--muted);width:28px">${cnt}</span>
+            <span style="font-size:11px;color:var(--muted);width:24px">${cnt}</span>
           </div>`;
         }).join('')}
       </div>
@@ -5294,19 +5293,14 @@ function renderProfile() {
     ${allReviews.map(r=>`
     <div class="card review-card">
       <div class="review-head">
-        <div class="review-avatar" style="background:linear-gradient(135deg,hsl(${strHash(r.user)%360},55%,70%),hsl(${strHash(r.user+'y')%360},55%,60%))">${r.userEmoji}</div>
+        <div class="review-avatar" style="background:linear-gradient(135deg,hsl(${strHash(r.user)%360},55%,70%),hsl(${strHash(r.user+'y')%360},55%,60%))">👤</div>
         <div style="flex:1">
-          <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px">${r.user} <span class="trust-mini ${getTrustClass(r.user)}">${getTrustLabel(r.user)}</span></div>
+          <div style="font-weight:700;font-size:13px">${r.user}</div>
           <div style="font-size:11px;color:var(--muted)">${r.date}</div>
         </div>
         <div style="color:var(--gold);font-size:14px">${'⭐'.repeat(r.stars)}</div>
       </div>
-      <div class="review-text">${r.text}</div>
-      ${r.q1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
-        <span style="font-size:10px;background:var(--green-l);color:#166534;padding:3px 8px;border-radius:99px;font-weight:600">📦 ${r.q1}</span>
-        <span style="font-size:10px;background:var(--blue-l);color:#1e40af;padding:3px 8px;border-radius:99px;font-weight:600">💬 Comunicación: ${r.q2}</span>
-        <span style="font-size:10px;background:var(--accent-l);color:var(--accent);padding:3px 8px;border-radius:99px;font-weight:600">👍 Recomendaría: ${r.q3}</span>
-      </div>` : ''}
+      ${r.text ? `<div class="review-text">${r.text}</div>` : ''}
     </div>`).join('')}`;
 
   document.getElementById('reviews-badge').textContent = allReviews.length;
@@ -5720,122 +5714,52 @@ let reviewAnswers = {};
 let activeReviewCfId = null;
 
 function openReviewModal(cfId) {
-  // Funciona con convId de Supabase o con id del array local de demo
   const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===cfId) : null;
   activeReviewCfId = cfId;
-  reviewStep = 0;
   reviewAnswers = {};
-  renderReviewStep(cf || { user: 'el otro usuario', userEmoji: '👤', myItem: {emoji:'📦', name:'Tu objeto'}, theirItem: {emoji:'📦', name:'Su objeto'} });
-  document.getElementById('review-modal-overlay').classList.add('open');
-}
 
-function renderReviewStep(cf) {
-  const steps = [
-    {
-      id:'accuracy',
-      title:'📦 ¿El objeto era como se describía?',
-      options:['Sí, exactamente como describió','Sí, con pequeñas diferencias','No del todo','No, era diferente a lo descrito'],
-    },
-    {
-      id:'communication',
-      title:'💬 ¿Cómo fue la comunicación?',
-      options:['Excelente — respondió rápido y claro','Muy buena','Normal','Mejorable'],
-    },
-    {
-      id:'recommend',
-      title:'👍 ¿Recomendarías a este usuario?',
-      options:['100% — sin duda','Sí, probablemente','No estoy seguro/a','No lo recomendaría'],
-    },
-    {
-      id:'stars',
-      title:'⭐ Puntuación global',
-      type:'stars',
-    },
-    {
-      id:'comment',
-      title:'✍️ Comentario (opcional)',
-      type:'text',
-    },
-  ];
+  const otherName = cf?.user || 'el otro usuario';
+  const theirEmoji = cf?.theirItem?.emoji || '📦';
+  const theirName = cf?.theirItem?.name || 'Su objeto';
 
-  const step = steps[reviewStep];
-  const total = steps.length;
-  const progress = steps.map((_,i)=>`<div class="review-progress-dot ${i<reviewStep?'done':i===reviewStep?'active':''}"></div>`).join('');
-
-  let body = `
+  document.getElementById('review-modal-body').innerHTML = `
     <div class="review-modal-header">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:2rem">${cf.theirItem.emoji}</div>
+        <div style="font-size:2rem">${theirEmoji}</div>
         <div>
-          <div style="font-weight:700;font-size:.9rem">${cf.theirItem.name}</div>
-          <div style="font-size:12px;color:#166534">${cf.userEmoji} Trueque con ${cf.user}</div>
+          <div style="font-weight:700;font-size:.9rem">${theirName}</div>
+          <div style="font-size:12px;color:#166534">Trueque con ${otherName}</div>
         </div>
       </div>
     </div>
-    <div class="review-progress">${progress}</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Paso ${reviewStep+1} de ${total}</div>
+    <div class="review-question" style="margin-bottom:20px">
+      <div class="review-question-title">⭐ ¿Cómo valorarías este trueque?</div>
+      <div class="review-star-row" id="review-stars" style="gap:10px">
+        ${[1,2,3,4,5].map(n=>`<span class="review-star" onclick="setReviewStars(${n})" style="font-size:2.2rem;cursor:pointer;filter:grayscale(1);transition:all .15s">⭐</span>`).join('')}
+      </div>
+    </div>
     <div class="review-question">
-      <div class="review-question-title">${step.title}</div>`;
-
-  if(step.type === 'stars') {
-    body += `<div class="review-star-row" id="review-stars">
-      ${[1,2,3,4,5].map(n=>`<span class="review-star ${(reviewAnswers.stars||0)>=n?'lit':''}" onclick="setReviewStars(${n})">⭐</span>`).join('')}
-    </div>`;
-  } else if(step.type === 'text') {
-    body += `<textarea id="review-comment-text" placeholder="Cuéntanos tu experiencia con este trueque..." style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;resize:vertical;min-height:90px;transition:border-color .18s">${reviewAnswers.comment||''}</textarea>`;
-  } else {
-    body += `<div class="review-options">${step.options.map(opt=>`
-      <div class="review-opt ${reviewAnswers[step.id]===opt?'selected':''}" onclick="selectReviewOpt('${step.id}','${opt}',this)">${opt}</div>`).join('')}
-    </div>`;
-  }
-
-  body += `</div>
-    <div style="display:flex;gap:10px;margin-top:4px">
-      ${reviewStep > 0 ? `<button class="btn btn-secondary btn-md" style="min-width:80px" onclick="reviewBack()">← Atrás</button>` : '<div></div>'}
-      <button class="btn btn-primary btn-md" style="flex:1" onclick="reviewNext('${step.id}','${step.type||''}')">
-        ${reviewStep < total-1 ? 'Siguiente →' : '✅ Enviar valoración'}
-      </button>
+      <div class="review-question-title">✍️ Comentario <span style="font-weight:400;color:var(--muted)">(opcional)</span></div>
+      <textarea id="review-comment-text" placeholder="Cuéntanos tu experiencia..." style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;resize:vertical;min-height:80px;font-family:inherit;transition:border-color .18s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-secondary btn-md" style="min-width:80px" onclick="closeReviewModal()">Cancelar</button>
+      <button class="btn btn-primary btn-md" style="flex:1" onclick="submitReview()">✅ Enviar valoración</button>
     </div>`;
 
-  document.getElementById('review-modal-body').innerHTML = body;
-}
-
-function selectReviewOpt(stepId, value, el) {
-  reviewAnswers[stepId] = value;
-  document.querySelectorAll('.review-opt').forEach(o=>o.classList.remove('selected'));
-  el.classList.add('selected');
-}
-function setReviewStars(n) {
-  reviewAnswers.stars = n;
-  document.querySelectorAll('.review-star').forEach((s,i)=>s.classList.toggle('lit',i<n));
-}
-function reviewBack() {
-  reviewStep = Math.max(0, reviewStep-1);
-  const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===activeReviewCfId) : null;
-  renderReviewStep(cf || { user:'el otro usuario', userEmoji:'👤', myItem:{emoji:'📦',name:'Tu objeto'}, theirItem:{emoji:'📦',name:'Su objeto'} });
-}
-function reviewNext(stepId, type) {
-  if(type==='text') reviewAnswers.comment = document.getElementById('review-comment-text')?.value || '';
-  const steps = ['accuracy','communication','recommend','stars','comment'];
-  if(reviewStep < steps.length-1) {
-    reviewStep++;
-    const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===activeReviewCfId) : null;
-    renderReviewStep(cf || { user:'el otro usuario', userEmoji:'👤', myItem:{emoji:'📦',name:'Tu objeto'}, theirItem:{emoji:'📦',name:'Su objeto'} });
-  } else {
-    submitReview();
-  }
+  document.getElementById('review-modal-overlay').classList.add('open');
 }
 async function submitReview() {
   if (!currentUser) { showToast('⚠️ Debes iniciar sesión'); return; }
 
-  const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===activeReviewCfId) : null;
-  const stars = reviewAnswers.stars || 5;
+  const stars = reviewAnswers.stars || 0;
+  if (!stars) { showToast('⭐ Selecciona una puntuación'); return; }
 
-  // Determinar el ID del usuario valorado
+  const comment = document.getElementById('review-comment-text')?.value?.trim() || '';
+
   let reviewedUserId = null;
-  let reviewedUserName = cf?.user || 'Usuario';
-  if (activeReviewCfId && cf == null) {
-    // Buscar la conversación en Supabase para obtener el otro usuario
+  let reviewedUserName = 'Usuario';
+  if (activeReviewCfId) {
     const { data: conv } = await db.from('conversations').select('user1_id,user2_id,user1_name,user2_name').eq('id', activeReviewCfId).single();
     if (conv) {
       const isUser1 = conv.user1_id === currentUser.id;
@@ -5844,7 +5768,6 @@ async function submitReview() {
     }
   }
 
-  // Guardar en Supabase
   const { error } = await db.from('reviews').insert([{
     conversation_id: activeReviewCfId,
     reviewer_id: currentUser.id,
@@ -5852,26 +5775,10 @@ async function submitReview() {
     reviewed_user_id: reviewedUserId,
     reviewed_user_name: reviewedUserName,
     stars,
-    comment: reviewAnswers.comment || '',
-    q_accuracy: reviewAnswers.accuracy || '',
-    q_communication: reviewAnswers.communication || '',
-    q_recommend: reviewAnswers.recommend || '',
+    comment,
   }]);
 
-  if (error) {
-    // Si la tabla no existe aún, guardamos localmente de todas formas
-    console.warn('Reviews table error:', error.message);
-  }
-
-  // Actualizar array local también para reflejo inmediato
-  const newReview = {
-    user: reviewedUserName, userEmoji: '👤',
-    stars, text: reviewAnswers.comment || '',
-    date: 'Ahora mismo',
-    q1: reviewAnswers.accuracy || '', q2: reviewAnswers.communication || '', q3: reviewAnswers.recommend || '',
-    fromSupabase: true,
-  };
-  REVIEWS_DATA.unshift(newReview);
+  if (error) console.warn('Reviews table error:', error.message);
 
   myTrustScore = Math.min(100, myTrustScore + 3);
   myCompletedTrades++;
@@ -5879,9 +5786,8 @@ async function submitReview() {
 
   closeReviewModal();
   showToast('⭐ ¡Valoración enviada! +3 puntos de confianza');
-  addNotification('⭐','#fef9c3','Valoración enviada','Gracias. Tu puntuación de confianza sube a '+myTrustScore+'.');
+  addNotification('⭐','#fef9c3','Valoración enviada','Tu puntuación de confianza sube a '+myTrustScore+'.');
 
-  // Recargar reviews reales y navegar al perfil
   await loadReviews();
   renderProfile();
   switchPTab('reviews');
@@ -5897,41 +5803,33 @@ async function loadReviews() {
     .eq('reviewed_user_id', currentUser.id)
     .order('created_at', { ascending: false });
 
-  if (error || !data || !data.length) return;
+  // Limpiar REVIEWS_DATA y rellenar solo con reales
+  REVIEWS_DATA.length = 0;
 
-  // Reemplazar REVIEWS_DATA con los datos reales
-  const realReviews = data.map(r => ({
+  if (error || !data || !data.length) {
+    const trustReviewCount = document.getElementById('trust-review-count');
+    if (trustReviewCount) trustReviewCount.textContent = '0';
+    const reviewsBadge = document.getElementById('reviews-badge');
+    if (reviewsBadge) reviewsBadge.textContent = '0';
+    return;
+  }
+
+  data.forEach(r => REVIEWS_DATA.push({
     user: r.reviewer_name || 'Usuario',
     userEmoji: '👤',
     stars: r.stars || 5,
     text: r.comment || '',
     date: new Date(r.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }),
-    q1: r.q_accuracy || '',
-    q2: r.q_communication || '',
-    q3: r.q_recommend || '',
     fromSupabase: true,
   }));
 
-  // Sustituir solo los de Supabase, mantener los demo si no hay ninguno real
-  if (realReviews.length > 0) {
-    // Quitar los anteriores de Supabase y añadir los nuevos
-    const demoOnes = REVIEWS_DATA.filter(r => !r.fromSupabase);
-    REVIEWS_DATA.length = 0;
-    realReviews.forEach(r => REVIEWS_DATA.push(r));
-    // Si solo hay 1-2 reviews reales, añadir algunos demo para no mostrar perfil vacío
-    if (realReviews.length < 3) demoOnes.slice(0, 3 - realReviews.length).forEach(r => REVIEWS_DATA.push(r));
-  }
-
-  // Calcular media real de estrellas
-  const avg = realReviews.length
-    ? (realReviews.reduce((s, r) => s + r.stars, 0) / realReviews.length).toFixed(1)
-    : '4.9';
+  const avg = (data.reduce((s,r) => s + r.stars, 0) / data.length).toFixed(1);
   const trustRating = document.getElementById('trust-rating');
   if (trustRating) trustRating.textContent = avg;
   const trustReviewCount = document.getElementById('trust-review-count');
-  if (trustReviewCount) trustReviewCount.textContent = realReviews.length;
+  if (trustReviewCount) trustReviewCount.textContent = data.length;
   const reviewsBadge = document.getElementById('reviews-badge');
-  if (reviewsBadge) reviewsBadge.textContent = realReviews.length;
+  if (reviewsBadge) reviewsBadge.textContent = data.length;
 }
 function closeReviewModal() { document.getElementById('review-modal-overlay').classList.remove('open'); }
 function closeReviewModalBg(e) { if(e.target===document.getElementById('review-modal-overlay')) closeReviewModal(); }
