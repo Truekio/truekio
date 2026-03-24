@@ -2274,14 +2274,18 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="card profile-header-card" style="padding:0 28px 0;margin-bottom:20px">
       <div class="ptabs" style="border-top:none;padding-top:0;margin-top:0">
         <button class="ptab active" id="ptab-btn-items" onclick="switchPTab('items')">Mis objetos</button>
+        <button class="ptab" id="ptab-btn-favs" onclick="switchPTab('favs')">❤️ Favoritos</button>
         <button class="ptab" id="ptab-btn-done" onclick="switchPTab('done')">Completados</button>
-        <button class="ptab" id="ptab-btn-reviews" onclick="switchPTab('reviews')">Valoraciones <span style="font-size:10px;font-weight:800;background:var(--accent-l);color:var(--accent);padding:2px 6px;border-radius:99px;margin-left:3px" id="reviews-badge">15</span></button>
+        <button class="ptab" id="ptab-btn-reviews" onclick="switchPTab('reviews')">Valoraciones <span style="font-size:10px;font-weight:800;background:var(--accent-l);color:var(--accent);padding:2px 6px;border-radius:99px;margin-left:3px" id="reviews-badge">0</span></button>
         <button class="ptab" id="ptab-btn-config" onclick="switchPTab('config')">Configuración</button>
       </div>
     </div>
 
     <div class="ptab-content active" id="ptab-items">
       <div class="my-items-grid" id="my-items-grid"></div>
+    </div>
+    <div class="ptab-content" id="ptab-favs">
+      <div id="favs-grid"></div>
     </div>
     <div class="ptab-content" id="ptab-done">
       <div id="done-grid"></div>
@@ -2675,6 +2679,8 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadReviews(), 400);
   // Cargar stats reales del perfil (trueques, ahorro, puntuación)
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
+  // Cargar favoritos
+  if(currentUser) setTimeout(() => loadFavorites(), 300);
   // Cargar deseos del usuario desde Supabase
   if (currentUser) {
     db.from('wishes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
@@ -3013,6 +3019,38 @@ let matches = [];
 let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.otherAccepted]}));
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
+let favorites = []; // IDs de items guardados como favoritos
+
+// ── Favoritos ──
+async function loadFavorites() {
+  if (!currentUser) return;
+  const { data } = await db.from('favorites').select('item_id').eq('user_id', currentUser.id);
+  if (data) favorites = data.map(r => String(r.item_id));
+}
+
+async function toggleFavorite(itemId, itemName, e) {
+  e.stopPropagation();
+  if (!currentUser) { showToast('⚠️ Inicia sesión para guardar favoritos'); return; }
+  const btn = e.currentTarget;
+  const id = String(itemId);
+  const isFaved = favorites.includes(id);
+
+  if (isFaved) {
+    // Quitar favorito
+    favorites = favorites.filter(f => f !== id);
+    btn.classList.remove('faved');
+    await db.from('favorites').delete().eq('user_id', currentUser.id).eq('item_id', id);
+    showToast('Eliminado de favoritos');
+  } else {
+    // Añadir favorito
+    favorites.push(id);
+    btn.classList.add('faved');
+    const svg = btn.querySelector('svg');
+    if (svg) { svg.style.transform = 'scale(1.4)'; setTimeout(() => svg.style.transform = '', 200); }
+    await db.from('favorites').insert([{ user_id: currentUser.id, item_id: id, item_name: itemName }]);
+    showToast('❤️ Guardado en favoritos');
+  }
+}
 let wishAlerts = [];
 let convs = CONVS_DATA.map(c=>({...c,messages:[...c.messages]}));
 let myItems = [
@@ -3332,7 +3370,6 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const isInWishlist = wishlist.some(w => w.name.toLowerCase() === item.name.toLowerCase());
   const topBadge = isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
     : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
@@ -3344,7 +3381,7 @@ function itemCardHTML(item, isPremiumView=false) {
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
-      <button class="${isInWishlist ? 'fav-btn faved' : 'fav-btn'}" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
@@ -3599,7 +3636,6 @@ function itemCardHTML(item, isPremiumView=false) {
   : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
-  const isInWishlist = wishlist.some(w => w.name.toLowerCase() === item.name.toLowerCase());
 
   const topBadge = isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
@@ -3612,7 +3648,7 @@ function itemCardHTML(item, isPremiumView=false) {
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
-      <button class="${isInWishlist ? 'fav-btn faved' : 'fav-btn'}" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
@@ -5750,12 +5786,44 @@ async function deleteItem(itemId, btnEl) {
 }
 
 function switchPTab(tab) {
-  ['items','done','reviews','config'].forEach(t => {
+  ['items','favs','done','reviews','config'].forEach(t => {
     const btn = document.getElementById('ptab-btn-'+t);
     const content = document.getElementById('ptab-'+t);
     if(btn) btn.classList.toggle('active', t===tab);
     if(content) content.classList.toggle('active', t===tab);
   });
+  if (tab === 'favs') renderFavorites();
+}
+
+async function renderFavorites() {
+  const grid = document.getElementById('favs-grid');
+  if (!grid) return;
+  if (!currentUser) {
+    grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Inicia sesión para ver tus favoritos.</div>';
+    return;
+  }
+  if (favorites.length === 0) {
+    grid.innerHTML = `<div style="padding:50px 20px;text-align:center;color:var(--muted)">
+      <div style="font-size:2.5rem;margin-bottom:12px">❤️</div>
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:6px;color:var(--text)">Sin favoritos todavía</div>
+      <div style="font-size:13px;line-height:1.6">Pulsa el ❤️ en cualquier objeto del explorador para guardarlo aquí.</div>
+    </div>`;
+    return;
+  }
+  // Cargar los items favoritos desde Supabase
+  const { data } = await db.from('favorites')
+    .select('item_id, item_name, created_at')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  if (!data || !data.length) { grid.innerHTML = ''; return; }
+
+  // Buscar en el array local de items
+  const favItems = data.map(f => {
+    const found = items.find(i => String(i.id) === String(f.item_id));
+    return found || { id: f.item_id, name: f.item_name, emoji: '📦', cat: '—', location: '—', wants: [], _placeholder: true };
+  });
+
+  grid.innerHTML = `<div class="items-grid">${favItems.map(i => itemCardHTML(i)).join('')}</div>`;
 }
 
 // ── Actualiza todos los avatares de la UI con foto o inicial
