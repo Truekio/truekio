@@ -590,34 +590,33 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .wish-empty{text-align:center;padding:50px 20px;color:var(--muted);}
 .wish-empty-icon{font-size:3rem;margin-bottom:12px;}
 
-/* ── TRUST PASSPORT ── */
-.trust-passport{background:linear-gradient(160deg,#0f1f33 0%,#231408 50%,#0f1f33 100%);border-radius:var(--r-lg);padding:0;overflow:hidden;margin-bottom:20px;box-shadow:var(--sh-xl);}
+.trust-passport{background:linear-gradient(150deg,#1a2f45 0%,#0f1e2e 55%,#162640 100%);border-radius:var(--r-lg);padding:0;overflow:hidden;margin-bottom:20px;box-shadow:0 8px 32px rgba(15,30,46,.35),0 2px 8px rgba(78,143,186,.12);}
 .trust-passport-top{padding:24px 28px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}
 .trust-avatar-wrap{position:relative;flex-shrink:0;}
-.trust-avatar{width:80px;height:80px;border-radius:var(--r);background:linear-gradient(135deg,#e8957a,var(--accent));display:flex;align-items:center;justify-content:center;font-size:2.2rem;border:3px solid rgba(255,255,255,.15);}
+.trust-avatar{width:80px;height:80px;border-radius:var(--r);background:linear-gradient(135deg,var(--accent-mid),var(--accent-h));display:flex;align-items:center;justify-content:center;font-size:2.2rem;border:3px solid rgba(78,143,186,.3);}
 .trust-level-badge{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;letter-spacing:.04em;}
-.trust-level-nuevo{background:#6b7280;color:#fff;}
-.trust-level-fiable{background:var(--blue);color:#fff;}
-.trust-level-veterano{background:#8b5cf6;color:#fff;}
-.trust-level-elite{background:linear-gradient(90deg,#f59e0b,#ef4444);color:#fff;}
+.trust-level-nuevo{background:#475569;color:#fff;}
+.trust-level-fiable{background:var(--accent);color:#fff;}
+.trust-level-veterano{background:#7c3aed;color:#fff;}
+.trust-level-elite{background:linear-gradient(90deg,#d97706,#b45309);color:#fff;}
 .trust-info{flex:1;min-width:0;}
 .trust-name{font-family:'Playfair Display',serif;font-weight:700;font-size:1.4rem;color:#fff;margin-bottom:3px;}
 .trust-meta{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;}
 .trust-score-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 .trust-score-big{font-family:'Playfair Display',serif;font-weight:800;font-size:2.8rem;color:#fff;line-height:1;}
-.trust-score-label{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;margin-top:2px;}
+.trust-score-label{font-size:11px;color:rgba(255,255,255,.45);font-weight:600;margin-top:2px;}
 .trust-stars{font-size:1rem;letter-spacing:2px;}
-.trust-divider{height:1px;background:rgba(255,255,255,.08);margin:0 28px;}
+.trust-divider{height:1px;background:rgba(78,143,186,.18);margin:0 28px;}
 .trust-metrics{display:grid;grid-template-columns:repeat(4,1fr);padding:18px 28px;gap:0;}
-.trust-metric{text-align:center;padding:10px 0;border-right:1px solid rgba(255,255,255,.08);}
+.trust-metric{text-align:center;padding:10px 0;border-right:1px solid rgba(78,143,186,.15);}
 .trust-metric:last-child{border-right:none;}
 .trust-metric-n{font-family:'Playfair Display',serif;font-weight:700;font-size:1.4rem;color:#fff;}
-.trust-metric-l{font-size:10px;color:rgba(255,255,255,.4);font-weight:500;margin-top:2px;}
+.trust-metric-l{font-size:10px;color:rgba(255,255,255,.38);font-weight:500;margin-top:2px;}
 .trust-verif-row{padding:14px 28px 18px;display:flex;gap:8px;flex-wrap:wrap;}
 .trust-verif-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 11px;border-radius:99px;}
-.trust-verif-ok{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);}
-.trust-verif-pending{background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:all .18s;}
-.trust-verif-pending:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);}
+.trust-verif-ok{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25);}
+.trust-verif-pending{background:rgba(78,143,186,.1);color:rgba(255,255,255,.45);border:1px solid rgba(78,143,186,.2);cursor:pointer;transition:all .18s;}
+.trust-verif-pending:hover{background:rgba(78,143,186,.2);color:rgba(255,255,255,.75);}
 .trust-progress-row{padding:0 28px 20px;}
 .trust-progress-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;}
 .trust-progress-label span:first-child{color:rgba(255,255,255,.5);font-weight:600;}
@@ -3098,6 +3097,7 @@ function navTo(v) {
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
 
 function navToActivity(tab) {
@@ -3115,6 +3115,7 @@ function navToActivity(tab) {
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3365,6 +3366,7 @@ function navTo(v) {
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
 
 function navToActivity(tab) {
@@ -3382,6 +3384,7 @@ function navToActivity(tab) {
   if(v === 'publish') setTimeout(() => autoDetectCity(), 300);
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -5211,10 +5214,10 @@ let mySavings = 0;
 async function loadProfileStats() {
   if (!currentUser) return;
 
-  // 1. Trueques completados: conversaciones donde confirmed_by contiene el uid del usuario
+  // 1. Trueques completados + ahorro
   const { data: convs } = await db
     .from('conversations')
-    .select('id, confirmed_by, item1_value, item2_value')
+    .select('id, confirmed_by, item1_value, item2_value, created_at')
     .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
 
   let completedCount = 0;
@@ -5223,7 +5226,6 @@ async function loadProfileStats() {
     for (const c of convs) {
       let confirmed = [];
       try { confirmed = JSON.parse(c.confirmed_by || '[]'); } catch(e) {}
-      // Se considera completado si ambos confirmaron (al menos 2 IDs, ninguno empieza por 'issue_')
       const validConfirms = confirmed.filter(id => !String(id).startsWith('issue_'));
       if (validConfirms.length >= 2) {
         completedCount++;
@@ -5235,24 +5237,56 @@ async function loadProfileStats() {
   myCompletedTrades = completedCount;
   mySavings = totalSavings;
 
-  // 2. Reviews recibidas (ya cargadas en REVIEWS_DATA por loadReviews)
+  // 2. Tiempo de respuesta medio — basado en mensajes enviados por el usuario
+  let avgResponseTime = null;
+  const { data: msgs } = await db
+    .from('messages')
+    .select('conversation_id, created_at')
+    .eq('sender_id', currentUser.id)
+    .order('created_at', { ascending: true })
+    .limit(50);
+
+  if (msgs && msgs.length >= 2) {
+    // Calcular diferencia entre mensajes consecutivos del mismo hilo
+    const byConv = {};
+    for (const m of msgs) {
+      if (!byConv[m.conversation_id]) byConv[m.conversation_id] = [];
+      byConv[m.conversation_id].push(new Date(m.created_at));
+    }
+    const gaps = [];
+    for (const times of Object.values(byConv)) {
+      for (let i = 1; i < times.length; i++) {
+        const diff = (times[i] - times[i-1]) / 60000; // minutos
+        if (diff > 1 && diff < 1440) gaps.push(diff); // entre 1min y 24h
+      }
+    }
+    if (gaps.length) {
+      const avg = gaps.reduce((a,b) => a+b, 0) / gaps.length;
+      avgResponseTime = avg < 60
+        ? `~${Math.round(avg)} min`
+        : avg < 1440
+          ? `~${Math.round(avg/60)} h`
+          : `~${Math.round(avg/1440)} días`;
+    }
+  }
+
+  // 3. Reviews recibidas
   const reviewCount = REVIEWS_DATA.filter(r => r.fromSupabase).length;
   const avgStars = reviewCount
     ? REVIEWS_DATA.filter(r => r.fromSupabase).reduce((s, r) => s + r.stars, 0) / reviewCount
     : 0;
 
-  // 3. Calcular puntuación de confianza de forma determinista
-  // Base: email verificado = 10 pts (siempre, si ha iniciado sesión)
-  let score = 10;
-  // +5 por cada trueque completado (máx 40)
-  score += Math.min(completedCount * 5, 40);
-  // +hasta 30 según media de estrellas (si tiene reviews)
-  if (reviewCount > 0) score += Math.round((avgStars / 5) * 30);
-  // +10 si tiene 3+ reviews
-  if (reviewCount >= 3) score += 10;
-  // +10 si tiene teléfono verificado (lo asumimos si tiene metadata de teléfono)
-  if (currentUser.phone) score += 10;
+  // 4. Puntuación de confianza determinista
+  let score = 10; // base: cuenta verificada
+  score += Math.min(completedCount * 5, 40); // +5 por trueque, máx 40
+  if (reviewCount > 0) score += Math.round((avgStars / 5) * 30); // hasta 30 por estrellas
+  if (reviewCount >= 3) score += 10; // bonus por volumen
+  if (currentUser.phone) score += 10; // teléfono verificado
   myTrustScore = Math.min(score, 100);
+
+  // 5. Actualizar el DOM del tiempo de respuesta
+  const tmTiempo = document.getElementById('tm-tiempo');
+  if (tmTiempo) tmTiempo.textContent = avgResponseTime || '—';
 
   renderProfile();
 }
