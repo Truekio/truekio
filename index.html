@@ -3487,49 +3487,6 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-// ═══ FILTERS ═══
-function buildFilters() {
-  const row = document.getElementById('filter-row');
-  row.className = 'filter-scroll';
-  row.innerHTML = CATS.map(c => `
-    <button class="filter-btn${c==='Todos'?' active':''}" data-cat="${c}" onclick="filterItems(this,'${c}')">
-      ${CAT_ICONS[c]} ${c}
-    </button>`).join('') +
-    `<button class="filter-btn" data-cat="Premium" onclick="filterItems(this,'Premium')" style="background:linear-gradient(135deg,#fef3c7,#fee2e2);border-color:rgba(245,158,11,.4);color:#92400e">✦ Premium</button>`;
-}
-
-function filterItems(btn, cat) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentFilter = cat;
-  const q = document.getElementById('search-input').value;
-  applyFilter(q, cat);
-}
-
-function searchItems(q) { applyFilter(q, currentFilter); }
-
-function applyFilter(q, cat) {
-  let f = items.filter(i => {
-    const isPremium = i.price && parseInt(i.price) >= 300;
-    const bc = cat==='Todos' || cat==='' || (cat==='Premium' ? isPremium : i.cat===cat);
-    const bq = !q || i.name.toLowerCase().includes(q.toLowerCase()) || i.location.toLowerCase().includes(q.toLowerCase()) || i.wants.some(w=>w.toLowerCase().includes(q.toLowerCase()));
-    // Advanced panel filters
-    const bCat = !spFilters.cat || i.cat===spFilters.cat;
-    const bCity = !spFilters.city || i.location===spFilters.city;
-    const bMin = !spFilters.minVal || !i.price || parseInt(i.price)>=parseInt(spFilters.minVal);
-    const bMax = !spFilters.maxVal || !i.price || parseInt(i.price)<=parseInt(spFilters.maxVal);
-    const bCond = !spFilters.conditions.length || spFilters.conditions.includes(i.condition);
-    const bShip = !spFilters.shipping.length || spFilters.shipping.includes(i.shipping);
-    return bc && bq && bCat && bCity && bMin && bMax && bCond && bShip;
-  });
-  if(sortByDistance && userCoords) {
-    f = f.map(i => ({...i, _dist: getItemDistance(i)})).sort((a,b) => a._dist - b._dist);
-  }
-  const countEl = document.getElementById('sp-results-n');
-  if(countEl) countEl.textContent = f.length;
-  renderExplore(f);
-}
-
 // ═══ ITEM CARD HTML — redesigned ═══
 function itemCardHTML(item, isPremiumView=false) {
   const isMatch = matches.some(m => m.theirItem.name === item.name);
@@ -6425,10 +6382,24 @@ function haversine(lat1, lng1, lat2, lng2) {
 }
 
 function getItemDistance(item) {
-  if(!userCoords) return Infinity;
-  const coords = CITY_COORDS[item.location];
-  if(!coords) return Infinity;
-  return haversine(userCoords.lat, userCoords.lng, coords.lat, coords.lng);
+  if (!userCoords) return Infinity;
+  // 1. Usar lat/lng propios del item si existen (items de Supabase)
+  if (item.lat && item.lng) {
+    return haversine(userCoords.lat, userCoords.lng, parseFloat(item.lat), parseFloat(item.lng));
+  }
+  // 2. Buscar en CITY_COORDS exacto
+  if (CITY_COORDS[item.location]) {
+    const c = CITY_COORDS[item.location];
+    return haversine(userCoords.lat, userCoords.lng, c.lat, c.lng);
+  }
+  // 3. Búsqueda case-insensitive y por prefijo
+  const loc = (item.location || '').toLowerCase().trim();
+  for (const [city, coords] of Object.entries(CITY_COORDS)) {
+    if (city.toLowerCase() === loc || loc.startsWith(city.toLowerCase()) || city.toLowerCase().startsWith(loc)) {
+      return haversine(userCoords.lat, userCoords.lng, coords.lat, coords.lng);
+    }
+  }
+  return Infinity;
 }
 
 function getNearestCityName(lat, lng) {
