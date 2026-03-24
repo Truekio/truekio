@@ -4366,8 +4366,13 @@ async function renderConfirmations() {
   }
 
   const isUser1 = c => c.user1_id === currentUser.id;
-  // confirmed_by es array de user_ids que ya confirmaron, guardado como texto JSON
-  const getConfirmed = c => { try { return JSON.parse(c.confirmed_by || '[]'); } catch(e) { return []; } };
+  // confirmed_by puede llegar como array nativo de Postgres o como JSON string
+  const getConfirmed = c => {
+    let v = c.confirmed_by;
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') { try { return JSON.parse(v); } catch(e) {} }
+    return [];
+  };
 
   const pendingMe = convs.filter(c => {
     const confirmed = getConfirmed(c);
@@ -4573,8 +4578,10 @@ async function confirmReceipt(cfId) {
   const { data: conv } = await db.from('conversations').select('confirmed_by,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title').eq('id', cfId).single();
   if (!conv) { showToast('⚠️ Error al confirmar'); return; }
 
-  let confirmed = [];
-  try { confirmed = JSON.parse(conv.confirmed_by || '[]'); } catch(e) {}
+  let confirmed = conv.confirmed_by;
+  if (Array.isArray(confirmed)) { /* ya es array */ }
+  else { try { confirmed = JSON.parse(confirmed || '[]'); } catch(e) { confirmed = []; } }
+  if (!Array.isArray(confirmed)) confirmed = [];
 
   if (!confirmed.includes(currentUser.id)) confirmed.push(currentUser.id);
 
@@ -5214,59 +5221,72 @@ let mySavings = 0;
 async function loadProfileStats() {
   if (!currentUser) return;
 
-  // 1. Trueques completados + ahorro
+  // 1. Trueques completados
+  // confirmed_by puede llegar como string JSON o como array nativo de Postgres
   const { data: convs } = await db
     .from('conversations')
-    .select('id, confirmed_by, item1_value, item2_value, created_at')
+    .select('id, confirmed_by, user1_id, user2_id')
     .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
 
   let completedCount = 0;
-  let totalSavings = 0;
   if (convs) {
     for (const c of convs) {
-      let confirmed = [];
-      try { confirmed = JSON.parse(c.confirmed_by || '[]'); } catch(e) {}
+      // Normalizar: acepta array nativo o JSON string
+      let confirmed = c.confirmed_by;
+      if (typeof confirmed === 'string') {
+        try { confirmed = JSON.parse(confirmed); } catch(e) { confirmed = []; }
+      }
+      if (!Array.isArray(confirmed)) confirmed = [];
+
       const validConfirms = confirmed.filter(id => !String(id).startsWith('issue_'));
-      if (validConfirms.length >= 2) {
+      const otherUserId = c.user1_id === currentUser.id ? c.user2_id : c.user1_id;
+
+      // Completado si el usuario actual confirmó Y el otro también
+      if (validConfirms.includes(currentUser.id) && validConfirms.includes(otherUserId)) {
         completedCount++;
-        const val = parseInt(c.item1_value || c.item2_value || 100);
-        totalSavings += isNaN(val) ? 100 : val;
       }
     }
   }
   myCompletedTrades = completedCount;
-  mySavings = totalSavings;
+  // Ahorro estimado: 150€ medio por trueque
+  mySavings = completedCount * 150;
 
-  // 2. Tiempo de respuesta medio — basado en mensajes enviados por el usuario
+  // 2. Tiempo de respuesta medio — tiempo entre mensaje recibido y primera respuesta
   let avgResponseTime = null;
-  const { data: msgs } = await db
-    .from('messages')
-    .select('conversation_id, created_at')
-    .eq('sender_id', currentUser.id)
-    .order('created_at', { ascending: true })
-    .limit(50);
+  if (convs && convs.length > 0) {
+    const convIds = convs.map(c => c.id);
+    // Traer los últimos 100 mensajes de las conversaciones del usuario
+    const { data: msgs } = await db
+      .from('messages')
+      .select('conversation_id, sender_id, created_at')
+      .in('conversation_id', convIds.slice(0, 10)) // máx 10 convs para no saturar
+      .order('created_at', { ascending: true });
 
-  if (msgs && msgs.length >= 2) {
-    // Calcular diferencia entre mensajes consecutivos del mismo hilo
-    const byConv = {};
-    for (const m of msgs) {
-      if (!byConv[m.conversation_id]) byConv[m.conversation_id] = [];
-      byConv[m.conversation_id].push(new Date(m.created_at));
-    }
-    const gaps = [];
-    for (const times of Object.values(byConv)) {
-      for (let i = 1; i < times.length; i++) {
-        const diff = (times[i] - times[i-1]) / 60000; // minutos
-        if (diff > 1 && diff < 1440) gaps.push(diff); // entre 1min y 24h
+    if (msgs && msgs.length > 1) {
+      const gaps = [];
+      // Agrupar por conversación
+      const byConv = {};
+      for (const m of msgs) {
+        if (!byConv[m.conversation_id]) byConv[m.conversation_id] = [];
+        byConv[m.conversation_id].push(m);
       }
-    }
-    if (gaps.length) {
-      const avg = gaps.reduce((a,b) => a+b, 0) / gaps.length;
-      avgResponseTime = avg < 60
-        ? `~${Math.round(avg)} min`
-        : avg < 1440
-          ? `~${Math.round(avg/60)} h`
-          : `~${Math.round(avg/1440)} días`;
+      for (const thread of Object.values(byConv)) {
+        for (let i = 1; i < thread.length; i++) {
+          const prev = thread[i - 1];
+          const curr = thread[i];
+          // Solo cuenta cuando el mensaje anterior es del otro y el actual es mío
+          if (prev.sender_id !== currentUser.id && curr.sender_id === currentUser.id) {
+            const diff = (new Date(curr.created_at) - new Date(prev.created_at)) / 60000;
+            if (diff >= 0.5 && diff < 1440) gaps.push(diff); // entre 30s y 24h
+          }
+        }
+      }
+      if (gaps.length >= 1) {
+        const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+        avgResponseTime = avg < 60
+          ? `~${Math.round(avg)} min`
+          : `~${(avg / 60).toFixed(1)} h`;
+      }
     }
   }
 
@@ -5277,14 +5297,14 @@ async function loadProfileStats() {
     : 0;
 
   // 4. Puntuación de confianza determinista
-  let score = 10; // base: cuenta verificada
-  score += Math.min(completedCount * 5, 40); // +5 por trueque, máx 40
-  if (reviewCount > 0) score += Math.round((avgStars / 5) * 30); // hasta 30 por estrellas
-  if (reviewCount >= 3) score += 10; // bonus por volumen
-  if (currentUser.phone) score += 10; // teléfono verificado
+  let score = 10;
+  score += Math.min(completedCount * 5, 40);
+  if (reviewCount > 0) score += Math.round((avgStars / 5) * 30);
+  if (reviewCount >= 3) score += 10;
+  if (currentUser.phone) score += 10;
   myTrustScore = Math.min(score, 100);
 
-  // 5. Actualizar el DOM del tiempo de respuesta
+  // 5. Tiempo de respuesta al DOM
   const tmTiempo = document.getElementById('tm-tiempo');
   if (tmTiempo) tmTiempo.textContent = avgResponseTime || '—';
 
