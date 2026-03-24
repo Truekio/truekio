@@ -2642,6 +2642,8 @@ window._enterApp = function() {
   }
   // Pre-cargar objetos del usuario para el perfil
   if(currentUser) setTimeout(() => loadMyItems(), 300);
+  // Cargar valoraciones reales desde Supabase
+  if(currentUser) setTimeout(() => loadReviews(), 400);
   // Cargar deseos del usuario desde Supabase
   if (currentUser) {
     db.from('wishes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
@@ -3013,6 +3015,24 @@ let spFilters = { cat:'', minVal:'', maxVal:'', city:'', conditions:[], shipping
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', async () => {
+  // ── SQL para crear la tabla reviews en Supabase (ejecutar una vez) ──
+  // CREATE TABLE IF NOT EXISTS reviews (
+  //   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  //   created_at timestamptz DEFAULT now(),
+  //   conversation_id uuid REFERENCES conversations(id) ON DELETE SET NULL,
+  //   reviewer_id uuid NOT NULL,
+  //   reviewer_name text,
+  //   reviewed_user_id uuid,
+  //   reviewed_user_name text,
+  //   stars int NOT NULL DEFAULT 5,
+  //   comment text DEFAULT '',
+  //   q_accuracy text DEFAULT '',
+  //   q_communication text DEFAULT '',
+  //   q_recommend text DEFAULT ''
+  // );
+  // ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+  // CREATE POLICY "Users can insert their own reviews" ON reviews FOR INSERT WITH CHECK (auth.uid() = reviewer_id);
+  // CREATE POLICY "Reviews are publicly readable" ON reviews FOR SELECT USING (true);
   buildEmojiPicker();
   buildFilters();
 
@@ -5172,9 +5192,15 @@ function renderProfile() {
   const trustName = document.getElementById('trust-name');
   if(trustName) trustName.textContent = document.getElementById('edit-name')?.value || 'Usuario';
   const trustRating = document.getElementById('trust-rating');
-  if(trustRating) trustRating.textContent = '4.9';
+  if(trustRating) {
+    const realOnes = REVIEWS_DATA.filter(r => r.fromSupabase);
+    const avg = realOnes.length
+      ? (realOnes.reduce((s,r) => s + r.stars, 0) / realOnes.length).toFixed(1)
+      : '4.9';
+    trustRating.textContent = avg;
+  }
   const trustReviewCount = document.getElementById('trust-review-count');
-  if(trustReviewCount) trustReviewCount.textContent = REVIEWS_DATA.length + myCompletedTrades - 3;
+  if(trustReviewCount) trustReviewCount.textContent = REVIEWS_DATA.filter(r=>r.fromSupabase).length || REVIEWS_DATA.length;
   const tmCompletados = document.getElementById('tm-completados');
   if(tmCompletados) tmCompletados.textContent = myCompletedTrades;
   const tmPublicados = document.getElementById('tm-publicados');
@@ -5240,19 +5266,17 @@ function renderProfile() {
       </div>`).join('')}
     </div>`;
 
-  // Reviews with new detailed format
-  const allReviews = [
-    ...REVIEWS_DATA,
-    {user:'Carmen R.',userEmoji:'👩‍💻',stars:5,text:'Muy buen trato y el objeto en perfectas condiciones. Responde rápido y es muy flexible con los tiempos.',date:'Hace 3 semanas',
-     q1:'Sí, exactamente como describió',q2:'Excelente',q3:'100%'},
-    {user:'Luis P.',userEmoji:'🎵',stars:5,text:'Trueque impecable. El iPhone llegó perfecto, sin un arañazo. Repetiría sin dudar.',date:'Hace 1 mes',
-     q1:'Sí, exactamente como describió',q2:'Muy buena',q3:'100%'},
+  // Reviews — mezcla reales + demo
+  const allReviews = REVIEWS_DATA.length > 0 ? REVIEWS_DATA : [
+    {user:'Carmen R.',userEmoji:'👩‍💻',stars:5,text:'Muy buen trato y el objeto en perfectas condiciones. Responde rápido y es muy flexible con los tiempos.',date:'Hace 3 semanas',q1:'Sí, exactamente como describió',q2:'Excelente',q3:'100%'},
+    {user:'Luis P.',userEmoji:'🎵',stars:5,text:'Trueque impecable. El iPhone llegó perfecto, sin un arañazo. Repetiría sin dudar.',date:'Hace 1 mes',q1:'Sí, exactamente como describió',q2:'Muy buena',q3:'100%'},
   ];
+  const avgStars = allReviews.length ? (allReviews.reduce((s,r)=>s+r.stars,0)/allReviews.length).toFixed(1) : '4.9';
   document.getElementById('reviews-list').innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:16px 20px;background:var(--bg2);border-radius:var(--r-lg);flex-wrap:wrap">
       <div style="text-align:center;flex-shrink:0">
-        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:2.8rem;line-height:1">4.9</div>
-        <div style="color:var(--gold);font-size:1rem;margin:4px 0">⭐⭐⭐⭐⭐</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:2.8rem;line-height:1">${avgStars}</div>
+        <div style="color:var(--gold);font-size:1rem;margin:4px 0">${'⭐'.repeat(Math.round(parseFloat(avgStars)))}</div>
         <div style="font-size:11px;color:var(--muted)">${allReviews.length} valoraciones</div>
       </div>
       <div style="flex:1;min-width:160px">
@@ -5801,28 +5825,113 @@ function reviewNext(stepId, type) {
     submitReview();
   }
 }
-function submitReview() {
+async function submitReview() {
+  if (!currentUser) { showToast('⚠️ Debes iniciar sesión'); return; }
+
   const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===activeReviewCfId) : null;
   const stars = reviewAnswers.stars || 5;
+
+  // Determinar el ID del usuario valorado
+  let reviewedUserId = null;
+  let reviewedUserName = cf?.user || 'Usuario';
+  if (activeReviewCfId && cf == null) {
+    // Buscar la conversación en Supabase para obtener el otro usuario
+    const { data: conv } = await db.from('conversations').select('user1_id,user2_id,user1_name,user2_name').eq('id', activeReviewCfId).single();
+    if (conv) {
+      const isUser1 = conv.user1_id === currentUser.id;
+      reviewedUserId = isUser1 ? conv.user2_id : conv.user1_id;
+      reviewedUserName = isUser1 ? conv.user2_name : conv.user1_name;
+    }
+  }
+
+  // Guardar en Supabase
+  const { error } = await db.from('reviews').insert([{
+    conversation_id: activeReviewCfId,
+    reviewer_id: currentUser.id,
+    reviewer_name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
+    reviewed_user_id: reviewedUserId,
+    reviewed_user_name: reviewedUserName,
+    stars,
+    comment: reviewAnswers.comment || '',
+    q_accuracy: reviewAnswers.accuracy || '',
+    q_communication: reviewAnswers.communication || '',
+    q_recommend: reviewAnswers.recommend || '',
+  }]);
+
+  if (error) {
+    // Si la tabla no existe aún, guardamos localmente de todas formas
+    console.warn('Reviews table error:', error.message);
+  }
+
+  // Actualizar array local también para reflejo inmediato
   const newReview = {
-    user: cf?.user || 'Usuario', userEmoji: cf?.userEmoji || '👤',
-    stars, text: reviewAnswers.comment || 'Trueque perfecto, muy recomendable.',
+    user: reviewedUserName, userEmoji: '👤',
+    stars, text: reviewAnswers.comment || '',
     date: 'Ahora mismo',
-    q1: reviewAnswers.accuracy || 'Sí, exactamente como describió',
-    q2: reviewAnswers.communication || 'Excelente',
-    q3: reviewAnswers.recommend || '100%',
+    q1: reviewAnswers.accuracy || '', q2: reviewAnswers.communication || '', q3: reviewAnswers.recommend || '',
+    fromSupabase: true,
   };
   REVIEWS_DATA.unshift(newReview);
-  // Update trust score
+
   myTrustScore = Math.min(100, myTrustScore + 3);
   myCompletedTrades++;
   mySavings += Math.round(200 + Math.random()*300);
+
   closeReviewModal();
-  renderProfile();
   showToast('⭐ ¡Valoración enviada! +3 puntos de confianza');
   addNotification('⭐','#fef9c3','Valoración enviada','Gracias. Tu puntuación de confianza sube a '+myTrustScore+'.');
+
+  // Recargar reviews reales y navegar al perfil
+  await loadReviews();
+  renderProfile();
   switchPTab('reviews');
   navTo('profile');
+}
+
+// ── Cargar valoraciones reales desde Supabase ──
+async function loadReviews() {
+  if (!currentUser) return;
+  const { data, error } = await db
+    .from('reviews')
+    .select('*')
+    .eq('reviewed_user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error || !data || !data.length) return;
+
+  // Reemplazar REVIEWS_DATA con los datos reales
+  const realReviews = data.map(r => ({
+    user: r.reviewer_name || 'Usuario',
+    userEmoji: '👤',
+    stars: r.stars || 5,
+    text: r.comment || '',
+    date: new Date(r.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }),
+    q1: r.q_accuracy || '',
+    q2: r.q_communication || '',
+    q3: r.q_recommend || '',
+    fromSupabase: true,
+  }));
+
+  // Sustituir solo los de Supabase, mantener los demo si no hay ninguno real
+  if (realReviews.length > 0) {
+    // Quitar los anteriores de Supabase y añadir los nuevos
+    const demoOnes = REVIEWS_DATA.filter(r => !r.fromSupabase);
+    REVIEWS_DATA.length = 0;
+    realReviews.forEach(r => REVIEWS_DATA.push(r));
+    // Si solo hay 1-2 reviews reales, añadir algunos demo para no mostrar perfil vacío
+    if (realReviews.length < 3) demoOnes.slice(0, 3 - realReviews.length).forEach(r => REVIEWS_DATA.push(r));
+  }
+
+  // Calcular media real de estrellas
+  const avg = realReviews.length
+    ? (realReviews.reduce((s, r) => s + r.stars, 0) / realReviews.length).toFixed(1)
+    : '4.9';
+  const trustRating = document.getElementById('trust-rating');
+  if (trustRating) trustRating.textContent = avg;
+  const trustReviewCount = document.getElementById('trust-review-count');
+  if (trustReviewCount) trustReviewCount.textContent = realReviews.length;
+  const reviewsBadge = document.getElementById('reviews-badge');
+  if (reviewsBadge) reviewsBadge.textContent = realReviews.length;
 }
 function closeReviewModal() { document.getElementById('review-modal-overlay').classList.remove('open'); }
 function closeReviewModalBg(e) { if(e.target===document.getElementById('review-modal-overlay')) closeReviewModal(); }
