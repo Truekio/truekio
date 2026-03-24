@@ -887,7 +887,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .fd-title{font-weight:800;font-size:1rem;}
 .fd-close{width:30px;height:30px;border-radius:50%;background:var(--bg2);border:none;font-size:18px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s;}
 .fd-close:hover{background:var(--bg3);}
-.fd-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.fd-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .fd-section{padding:18px 20px;border-bottom:1px solid var(--border);}
 .fd-section:last-child{border-bottom:none;padding-bottom:32px;}
 .fd-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;}
@@ -2639,9 +2639,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="fd-section">
       <div class="fd-label">Valor estimado (€)</div>
       <div class="fd-price-row">
-        <input class="fd-price-input" type="number" id="fd-min" placeholder="Mín" min="0">
+        <input class="fd-price-input" type="number" id="fd-min" placeholder="Mín" min="0" inputmode="decimal">
         <span class="fd-price-sep">—</span>
-        <input class="fd-price-input" type="number" id="fd-max" placeholder="Máx" min="0">
+        <input class="fd-price-input" type="number" id="fd-max" placeholder="Máx" min="0" inputmode="decimal">
       </div>
     </div>
   </div>
@@ -2659,12 +2659,16 @@ function openFilterDrawer() {
   document.getElementById('filter-drawer').classList.add('open');
   document.getElementById('filter-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
   _fdSyncUI();
 }
 function closeFilterDrawer() {
   document.getElementById('filter-drawer').classList.remove('open');
   document.getElementById('filter-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
 }
 function fdSelectCat(btn) {
   fdState.cat = btn.dataset.val;
@@ -3512,8 +3516,8 @@ function applyFilter(q, cat) {
     // Advanced panel filters
     const bCat = !spFilters.cat || i.cat===spFilters.cat;
     const bCity = !spFilters.city || i.location===spFilters.city;
-    const bMin = !spFilters.minVal || (i.price && parseInt(i.price)>=parseInt(spFilters.minVal));
-    const bMax = !spFilters.maxVal || (i.price && parseInt(i.price)<=parseInt(spFilters.maxVal));
+    const bMin = !spFilters.minVal || !i.price || parseInt(i.price)>=parseInt(spFilters.minVal);
+    const bMax = !spFilters.maxVal || !i.price || parseInt(i.price)<=parseInt(spFilters.maxVal);
     const bCond = !spFilters.conditions.length || spFilters.conditions.includes(i.condition);
     const bShip = !spFilters.shipping.length || spFilters.shipping.includes(i.shipping);
     return bc && bq && bCat && bCity && bMin && bMax && bCond && bShip;
@@ -3779,8 +3783,8 @@ function applyFilter(q, cat) {
     // Advanced panel filters
     const bCat = !spFilters.cat || i.cat===spFilters.cat;
     const bCity = !spFilters.city || i.location===spFilters.city;
-    const bMin = !spFilters.minVal || (i.price && parseInt(i.price)>=parseInt(spFilters.minVal));
-    const bMax = !spFilters.maxVal || (i.price && parseInt(i.price)<=parseInt(spFilters.maxVal));
+    const bMin = !spFilters.minVal || !i.price || parseInt(i.price)>=parseInt(spFilters.minVal);
+    const bMax = !spFilters.maxVal || !i.price || parseInt(i.price)<=parseInt(spFilters.maxVal);
     const bCond = !spFilters.conditions.length || spFilters.conditions.includes(i.condition);
     const bShip = !spFilters.shipping.length || spFilters.shipping.includes(i.shipping);
     return bc && bq && bCat && bCity && bMin && bMax && bCond && bShip;
