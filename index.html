@@ -3363,7 +3363,18 @@ let spFilters = { cat:'', minVal:'', maxVal:'', city:'', conditions:[], shipping
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', async () => {
-  // ── SQL para crear la tabla reviews en Supabase (ejecutar una vez) ──
+  // ── SQL para crear la tabla completed_trades en Supabase (ejecutar una vez) ──
+  // CREATE TABLE IF NOT EXISTS completed_trades (
+  //   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  //   created_at timestamptz DEFAULT now(),
+  //   conversation_id uuid UNIQUE,
+  //   user1_id uuid, user1_name text,
+  //   user2_id uuid, user2_name text,
+  //   item1_title text DEFAULT '', item2_title text DEFAULT ''
+  // );
+  // ALTER TABLE completed_trades ENABLE ROW LEVEL SECURITY;
+  // CREATE POLICY "readable_by_all" ON completed_trades FOR SELECT USING (true);
+  // CREATE POLICY "insert_own" ON completed_trades FOR INSERT WITH CHECK (auth.uid() = user1_id OR auth.uid() = user2_id);
   // CREATE TABLE IF NOT EXISTS reviews (
   //   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   //   created_at timestamptz DEFAULT now(),
@@ -4943,7 +4954,22 @@ async function confirmReceipt(cfId) {
 
   if (bothConfirmed) {
     showToast('🎉 ¡Trueque completado con éxito!');
-    await loadProfileStats(); // recalcula todo desde Supabase
+
+    // Guardar en tabla permanente (fire & forget — no bloquea si la tabla no existe aún)
+    const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    db.from('completed_trades').upsert([{
+      conversation_id: cfId,
+      user1_id: conv.user1_id || currentUser.id,
+      user1_name: conv.user1_name || myName,
+      user2_id: conv.user2_id || otherUserId,
+      user2_name: conv.user2_name || otherName,
+      item1_title: conv.item1_title || '',
+      item2_title: conv.item2_title || '',
+    }], { onConflict: 'conversation_id', ignoreDuplicates: true })
+      .then(({ error }) => { if (error) console.warn('completed_trades:', error.message); })
+      .catch(e => console.warn('completed_trades error:', e));
+
+    await loadProfileStats();
     setTimeout(() => openReviewModal(cfId), 1500);
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
@@ -5567,46 +5593,51 @@ let mySavings = 0;
 async function loadProfileStats() {
   if (!currentUser) return;
 
-  // 1. Trueques completados
-  // confirmed_by puede llegar como string JSON o como array nativo de Postgres
-  const { data: convs } = await db
-    .from('conversations')
-    .select('id, confirmed_by, user1_id, user2_id')
-    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
+  const userName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
 
+  // 1. Trueques completados — tabla permanente, no depende de conversaciones
   let completedCount = 0;
-  if (convs) {
-    console.log('[Truquo] Total convs:', convs.length, '| uid:', currentUser.id);
-    for (const c of convs) {
-      console.log('[Truquo] conv', c.id.slice(0,8), '| raw:', JSON.stringify(c.confirmed_by), '| type:', typeof c.confirmed_by);
+  try {
+    const { data: trades, error } = await db
+      .from('completed_trades')
+      .select('id')
+      .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
 
-      let confirmed = c.confirmed_by;
-      if (!confirmed) { confirmed = []; }
-      else if (Array.isArray(confirmed)) { /* array nativo */ }
-      else if (typeof confirmed === 'string') {
-        const s = confirmed.trim();
-        if (s.startsWith('[')) { try { confirmed = JSON.parse(s); } catch(e) { confirmed = []; } }
-        else if (s.startsWith('{')) { confirmed = s.replace(/[{}]/g,'').split(',').map(x=>x.trim().replace(/"/g,'')).filter(Boolean); }
-        else { confirmed = s ? [s] : []; }
-      } else { confirmed = []; }
+    if (!error) completedCount = (trades || []).length;
 
-      const validConfirms = confirmed.filter(id => id && !String(id).startsWith('issue_'));
-      const otherUserId = c.user1_id === currentUser.id ? c.user2_id : c.user1_id;
-      const iConfirmed = validConfirms.some(id => String(id).trim() === String(currentUser.id).trim());
-      const otherConfirmed = validConfirms.some(id => String(id).trim() === String(otherUserId).trim());
-
-      console.log('[Truquo] valid:', validConfirms, '| iOK:', iConfirmed, '| otherOK:', otherConfirmed);
-
-      if (iConfirmed && otherConfirmed) completedCount++;
+    // Fallback por nombre (trueques antiguos sin UUID)
+    if (completedCount === 0) {
+      const { data: tradesByName } = await db
+        .from('completed_trades')
+        .select('id')
+        .or(`user1_name.eq.${userName},user2_name.eq.${userName}`);
+      completedCount = (tradesByName || []).length;
     }
-    console.log('[Truquo] Completadas:', completedCount);
+  } catch(e) {
+    console.warn('completed_trades no disponible:', e.message);
   }
+
+  // Último fallback: reviews dadas
+  if (completedCount === 0) {
+    try {
+      const { data: givenReviews } = await db
+        .from('reviews').select('id').eq('reviewer_id', currentUser.id);
+      completedCount = (givenReviews || []).length;
+    } catch(e) {}
+  }
+
+  console.log('[Truquo] completed_trades:', completedCount);
   myCompletedTrades = completedCount;
-  // Ahorro estimado: 150€ medio por trueque
   mySavings = completedCount * 150;
 
-  // 2. Tiempo de respuesta medio — tiempo entre mensaje recibido y primera respuesta
+  // 2. Tiempo de respuesta medio
   let avgResponseTime = null;
+  const { data: convs } = await db
+    .from('conversations')
+    .select('id')
+    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
+    .limit(10);
+
   if (convs && convs.length > 0) {
     const convIds = convs.map(c => c.id);
     // Traer los últimos 100 mensajes de las conversaciones del usuario
