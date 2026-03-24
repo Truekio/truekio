@@ -2208,20 +2208,20 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="trust-passport-top">
         <div class="trust-avatar-wrap">
           <div class="trust-avatar" id="trust-avatar-emoji" style="overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--accent);background:var(--accent-l)">?</div>
-          <div class="trust-level-badge trust-level-veterano" id="trust-level-badge">VETERANO</div>
+          <div class="trust-level-badge trust-level-nuevo" id="trust-level-badge">NUEVO</div>
         </div>
         <div class="trust-info" style="margin-top:8px">
-          <div class="trust-name" id="trust-name">Alex Martínez</div>
-          <div class="trust-meta" id="trust-meta">📍 España · Miembro desde enero 2024</div>
+          <div class="trust-name" id="trust-name">—</div>
+          <div class="trust-meta" id="trust-meta">📍 España · Miembro desde —</div>
           <div id="trust-bio" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:5px;line-height:1.5;max-width:340px;display:none"></div>
           <div class="trust-score-row">
             <div>
-              <div class="trust-score-big" id="trust-score">87</div>
+              <div class="trust-score-big" id="trust-score">0</div>
               <div class="trust-score-label">Puntuación de confianza</div>
             </div>
             <div style="border-left:1px solid rgba(255,255,255,.12);padding-left:14px">
-              <div class="trust-stars" id="trust-stars">⭐⭐⭐⭐⭐</div>
-              <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px"><span id="trust-rating">4.9</span> · <span id="trust-review-count">15</span> valoraciones</div>
+              <div class="trust-stars" id="trust-stars">☆☆☆☆☆</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px"><span id="trust-rating">—</span> · <span id="trust-review-count">0</span> valoraciones</div>
             </div>
           </div>
         </div>
@@ -2231,10 +2231,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="trust-divider"></div>
 
       <div class="trust-metrics">
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-completados">12</div><div class="trust-metric-l">Trueques completados</div></div>
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-publicados">8</div><div class="trust-metric-l">Publicados activos</div></div>
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-ratio">100%</div><div class="trust-metric-l">Ratio completado</div></div>
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-tiempo">~1.2 días</div><div class="trust-metric-l">Tiempo resp. medio</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-completados">0</div><div class="trust-metric-l">Trueques completados</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-publicados">0</div><div class="trust-metric-l">Publicados activos</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-ratio">—</div><div class="trust-metric-l">Ratio completado</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-tiempo">—</div><div class="trust-metric-l">Tiempo resp. medio</div></div>
       </div>
 
       <div class="trust-divider"></div>
@@ -2644,6 +2644,8 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadMyItems(), 300);
   // Cargar valoraciones reales desde Supabase
   if(currentUser) setTimeout(() => loadReviews(), 400);
+  // Cargar stats reales del perfil (trueques, ahorro, puntuación)
+  if(currentUser) setTimeout(() => loadProfileStats(), 500);
   // Cargar deseos del usuario desde Supabase
   if (currentUser) {
     db.from('wishes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
@@ -4555,8 +4557,7 @@ async function confirmReceipt(cfId) {
 
   if (bothConfirmed) {
     showToast('🎉 ¡Trueque completado con éxito!');
-    mySavings += 200; myCompletedTrades++;
-    renderProfile();
+    await loadProfileStats(); // recalcula todo desde Supabase
     setTimeout(() => openReviewModal(cfId), 1500);
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
@@ -5172,9 +5173,59 @@ function getTrustLabel(user) {
   return icons[lvl]+' '+TRUST_LEVELS[lvl].label;
 }
 
-let myTrustScore = 87;
-let myCompletedTrades = 12;
-let mySavings = 1240;
+let myTrustScore = 0;
+let myCompletedTrades = 0;
+let mySavings = 0;
+
+// ── Carga los stats reales del usuario desde Supabase y calcula la puntuación ──
+async function loadProfileStats() {
+  if (!currentUser) return;
+
+  // 1. Trueques completados: conversaciones donde confirmed_by contiene el uid del usuario
+  const { data: convs } = await db
+    .from('conversations')
+    .select('id, confirmed_by, item1_value, item2_value')
+    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
+
+  let completedCount = 0;
+  let totalSavings = 0;
+  if (convs) {
+    for (const c of convs) {
+      let confirmed = [];
+      try { confirmed = JSON.parse(c.confirmed_by || '[]'); } catch(e) {}
+      // Se considera completado si ambos confirmaron (al menos 2 IDs, ninguno empieza por 'issue_')
+      const validConfirms = confirmed.filter(id => !String(id).startsWith('issue_'));
+      if (validConfirms.length >= 2) {
+        completedCount++;
+        const val = parseInt(c.item1_value || c.item2_value || 100);
+        totalSavings += isNaN(val) ? 100 : val;
+      }
+    }
+  }
+  myCompletedTrades = completedCount;
+  mySavings = totalSavings;
+
+  // 2. Reviews recibidas (ya cargadas en REVIEWS_DATA por loadReviews)
+  const reviewCount = REVIEWS_DATA.filter(r => r.fromSupabase).length;
+  const avgStars = reviewCount
+    ? REVIEWS_DATA.filter(r => r.fromSupabase).reduce((s, r) => s + r.stars, 0) / reviewCount
+    : 0;
+
+  // 3. Calcular puntuación de confianza de forma determinista
+  // Base: email verificado = 10 pts (siempre, si ha iniciado sesión)
+  let score = 10;
+  // +5 por cada trueque completado (máx 40)
+  score += Math.min(completedCount * 5, 40);
+  // +hasta 30 según media de estrellas (si tiene reviews)
+  if (reviewCount > 0) score += Math.round((avgStars / 5) * 30);
+  // +10 si tiene 3+ reviews
+  if (reviewCount >= 3) score += 10;
+  // +10 si tiene teléfono verificado (lo asumimos si tiene metadata de teléfono)
+  if (currentUser.phone) score += 10;
+  myTrustScore = Math.min(score, 100);
+
+  renderProfile();
+}
 
 // ═══ PROFILE ═══
 function renderProfile() {
@@ -5188,15 +5239,18 @@ function renderProfile() {
   const trustName = document.getElementById('trust-name');
   if(trustName) trustName.textContent = document.getElementById('edit-name')?.value || 'Usuario';
   const trustRating = document.getElementById('trust-rating');
-  if(trustRating) {
-    const realOnes = REVIEWS_DATA.filter(r => r.fromSupabase);
-    const avg = realOnes.length
-      ? (realOnes.reduce((s,r) => s + r.stars, 0) / realOnes.length).toFixed(1)
-      : '4.9';
-    trustRating.textContent = avg;
-  }
+  const trustStars = document.getElementById('trust-stars');
   const trustReviewCount = document.getElementById('trust-review-count');
-  if(trustReviewCount) trustReviewCount.textContent = REVIEWS_DATA.filter(r=>r.fromSupabase).length || REVIEWS_DATA.length;
+  const realReviews = REVIEWS_DATA.filter(r => r.fromSupabase);
+  if (realReviews.length > 0) {
+    const avg = (realReviews.reduce((s,r) => s + r.stars, 0) / realReviews.length).toFixed(1);
+    if (trustRating) trustRating.textContent = avg;
+    if (trustStars) trustStars.textContent = '⭐'.repeat(Math.round(parseFloat(avg)));
+  } else {
+    if (trustRating) trustRating.textContent = '—';
+    if (trustStars) trustStars.textContent = '☆☆☆☆☆';
+  }
+  if (trustReviewCount) trustReviewCount.textContent = realReviews.length;
   const tmCompletados = document.getElementById('tm-completados');
   if(tmCompletados) tmCompletados.textContent = myCompletedTrades;
   const tmPublicados = document.getElementById('tm-publicados');
@@ -5780,16 +5834,11 @@ async function submitReview() {
 
   if (error) console.warn('Reviews table error:', error.message);
 
-  myTrustScore = Math.min(100, myTrustScore + 3);
-  myCompletedTrades++;
-  mySavings += Math.round(200 + Math.random()*300);
-
   closeReviewModal();
   showToast('⭐ ¡Valoración enviada! +3 puntos de confianza');
-  addNotification('⭐','#fef9c3','Valoración enviada','Tu puntuación de confianza sube a '+myTrustScore+'.');
 
   await loadReviews();
-  renderProfile();
+  await loadProfileStats();
   switchPTab('reviews');
   navTo('profile');
 }
