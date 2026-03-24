@@ -5574,9 +5574,8 @@ async function loadMyItems() {
       <div style="padding:10px 12px 12px">
         <div style="font-weight:700;font-size:.85rem;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.title}</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${item.category || ''}</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-secondary btn-sm" style="flex:1;font-size:11px" onclick="openEditItem(${item.id})">✏️ Editar</button>
-          <button class="btn btn-danger btn-sm" style="font-size:11px" onclick="deleteItem(${item.id}, this)">🗑</button>
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn btn-danger btn-sm" style="font-size:11px" onclick="deleteItem(${item.id}, this)">🗑 Eliminar</button>
         </div>
       </div>
     </div>`;
