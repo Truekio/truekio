@@ -420,6 +420,14 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .review-stars{color:var(--gold);font-size:14px;margin-bottom:8px;}
 .review-text{font-size:13px;color:var(--text2);line-height:1.7;}
 
+/* ── CITY AUTOCOMPLETE ── */
+.city-autocomplete{position:relative;}
+.city-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--accent);border-top:none;border-radius:0 0 var(--r) var(--r);box-shadow:var(--sh-md);z-index:50;max-height:200px;overflow-y:auto;display:none;}
+.city-suggestions.open{display:block;}
+.city-suggestion{padding:10px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s;}
+.city-suggestion:hover,.city-suggestion.highlighted{background:var(--accent-l);}
+.city-sug-name{font-weight:600;color:var(--text);}
+
 /* ── PUBLISH ACTIONS BAR ── */
 .pub-actions-bar{display:flex;gap:12px;margin-top:8px;}
 @media(max-width:640px){
@@ -2490,7 +2498,14 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
             <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2);flex:1">Detectando ubicación...</div>
             <button type="button" id="geo-btn" onclick="requestGeoLocation()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Reintentar</button>
           </div>
-          <input id="pub-loc" placeholder="Escribe tu ciudad si no se detecta" style="width:100%;box-sizing:border-box" oninput="document.getElementById('pub-lat').value='';document.getElementById('pub-lng').value=''">
+          <div class="city-autocomplete">
+            <input id="pub-loc" placeholder="Escribe tu ciudad..." style="width:100%;box-sizing:border-box" autocomplete="off"
+              oninput="cityAutocomplete(this.value)"
+              onkeydown="cityAutocompleteKey(event)"
+              onfocus="cityAutocomplete(this.value)"
+              onblur="setTimeout(()=>document.getElementById('city-suggestions').classList.remove('open'),180)">
+            <div class="city-suggestions" id="city-suggestions"></div>
+          </div>
           <input type="hidden" id="pub-lat" value="">
           <input type="hidden" id="pub-lng" value="">
           <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
@@ -2750,6 +2765,73 @@ function fdRemoveChip(key) {
   else if (key.startsWith('shipping:')) { const v = key.slice(9); fdState.shipping = fdState.shipping.filter(s => s !== v); }
   fdApply();
   _fdSyncUI();
+}
+
+// ── CITY AUTOCOMPLETE ──
+let _cityHighlight = -1;
+
+function cityAutocomplete(q) {
+  const box = document.getElementById('city-suggestions');
+  if (!box) return;
+  const val = q.trim().toLowerCase();
+  if (!val) { box.classList.remove('open'); return; }
+
+  // Buscar en CITY_COORDS — primero las que empiezan por el texto, luego las que lo contienen
+  const all = typeof CITY_COORDS !== 'undefined' ? Object.keys(CITY_COORDS) : [];
+  const starts = all.filter(c => c.toLowerCase().startsWith(val));
+  const contains = all.filter(c => !c.toLowerCase().startsWith(val) && c.toLowerCase().includes(val));
+  const matches = [...starts, ...contains].slice(0, 8);
+
+  if (!matches.length) { box.classList.remove('open'); return; }
+
+  _cityHighlight = -1;
+  box.innerHTML = matches.map((city, i) =>
+    `<div class="city-suggestion" data-city="${city}" onmousedown="citySelect('${city.replace(/'/g,"\\'")}')">
+      <span>📍</span><span class="city-sug-name">${_cityHighlightMatch(city, q)}</span>
+    </div>`
+  ).join('');
+  box.classList.add('open');
+}
+
+function _cityHighlightMatch(city, q) {
+  const idx = city.toLowerCase().indexOf(q.trim().toLowerCase());
+  if (idx === -1) return city;
+  return city.slice(0, idx) + '<strong>' + city.slice(idx, idx + q.trim().length) + '</strong>' + city.slice(idx + q.trim().length);
+}
+
+function citySelect(city) {
+  const input = document.getElementById('pub-loc');
+  if (input) input.value = city;
+  const coords = typeof CITY_COORDS !== 'undefined' ? CITY_COORDS[city] : null;
+  if (coords) {
+    const lat = document.getElementById('pub-lat');
+    const lng = document.getElementById('pub-lng');
+    if (lat) lat.value = coords.lat;
+    if (lng) lng.value = coords.lng;
+  }
+  const box = document.getElementById('city-suggestions');
+  if (box) box.classList.remove('open');
+}
+
+function cityAutocompleteKey(e) {
+  const box = document.getElementById('city-suggestions');
+  if (!box || !box.classList.contains('open')) return;
+  const items = box.querySelectorAll('.city-suggestion');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _cityHighlight = Math.min(_cityHighlight + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === _cityHighlight));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _cityHighlight = Math.max(_cityHighlight - 1, -1);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === _cityHighlight));
+  } else if (e.key === 'Enter' && _cityHighlight >= 0) {
+    e.preventDefault();
+    const city = items[_cityHighlight]?.dataset.city;
+    if (city) citySelect(city);
+  } else if (e.key === 'Escape') {
+    box.classList.remove('open');
+  }
 }
 </script>
 
@@ -6313,17 +6395,24 @@ function autoDetectCity() {
         if(sub) sub.textContent = city ? 'Puedes editarla si es incorrecta' : 'Escribe tu ciudad manualmente';
         if(btn) { btn.textContent = '✓'; btn.style.background = 'var(--green)'; btn.disabled = false; }
       } catch(e) {
-        document.getElementById('pub-loc').value = 'Barcelona';
-        if(label) label.textContent = '📍 Barcelona (por defecto)';
-        if(sub) sub.textContent = '';
+        // Si falla el geocoding pero tenemos coords, intentar mapear a ciudad conocida
+        const nearest = getNearestCityName(lat, lng);
+        if (nearest) {
+          document.getElementById('pub-loc').value = nearest;
+          citySelect(nearest);
+          if(label) label.textContent = '📍 ' + nearest;
+        } else {
+          if(label) label.textContent = '📍 Ubicación detectada';
+        }
+        if(sub) sub.textContent = 'Puedes cambiarla escribiendo';
         if(btn) { btn.textContent = '✓'; btn.disabled = false; }
       }
     },
     () => {
-      // Sin permiso — dejamos Barcelona por defecto silenciosamente
-      if(label) label.textContent = '📍 Barcelona';
+      // Sin permiso — dejar vacío para que el usuario escriba
+      if(label) label.textContent = '📍 Escribe tu ciudad';
       if(sub) sub.textContent = 'Activa la ubicación para detectarla automáticamente';
-      if(btn) { btn.textContent = 'Reintentar'; btn.disabled = false; }
+      if(btn) { btn.textContent = 'Detectar'; btn.disabled = false; }
     },
     { timeout: 8000 }
   );
