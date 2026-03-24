@@ -5576,37 +5576,30 @@ async function loadProfileStats() {
 
   let completedCount = 0;
   if (convs) {
+    console.log('[Truquo] Total convs:', convs.length, '| uid:', currentUser.id);
     for (const c of convs) {
-      // Normalizar confirmed_by — puede ser null, array nativo, JSON string, o string con formato Postgres
-      let confirmed = c.confirmed_by;
+      console.log('[Truquo] conv', c.id.slice(0,8), '| raw:', JSON.stringify(c.confirmed_by), '| type:', typeof c.confirmed_by);
 
+      let confirmed = c.confirmed_by;
       if (!confirmed) { confirmed = []; }
-      else if (Array.isArray(confirmed)) { /* ya es array */ }
+      else if (Array.isArray(confirmed)) { /* array nativo */ }
       else if (typeof confirmed === 'string') {
         const s = confirmed.trim();
-        if (s.startsWith('[')) {
-          try { confirmed = JSON.parse(s); } catch(e) { confirmed = []; }
-        } else if (s.startsWith('{')) {
-          // Formato array literal de Postgres: {uuid1,uuid2}
-          confirmed = s.replace(/[{}]/g,'').split(',').map(x=>x.trim().replace(/"/g,''));
-        } else {
-          confirmed = s ? [s] : [];
-        }
+        if (s.startsWith('[')) { try { confirmed = JSON.parse(s); } catch(e) { confirmed = []; } }
+        else if (s.startsWith('{')) { confirmed = s.replace(/[{}]/g,'').split(',').map(x=>x.trim().replace(/"/g,'')).filter(Boolean); }
+        else { confirmed = s ? [s] : []; }
       } else { confirmed = []; }
 
       const validConfirms = confirmed.filter(id => id && !String(id).startsWith('issue_'));
       const otherUserId = c.user1_id === currentUser.id ? c.user2_id : c.user1_id;
-
-      // Completado si ambas partes confirmaron
-      const myId = currentUser.id;
-      const iConfirmed = validConfirms.some(id => String(id).trim() === String(myId).trim());
+      const iConfirmed = validConfirms.some(id => String(id).trim() === String(currentUser.id).trim());
       const otherConfirmed = validConfirms.some(id => String(id).trim() === String(otherUserId).trim());
 
-      if (iConfirmed && otherConfirmed) {
-        completedCount++;
-      }
+      console.log('[Truquo] valid:', validConfirms, '| iOK:', iConfirmed, '| otherOK:', otherConfirmed);
+
+      if (iConfirmed && otherConfirmed) completedCount++;
     }
-    console.log('[Truquo] Conversaciones encontradas:', convs.length, '· Completadas:', completedCount);
+    console.log('[Truquo] Completadas:', completedCount);
   }
   myCompletedTrades = completedCount;
   // Ahorro estimado: 150€ medio por trueque
