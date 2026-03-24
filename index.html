@@ -5803,6 +5803,14 @@ function openReviewModal(cfId) {
 
   document.getElementById('review-modal-overlay').classList.add('open');
 }
+function setReviewStars(n) {
+  reviewAnswers.stars = n;
+  document.querySelectorAll('#review-stars .review-star').forEach((s, i) => {
+    s.style.filter = i < n ? 'none' : 'grayscale(1)';
+    s.style.transform = i < n ? 'scale(1.1)' : 'scale(1)';
+  });
+}
+
 async function submitReview() {
   if (!currentUser) { showToast('⚠️ Debes iniciar sesión'); return; }
 
