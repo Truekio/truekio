@@ -411,7 +411,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .ptab.active{color:var(--accent);font-weight:700;border-bottom-color:var(--accent);}
 .ptab-content{display:none;}
 .ptab-content.active{display:block;}
-.my-items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.my-items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding-bottom:80px;}
 .my-item-card{padding:16px;display:flex;gap:14px;align-items:center;}
 .my-item-emoji{width:48px;height:48px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
 .review-card{padding:22px;margin-bottom:14px;}
@@ -5562,13 +5562,16 @@ async function loadMyItems() {
     const emoji = item.emoji || '📦';
     return `
     <div class="card my-item-card" style="flex-direction:column;gap:0;padding:0;overflow:hidden">
-      <div style="height:120px;background:var(--bg2);position:relative;overflow:hidden;cursor:pointer" onclick="openDetail(${item.id})">
+      <div style="height:120px;background:var(--bg2);position:relative;overflow:hidden;cursor:pointer" onclick="openEditItem(${item.id})">
         ${photo
           ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`
           : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem">${emoji}</div>`
         }
+        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.45));padding:20px 8px 6px;display:flex;justify-content:flex-end">
+          <span style="background:rgba(255,255,255,.9);color:var(--text);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px">✏️ Editar</span>
+        </div>
       </div>
-      <div style="padding:12px">
+      <div style="padding:10px 12px 12px">
         <div style="font-weight:700;font-size:.85rem;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.title}</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${item.category || ''}</div>
         <div style="display:flex;gap:6px">
