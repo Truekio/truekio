@@ -291,8 +291,9 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .fav-btn{position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 .fav-btn:hover{background:#fff;transform:scale(1.1);}
 .fav-btn:hover svg{stroke:var(--accent);}
-.fav-btn.faved svg{stroke:#e53e3e;fill:#e53e3e;}
-.fav-heart{width:14px;height:14px;stroke:var(--muted2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:all .18s;}
+.fav-btn.faved{background:rgba(255,255,255,.96);}
+.fav-btn.faved .fav-heart{stroke:#e53e3e;fill:#e53e3e;}
+.fav-heart{width:14px;height:14px;stroke:rgba(80,80,80,.5);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:all .2s;}
 
 /* Info debajo de la foto — compacta */
 .item-body{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
@@ -3331,6 +3332,7 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
+  const isInWishlist = wishlist.some(w => w.name.toLowerCase() === item.name.toLowerCase());
   const topBadge = isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
     : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
@@ -3342,7 +3344,7 @@ function itemCardHTML(item, isPremiumView=false) {
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
-      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="${isInWishlist ? 'fav-btn faved' : 'fav-btn'}" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
@@ -3597,6 +3599,7 @@ function itemCardHTML(item, isPremiumView=false) {
   : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
+  const isInWishlist = wishlist.some(w => w.name.toLowerCase() === item.name.toLowerCase());
 
   const topBadge = isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
@@ -3609,7 +3612,7 @@ function itemCardHTML(item, isPremiumView=false) {
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
-      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="${isInWishlist ? 'fav-btn faved' : 'fav-btn'}" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/['"`]/g,'')}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
@@ -6995,9 +6998,12 @@ async function addToWishlistFromCard(name, cat, emoji, e) {
   if (error) { showToast('⚠️ Error: ' + error.message); return; }
   wishlist.unshift({ id: data.id, emoji, name, cat, addedDate: 'Ahora mismo', notify: true, hasMatch: false, hasSupply: false, matchCount: 0 });
   updateWishBadges();
-  showToast('✦ Añadido a lista de deseos — ve a Actividad · Deseos');
+  showToast('✦ Añadido a lista de deseos');
   const btn = e.currentTarget;
-  btn.classList.add('faved');
+  btn.className = btn.className.replace('fav-btn', 'fav-btn faved').trim();
+  // Micro-animación de pop
+  const svg = btn.querySelector('svg');
+  if (svg) { svg.style.transform = 'scale(1.4)'; setTimeout(() => svg.style.transform = 'scale(1)', 200); }
 }
 
 function renderWishAlerts() {
