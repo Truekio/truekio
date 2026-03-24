@@ -124,7 +124,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 
 /* ── LAYOUT ── */
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
-.page-pad{padding-top:44px;padding-bottom:80px;}
+.page-pad{padding-top:44px;padding-bottom:max(100px,calc(72px + env(safe-area-inset-bottom)));}
 
 /* ── CARDS ── */
 .card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);border:1px solid var(--border);}
@@ -410,7 +410,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .ptab:hover{color:var(--text2);}
 .ptab.active{color:var(--accent);font-weight:700;border-bottom-color:var(--accent);}
 .ptab-content{display:none;}
-.ptab-content.active{display:block;}
+.ptab-content.active{display:block;padding-bottom:max(100px,calc(72px + env(safe-area-inset-bottom)));}
 .my-items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding-bottom:80px;}
 .my-item-card{padding:16px;display:flex;gap:14px;align-items:center;}
 .my-item-emoji{width:48px;height:48px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
@@ -948,7 +948,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 
 /* Tighter section spacing */
 .wrap{max-width:1060px;margin:0 auto;padding:0 24px;}
-.page-pad{padding-top:36px;padding-bottom:72px;}
+.page-pad{padding-top:36px;padding-bottom:max(100px,calc(72px + env(safe-area-inset-bottom)));}
 
 /* Cleaner section backgrounds */
 .section-alt{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
