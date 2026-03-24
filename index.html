@@ -7324,13 +7324,15 @@ async function publishItem() {
   document.getElementById('pub-book-hint').style.display = 'none';
   if(btn) { btn.textContent = originalText; btn.disabled = false; }
 
-  pubGoTo(1);
-  pubCurrentScreen = 1;
+  showToast('✦ ¡Publicado en Truquo!');
   renderExplore(items);
   renderProfile();
   document.getElementById('prof-stat-items').textContent = myItems.length;
-  showToast('✦ ¡Publicado en Truquo!');
   navTo('explore');
+
+  // Reset del formulario en background
+  pubCurrentScreen = 1;
+  setTimeout(() => pubGoTo(1), 400);
 }
 
 // ═══════════════════════════════════
