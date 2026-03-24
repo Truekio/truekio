@@ -420,6 +420,13 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .review-stars{color:var(--gold);font-size:14px;margin-bottom:8px;}
 .review-text{font-size:13px;color:var(--text2);line-height:1.7;}
 
+/* ── PHOTO UPLOAD BUTTONS ── */
+.photo-upload-row{display:flex;gap:10px;margin-bottom:12px;}
+.photo-upload-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:18px 10px;border:1.5px dashed var(--border2);border-radius:var(--r);background:var(--bg);cursor:pointer;transition:all .18s;user-select:none;}
+.photo-upload-btn:hover{border-color:var(--accent);background:var(--accent-l);}
+.photo-upload-camera{border-color:var(--green);color:var(--green);}
+.photo-upload-camera:hover{border-color:var(--green);background:var(--green-l);}
+
 /* ── CITY AUTOCOMPLETE ── */
 .city-autocomplete{position:relative;}
 .city-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--accent);border-top:none;border-radius:0 0 var(--r) var(--r);box-shadow:var(--sh-md);z-index:50;max-height:200px;overflow-y:auto;display:none;}
@@ -2449,10 +2456,19 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <div class="step-head"><div class="step-num">1</div><div class="step-title">Foto y nombre</div></div>
           <div class="field">
             <label>Fotos <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(hasta 5)</span></label>
-            <div class="img-upload-area" id="img-upload-area" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" ondrop="imgDrop(event)">
-              <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)">
-              <div class="img-upload-icon">🖼️</div>
-              <div class="img-upload-hint">Arrastra fotos aquí o <strong>haz clic para subir</strong><br><span style="font-size:11px">JPG, PNG, WEBP · Máx. 5MB</span></div>
+            <div class="photo-upload-row">
+              <!-- Botón galería -->
+              <label class="photo-upload-btn" for="pub-images">
+                <span style="font-size:1.4rem">🖼️</span>
+                <span style="font-size:12px;font-weight:700">Galería</span>
+                <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)" style="display:none">
+              </label>
+              <!-- Botón cámara -->
+              <label class="photo-upload-btn photo-upload-camera" for="pub-camera">
+                <span style="font-size:1.4rem">📷</span>
+                <span style="font-size:12px;font-weight:700">Cámara</span>
+                <input type="file" id="pub-camera" accept="image/*" capture="environment" onchange="imgSelected(this)" style="display:none">
+              </label>
             </div>
             <div class="img-previews" id="img-previews"></div>
           </div>
@@ -5970,14 +5986,14 @@ async function saveEditItem() {
   let existingPhotos = [];
   try { existingPhotos = JSON.parse(preview.dataset.existingPhotos || '[]'); } catch(e) {}
 
-  // Subir fotos nuevas
+  // Subir fotos nuevas — comprimidas a JPEG 1200px
   const newPhotoUrls = [];
   for(let i = 0; i < editItemNewPhotos.length; i++) {
     const file = editItemNewPhotos[i];
     const userId = currentUser ? currentUser.id : 'anon';
-    const ext = file.type.split('/')[1] || 'jpg';
-    const fileName = `${userId}_${Date.now()}_${i}.${ext}`;
-    const { error: upErr } = await db.storage.from('photos').upload(fileName, file, { contentType: file.type });
+    const fileName = `${userId}_${Date.now()}_${i}.jpg`;
+    const blob = await compressToBlob(file);
+    const { error: upErr } = await db.storage.from('photos').upload(fileName, blob, { contentType: 'image/jpeg' });
     if (!upErr) {
       const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
       newPhotoUrls.push(urlData.publicUrl);
@@ -6948,22 +6964,72 @@ function imgSelected(input) {
   Array.from(input.files).forEach(f => addPubImage(f));
   input.value = '';
 }
-function imgDragOver(e) { e.preventDefault(); document.getElementById('img-upload-area').classList.add('dragover'); }
-function imgDragLeave(e) { document.getElementById('img-upload-area').classList.remove('dragover'); }
+function imgDragOver(e) { e.preventDefault(); document.getElementById('img-upload-area')?.classList.add('dragover'); }
+function imgDragLeave(e) { document.getElementById('img-upload-area')?.classList.remove('dragover'); }
 function imgDrop(e) {
   e.preventDefault();
-  document.getElementById('img-upload-area').classList.remove('dragover');
+  document.getElementById('img-upload-area')?.classList.remove('dragover');
   Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(f=>addPubImage(f));
 }
-function addPubImage(file) {
-  if(pubImages.length >= 5) { showToast('Máximo 5 imágenes'); return; }
-  if(file.size > 5*1024*1024) { showToast('Imagen demasiado grande (max 5MB)'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    pubImages.push({dataUrl: e.target.result, name: file.name});
-    renderImgPreviews();
-  };
-  reader.readAsDataURL(file);
+
+// Comprime la imagen a max 1200px y calidad 0.82 JPEG (~150-300KB)
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const MAX_PX = 1200;
+    const QUALITY = 0.82;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > MAX_PX || h > MAX_PX) {
+          if (w > h) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
+          else       { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', QUALITY));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Versión que devuelve Blob para subir a Supabase Storage
+function compressToBlob(file) {
+  return new Promise((resolve) => {
+    const MAX_PX = 1200;
+    const QUALITY = 0.82;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > MAX_PX || h > MAX_PX) {
+          if (w > h) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
+          else       { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', QUALITY);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addPubImage(file) {
+  if (pubImages.length >= 5) { showToast('Máximo 5 imágenes'); return; }
+  if (!file.type.startsWith('image/')) { showToast('Solo se admiten imágenes'); return; }
+  // Comprimir antes de guardar
+  const dataUrl = await compressImage(file);
+  pubImages.push({ dataUrl, name: file.name });
+  renderImgPreviews();
 }
 function renderImgPreviews() {
   const el = document.getElementById('img-previews');
@@ -7098,19 +7164,18 @@ async function publishItem() {
   const originalText = btn ? btn.textContent : '';
   if(btn) { btn.textContent = '⏳ Subiendo fotos...'; btn.disabled = true; }
 
-  // Subir fotos a Supabase Storage
+  // Subir fotos a Supabase Storage (ya comprimidas en addPubImage)
   let photoUrls = [];
   for(let i = 0; i < pubImages.length; i++) {
     const img = pubImages[i];
-    // Convertir dataUrl a Blob
+    // dataUrl ya es JPEG comprimido — convertir a Blob
     const res = await fetch(img.dataUrl);
     const blob = await res.blob();
-    const ext = blob.type.split('/')[1] || 'jpg';
-    const fileName = `${userId || 'anon'}_${Date.now()}_${i}.${ext}`;
+    const fileName = `${userId || 'anon'}_${Date.now()}_${i}.jpg`;
 
     const { error: uploadError } = await db.storage
       .from('photos')
-      .upload(fileName, blob, { contentType: blob.type });
+      .upload(fileName, blob, { contentType: 'image/jpeg' });
 
     if(uploadError) {
       console.error('Error subiendo foto:', uploadError);
