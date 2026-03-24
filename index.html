@@ -420,7 +420,23 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .review-stars{color:var(--gold);font-size:14px;margin-bottom:8px;}
 .review-text{font-size:13px;color:var(--text2);line-height:1.7;}
 
-/* ── PUBLISH ── */
+/* ── PUBLISH ACTIONS BAR ── */
+.pub-actions-bar{display:flex;gap:12px;margin-top:8px;}
+@media(max-width:640px){
+  .pub-actions-bar{
+    position:sticky;
+    bottom:calc(60px + env(safe-area-inset-bottom));
+    background:rgba(245,248,251,.97);
+    backdrop-filter:blur(16px);
+    padding:12px 0 10px;
+    margin:0 -24px;
+    padding-left:24px;
+    padding-right:24px;
+    border-top:1px solid var(--border);
+    z-index:100;
+    box-shadow:0 -4px 16px rgba(0,0,0,.06);
+  }
+}
 .publish-wrap{max-width:620px;margin:0 auto;}
 .step-card{padding:26px;margin-bottom:16px;}
 .step-head{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
@@ -2499,9 +2515,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
 
         <!-- Botones paso 1 -->
-        <div style="display:flex;gap:12px;margin-top:8px">
+        <div class="pub-actions-bar">
           <button class="btn btn-primary btn-lg btn-r" style="flex:2;box-shadow:0 4px 16px rgba(78,143,186,.25)" onclick="publishItem()">🚀 Publicar</button>
-          <button class="btn btn-ghost btn-lg btn-r" style="flex:1" onclick="goToPubStep2()">Añadir detalles →</button>
+          <button class="btn btn-ghost btn-lg btn-r" style="flex:1" onclick="goToPubStep2()">Detalles →</button>
         </div>
 
       </div>
@@ -2542,7 +2558,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
 
         <!-- Botones paso 2 -->
-        <div style="display:flex;gap:12px;margin-top:8px">
+        <div class="pub-actions-bar">
           <button class="btn btn-ghost btn-lg btn-r" style="flex:1" onclick="goToPubStep1()">← Atrás</button>
           <button class="btn btn-primary btn-lg btn-r" style="flex:2;box-shadow:0 4px 16px rgba(78,143,186,.25)" onclick="publishItem()">🚀 Publicar</button>
         </div>
