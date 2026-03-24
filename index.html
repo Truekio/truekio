@@ -4376,7 +4376,35 @@ async function renderConfirmations() {
     else confCount.style.display = 'none';
   }
 
-  list.innerHTML = convs.map(c => {
+  // Cargar IDs de conversaciones que el usuario ya valoró
+  const { data: myReviews } = await db
+    .from('reviews')
+    .select('conversation_id')
+    .eq('reviewer_id', currentUser.id);
+  const reviewedConvIds = new Set((myReviews || []).map(r => r.conversation_id));
+
+  // Filtrar: mostrar solo las que NO están completadas, O están completadas pero pendientes de valorar
+  const visibleConvs = convs.filter(c => {
+    const confirmed = getConfirmed(c);
+    const otherUserId = isUser1(c) ? c.user2_id : c.user1_id;
+    const done = confirmed.includes(currentUser.id) && confirmed.includes(otherUserId);
+    if (!done) return true; // en curso → mostrar
+    return !reviewedConvIds.has(c.id); // completado pero sin valorar → mostrar
+    // completado y ya valorado → ocultar
+  });
+
+  if (!visibleConvs.length) {
+    list.innerHTML = emptyState({
+      icon:'✅', title:'Todo al día',
+      body:'No tienes trueques pendientes de confirmar ni de valorar.',
+      cta:'Explorar objetos', ctaAction:"navTo('explore')",
+    });
+    const confCount = document.getElementById('mtab-confirm-count');
+    if (confCount) confCount.style.display = 'none';
+    return;
+  }
+
+  list.innerHTML = visibleConvs.map(c => {
     const confirmed = getConfirmed(c);
     const myConfirmed = confirmed.includes(currentUser.id);
     const otherUserId = isUser1(c) ? c.user2_id : c.user1_id;
@@ -5843,10 +5871,11 @@ async function submitReview() {
   if (error) console.warn('Reviews table error:', error.message);
 
   closeReviewModal();
-  showToast('⭐ ¡Valoración enviada! +3 puntos de confianza');
+  showToast('⭐ ¡Valoración enviada!');
 
   await loadReviews();
   await loadProfileStats();
+  renderConfirmations();
   switchPTab('reviews');
   navTo('profile');
 }
