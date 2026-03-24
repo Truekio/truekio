@@ -266,36 +266,45 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .search-bar input{background:none;border:none;color:var(--text);font-size:14px;outline:none;width:100%;}
 
 /* ── ITEM CARDS — redesigned ── */
-.items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:20px;}
-.item-card{display:flex;flex-direction:column;border-radius:var(--r-lg);overflow:hidden;transition:all .25s cubic-bezier(.22,1,.36,1);}
-.item-card:hover{transform:translateY(-6px);box-shadow:var(--sh-lg);}
-.item-card.is-premium{box-shadow:var(--sh-premium);border-color:rgba(245,158,11,.4);}
-.item-card.is-premium:hover{box-shadow:0 16px 48px rgba(245,158,11,.3),var(--sh-lg);}
-.item-img{aspect-ratio:1/1;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;overflow:hidden;}
+/* ── EXPLORER GRID — 2 col Wallapop style ── */
+.items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.item-card{display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden;transition:all .2s cubic-bezier(.22,1,.36,1);background:var(--white);border:1px solid var(--border);}
+.item-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md);}
+.item-card.is-premium{border-color:rgba(245,158,11,.35);}
+.item-card.is-premium:hover{box-shadow:0 8px 28px rgba(245,158,11,.18),var(--sh-md);}
+
+/* Foto cuadrada dominante */
+.item-img{aspect-ratio:1/1;position:relative;overflow:hidden;background:var(--bg2);}
 .item-img-bg{position:absolute;inset:0;opacity:.12;}
-.item-img-emoji{position:relative;z-index:1;font-size:3.8rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.08));transition:transform .3s ease;}
-.item-card:hover .item-img-emoji{transform:scale(1.08) translateY(-3px);}
-.item-cat-pill{position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;padding:4px 10px;border-radius:99px;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.3);box-shadow:0 2px 8px rgba(0,0,0,.12);}
-.item-match-badge{position:absolute;top:12px;right:12px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:4px 10px;border-radius:99px;box-shadow:0 2px 8px rgba(78,143,186,.3);}
+.item-img-emoji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.6rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.08));transition:transform .3s ease;}
+.item-card:hover .item-img-emoji{transform:scale(1.06);}
+
+/* Badges sobre la foto */
+.item-cat-pill{position:absolute;top:8px;left:8px;display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;backdrop-filter:blur(10px);background:rgba(255,255,255,.88);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.item-match-badge{position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
 @keyframes matchPulse{0%,100%{box-shadow:0 2px 8px rgba(78,143,186,.3);}50%{box-shadow:0 2px 16px rgba(78,143,186,.8);}}
-.item-premium-badge{position:absolute;top:12px;right:12px;background:var(--elite-1);color:#fff;font-size:10px;font-weight:800;padding:4px 10px;border-radius:99px;box-shadow:var(--sh-premium);}
-.item-verified{position:absolute;bottom:10px;left:10px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);color:var(--green);font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;}
-.item-value-tag{position:absolute;bottom:10px;right:10px;background:rgba(26,23,20,.82);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;}
-.item-body{padding:16px 18px;display:flex;flex-direction:column;flex:1;}
-.item-user-row{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
-.item-user-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;color:#fff;font-weight:700;}
-.item-user-name{font-size:11px;font-weight:600;color:var(--muted);}
-.item-name{font-weight:800;font-size:.98rem;margin-bottom:4px;line-height:1.3;color:var(--text);}
-.item-location{font-size:11px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.wants-label{font-size:9px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;}
-.wants-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;flex:1;}
-.wants-tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;}
-.item-actions{display:flex;gap:8px;margin-top:auto;}
-.fav-btn{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;padding:0;}
-.fav-btn:hover{background:var(--accent-l);border-color:rgba(78,143,186,.2);}
+.item-premium-badge{position:absolute;top:8px;right:8px;background:var(--elite-1);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
+.item-verified{position:absolute;bottom:8px;left:8px;background:rgba(255,255,255,.9);color:var(--green);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;}
+.item-value-tag{position:absolute;bottom:8px;right:8px;background:rgba(26,23,20,.78);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;}
+
+/* Botón corazón flotante sobre foto */
+.fav-btn{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.fav-btn:hover{background:#fff;transform:scale(1.1);}
 .fav-btn:hover svg{stroke:var(--accent);}
 .fav-btn.faved svg{stroke:#e53e3e;fill:#e53e3e;}
-.fav-heart{width:16px;height:16px;stroke:var(--muted2);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:all .2s;}
+.fav-heart{width:14px;height:14px;stroke:var(--muted2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:all .18s;}
+
+/* Info debajo de la foto — compacta */
+.item-body{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
+.item-user-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.item-user-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;flex-shrink:0;color:#fff;font-weight:700;}
+.item-user-name{font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-name{font-weight:700;font-size:.85rem;margin-bottom:3px;line-height:1.3;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.item-location{font-size:10px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.wants-label{font-size:9px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.wants-tags{display:flex;gap:4px;flex-wrap:wrap;flex:1;}
+.wants-tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;}
+.item-actions{display:flex;gap:8px;margin-top:auto;}
 
 /* Category-specific card themes */
 .item-card[data-cat="Electrónica"] .item-img{background:linear-gradient(160deg,#f0f5ff,#dde8f8);}
@@ -744,7 +753,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   .hero-grid{grid-template-columns:1fr;gap:0;padding:44px 0;}
   .stats-grid{grid-template-columns:1fr 1fr;}
   .how-grid{grid-template-columns:1fr;}
-  .items-grid{grid-template-columns:1fr 1fr;}
+  .items-grid{grid-template-columns:1fr 1fr;gap:8px;}
   .messages-layout{grid-template-columns:1fr;position:relative;}
   .conv-list{display:flex;}
   .chat-main{display:none;}
@@ -765,7 +774,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   .items-grid{grid-template-columns:1fr 1fr;gap:12px;}
 }
 @media(max-width:400px){
-  .items-grid{grid-template-columns:1fr;}
+  .items-grid{grid-template-columns:1fr 1fr;gap:6px;}
 }
 
 /* ══════════════════════════════════
@@ -894,6 +903,9 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .review-stars{color:var(--gold);}
 
 /* Improved responsive */
+@media(min-width:900px){
+  .items-grid{grid-template-columns:repeat(3,1fr);gap:12px;}
+}
 @media(max-width:640px){
   .nav-tabs{display:none;}
   .bottom-nav{display:block;}
@@ -901,7 +913,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   .hero-grid{grid-template-columns:1fr;gap:0;padding:40px 0 32px;}
   .stats-grid{grid-template-columns:1fr 1fr;}
   .how-grid{grid-template-columns:1fr;}
-  .items-grid{grid-template-columns:1fr 1fr;gap:12px;}
+  .items-grid{grid-template-columns:1fr 1fr;gap:8px;}
   .messages-layout{grid-template-columns:1fr;position:relative;}
   .conv-list{display:flex;}
   .chat-main{display:none;}
@@ -922,9 +934,11 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   .trust-metrics{grid-template-columns:repeat(2,1fr);}
   .stories-feed{grid-template-columns:1fr;}
   .premium-grid{grid-template-columns:1fr 1fr;}
+  .wrap{padding:0 12px;}
+  .item-body{padding:8px 9px 10px;}
 }
-@media(max-width:420px){
-  .items-grid{grid-template-columns:1fr;}
+@media(max-width:360px){
+  .items-grid{grid-template-columns:1fr 1fr;gap:6px;}
   .trust-metrics{grid-template-columns:repeat(2,1fr);}
 }
 
@@ -3274,41 +3288,23 @@ function itemCardHTML(item, isPremiumView=false) {
     : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
-  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}" onclick_disabled="">
-    <div class="item-img" style="background:transparent;cursor:pointer" onclick="openDetail(${item.id})">
+  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
+    <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
       ${topBadge}
-      ${item.verified ? '<div class="item-verified">✓ Verificado</div>' : ''}
+      ${item.verified ? '<div class="item-verified">✓</div>' : ''}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
+      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,\"\")}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
-    <div style="display:flex;justify-content:flex-end;padding:6px 10px 0;background:var(--white)">
-      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)" style="background:none;border:none;cursor:pointer;padding:2px;line-height:0"><svg class="fav-heart" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-    </div>
-    <div class="item-body">
-      <div class="item-user-row">
-        <div class="item-user-avatar" style="background:${userBg};overflow:hidden">${
-  item.userAvatar ? `<img src="${item.userAvatar}" style="width:100%;height:100%;object-fit:cover">` :
-  USER_PHOTOS[item.user] ? `<img src="${USER_PHOTOS[item.user]}" style="width:100%;height:100%;object-fit:cover">` :
-  `<span style="font-size:.7rem;font-weight:700;color:#fff">${(item.user||'?').charAt(0).toUpperCase()}</span>`
-}</div>
-        <span class="item-user-name">${item.user}</span>
-        <span class="trust-mini ${trustCls}" style="margin-left:2px">${trustLbl}</span>
-      </div>
+    <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
-      <div class="item-location">
-        <span>📍 ${item.location}</span>
-        <span style="color:var(--border2)">·</span>
-        <span>${item.condition||'Bueno'}</span>
-        ${(sortByDistance && item._dist != null && item._dist !== Infinity) ? `<span class="dist-badge">🗺 ${item._dist < 1 ? '<1' : Math.round(item._dist)} km</span>` : ''}
-      </div>
-      <div class="wants-label">Acepta a cambio</div>
+      <div class="item-location">📍 ${item.location}${(sortByDistance && item._dist != null && item._dist !== Infinity) ? ` · <span class="dist-badge">${item._dist < 1 ? '<1' : Math.round(item._dist)} km</span>` : ''}</div>
       <div class="wants-tags">
-        ${item.exchangeOptions ? item.exchangeOptions.slice(0,3).map(o =>
-          `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}${o.items.length>1?' +'+( o.items.length-1):''}</span>`
-        ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
+        ${item.exchangeOptions ? item.exchangeOptions.slice(0,2).map(o =>
+          `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}</span>`
+        ).join('') + (item.exchangeOptions.length > 2 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-2}</span>` : '') : item.wants.slice(0,2).map(w=>`<span class="wants-tag">${w}</span>`).join('')}
       </div>
-
     </div>
   </div>`;
 }
@@ -3558,41 +3554,23 @@ function itemCardHTML(item, isPremiumView=false) {
     : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
-  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}" onclick_disabled="">
-    <div class="item-img" style="background:transparent;cursor:pointer" onclick="openDetail(${item.id})">
+  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
+    <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
       <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}</div>
       ${topBadge}
-      ${item.verified ? '<div class="item-verified">✓ Verificado</div>' : ''}
+      ${item.verified ? '<div class="item-verified">✓</div>' : ''}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
+      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,\"\")}','${item.cat}','${item.emoji}',event)"><svg class="fav-heart" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
-    <div style="display:flex;justify-content:flex-end;padding:6px 10px 0;background:var(--white)">
-      <button class="fav-btn" title="Añadir a lista de deseos" onclick="addToWishlistFromCard('${item.name.replace(/'/g,'')}','${item.cat}','${item.emoji}',event)" style="background:none;border:none;cursor:pointer;padding:2px;line-height:0"><svg class="fav-heart" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--muted2)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-    </div>
-    <div class="item-body">
-      <div class="item-user-row">
-        <div class="item-user-avatar" style="background:${userBg};overflow:hidden">${
-  item.userAvatar ? `<img src="${item.userAvatar}" style="width:100%;height:100%;object-fit:cover">` :
-  USER_PHOTOS[item.user] ? `<img src="${USER_PHOTOS[item.user]}" style="width:100%;height:100%;object-fit:cover">` :
-  `<span style="font-size:.7rem;font-weight:700;color:#fff">${(item.user||'?').charAt(0).toUpperCase()}</span>`
-}</div>
-        <span class="item-user-name">${item.user}</span>
-        <span class="trust-mini ${trustCls}" style="margin-left:2px">${trustLbl}</span>
-      </div>
+    <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
-      <div class="item-location">
-        <span>📍 ${item.location}</span>
-        <span style="color:var(--border2)">·</span>
-        <span>${item.condition||'Bueno'}</span>
-        ${(sortByDistance && item._dist != null && item._dist !== Infinity) ? `<span class="dist-badge">🗺 ${item._dist < 1 ? '<1' : Math.round(item._dist)} km</span>` : ''}
-      </div>
-      <div class="wants-label">Acepta a cambio</div>
+      <div class="item-location">📍 ${item.location}${(sortByDistance && item._dist != null && item._dist !== Infinity) ? ` · <span class="dist-badge">${item._dist < 1 ? '<1' : Math.round(item._dist)} km</span>` : ''}</div>
       <div class="wants-tags">
-        ${item.exchangeOptions ? item.exchangeOptions.slice(0,3).map(o =>
-          `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}${o.items.length>1?' +'+( o.items.length-1):''}</span>`
-        ).join('') + (item.exchangeOptions.length > 3 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-3} más</span>` : '') : wantTags}
+        ${item.exchangeOptions ? item.exchangeOptions.slice(0,2).map(o =>
+          `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}</span>`
+        ).join('') + (item.exchangeOptions.length > 2 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-2}</span>` : '') : item.wants.slice(0,2).map(w=>`<span class="wants-tag">${w}</span>`).join('')}
       </div>
-
     </div>
   </div>`;
 }
@@ -4844,31 +4822,11 @@ async function openConv(convId) {
   // Recargar lista para marcar activo
   loadConversations();
 
-  // Polling dinámico cada 3 segundos — solo añade mensajes nuevos
+  // Polling cada 5 segundos para nuevos mensajes
   if (msgPollingInterval) clearInterval(msgPollingInterval);
   msgPollingInterval = setInterval(() => {
-    if (activeConvId === convId) pollNewMessages(convId);
-  }, 3000);
-}
-
-// IDs de mensajes ya renderizados para no volver a pintarlos
-let _renderedMsgIds = new Set();
-// Último timestamp de mensaje visto (para polling incremental)
-let _lastMsgTimestamp = null;
-
-function _buildMsgHtml(m, otherName, bg) {
-  const isOut = m.sender_id === currentUser.id;
-  const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
-  return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
-    ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
-    <div>
-      ${isOut ? `<div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
-        <button onclick="deleteMessage('${m.id}')" class="msg-delete-btn" title="Eliminar">🗑</button>
-        <div class="bubble bubble-out">${m.text}</div>
-      </div>` : `<div class="bubble bubble-in">${m.text}</div>`}
-      <div class="msg-time" style="text-align:${isOut?'right':'left'}">${time}</div>
-    </div>
-  </div>`;
+    if (activeConvId === convId) loadMessages(convId);
+  }, 5000);
 }
 
 async function loadMessages(convId) {
@@ -4888,96 +4846,36 @@ async function loadMessages(convId) {
   const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
 
+  // Mensaje inicial del sistema
   const systemMsg = `
-    <div id="chat-system-msg" style="text-align:center;padding:16px 20px;margin-bottom:8px">
+    <div style="text-align:center;padding:16px 20px;margin-bottom:8px">
       <div style="display:inline-block;background:var(--green-l);color:var(--green);font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px">
         🤝 Trueque aceptado — coordinad el punto de encuentro
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${conv ? conv.item1_title + ' ↔ ' + conv.item2_title : ''}</div>
     </div>`;
 
-  _renderedMsgIds = new Set();
-  _lastMsgTimestamp = null;
-
   if (!data || !data.length) {
-    el.innerHTML = systemMsg + '<div id="chat-empty-hint" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
+    el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
     return;
   }
 
   el.innerHTML = systemMsg + data.map(m => {
-    _renderedMsgIds.add(m.id);
-    return _buildMsgHtml(m, otherName, bg);
+    const isOut = m.sender_id === currentUser.id;
+    const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+    return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
+      ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
+      <div>
+        ${isOut ? `<div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
+          <button onclick="deleteMessage('${m.id}')" class="msg-delete-btn" title="Eliminar">🗑</button>
+          <div class="bubble bubble-out">${m.text}</div>
+        </div>` : `<div class="bubble bubble-in">${m.text}</div>`}
+        <div class="msg-time" style="text-align:${isOut?'right':'left'}">${time}</div>
+      </div>
+    </div>`;
   }).join('');
 
-  // Guardar el timestamp del último mensaje
-  if (data.length) _lastMsgTimestamp = data[data.length - 1].created_at;
-
   scrollMsgs();
-}
-
-// ── Polling incremental: solo añade mensajes nuevos al DOM ──
-async function pollNewMessages(convId) {
-  if (!currentUser || !activeConvData) return;
-  const el = document.getElementById('chat-msgs');
-  if (!el) return;
-
-  let query = db.from('messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
-  if (_lastMsgTimestamp) query = query.gt('created_at', _lastMsgTimestamp);
-
-  const { data } = await query;
-  if (!data || !data.length) return;
-
-  const newMsgs = data.filter(m => !_renderedMsgIds.has(m.id));
-  if (!newMsgs.length) return;
-
-  const conv = activeConvData;
-  const isUser1 = conv.user1_id === currentUser.id;
-  const otherName = isUser1 ? conv.user2_name : conv.user1_name;
-  const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
-
-  const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
-  const hasIncoming = newMsgs.some(m => m.sender_id !== currentUser.id);
-
-  const hint = document.getElementById('chat-empty-hint');
-  if (hint) hint.remove();
-
-  newMsgs.forEach(m => {
-    _renderedMsgIds.add(m.id);
-    const div = document.createElement('div');
-    div.innerHTML = _buildMsgHtml(m, otherName, bg);
-    el.appendChild(div.firstElementChild);
-  });
-
-  _lastMsgTimestamp = newMsgs[newMsgs.length - 1].created_at;
-
-  if (isAtBottom) {
-    scrollMsgs();
-  } else if (hasIncoming) {
-    showNewMsgPill(el, otherName);
-  }
-
-  loadConversations();
-
-  if (hasIncoming && document.visibilityState === 'visible') {
-    playNotifSound();
-  }
-}
-
-function showNewMsgPill(container, senderName) {
-  if (document.getElementById('new-msg-pill')) return;
-  const pill = document.createElement('button');
-  pill.id = 'new-msg-pill';
-  pill.innerHTML = `↓ Nuevo mensaje de ${senderName}`;
-  pill.style.cssText = `position:sticky;bottom:8px;left:50%;transform:translateX(-50%);display:block;margin:0 auto;background:#1a2a3a;color:#fff;border:none;padding:8px 20px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);font-family:'Plus Jakarta Sans',sans-serif;animation:toastIn .22s ease both;z-index:10;white-space:nowrap;`;
-  pill.onclick = () => { scrollMsgs(); pill.remove(); };
-  container.appendChild(pill);
-  const onScroll = () => {
-    if (container.scrollHeight - container.scrollTop - container.clientHeight < 60) {
-      pill.remove();
-      container.removeEventListener('scroll', onScroll);
-    }
-  };
-  container.addEventListener('scroll', onScroll);
 }
 
 async function deleteMessage(msgId) {
@@ -5019,41 +4917,22 @@ async function sendMessage() {
 
   const senderName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
 
-  const { data: insertedRows, error } = await db.from('messages').insert([{
+  const { error } = await db.from('messages').insert([{
     conversation_id: activeConvId,
     sender_id: currentUser.id,
     sender_name: senderName,
     text,
-  }]).select();
+  }]);
 
-  if (error) { showToast('⚠️ Error al enviar'); input.value = text; return; }
+  if (error) { showToast('⚠️ Error al enviar'); return; }
 
-  // Actualizar last_message en background
-  db.from('conversations').update({
+  // Actualizar last_message
+  await db.from('conversations').update({
     last_message: text,
     last_message_at: new Date().toISOString(),
   }).eq('id', activeConvId);
 
-  // Añadir el mensaje al DOM de forma instantánea (sin recargar nada)
-  const el = document.getElementById('chat-msgs');
-  if (el && insertedRows && insertedRows.length) {
-    const hint = document.getElementById('chat-empty-hint');
-    if (hint) hint.remove();
-    const conv = activeConvData;
-    const isUser1 = conv && conv.user1_id === currentUser.id;
-    const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
-    const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
-    const newMsg = insertedRows[0];
-    if (!_renderedMsgIds.has(newMsg.id)) {
-      _renderedMsgIds.add(newMsg.id);
-      _lastMsgTimestamp = newMsg.created_at;
-      const div = document.createElement('div');
-      div.innerHTML = _buildMsgHtml(newMsg, otherName, bg);
-      el.appendChild(div.firstElementChild);
-      scrollMsgs();
-    }
-  }
-
+  loadMessages(activeConvId);
   loadConversations();
 }
 
