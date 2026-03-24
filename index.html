@@ -2608,37 +2608,64 @@ window._enterApp = function() {
   }
 
   navTo('explore');
-  // Activar ordenación por cercanía automáticamente si el usuario da permiso
+
+  // ── Geolocalización: usar coords guardadas al instante, actualizar en bg ──
+  function applyGeoAndRender(coords) {
+    userCoords = coords;
+    sortByDistance = true;
+    try { localStorage.setItem('truquo_coords', JSON.stringify(coords)); } catch(e) {}
+    const city = getNearestCityName ? getNearestCityName(coords.lat, coords.lng) : null;
+    const locationBar = document.getElementById('location-bar');
+    const locateLabel = document.getElementById('locate-label');
+    const locateIcon = document.getElementById('locate-icon');
+    if (locationBar) locationBar.style.display = 'flex';
+    if (locateLabel) locateLabel.textContent = 'Cerca de ' + (city || 'ti');
+    if (locateIcon) locateIcon.textContent = '✓';
+  }
+
+  // Si ya tenemos coords guardadas → aplicar de inmediato sin pedir permiso
+  if (userCoords) {
+    applyGeoAndRender(userCoords);
+    // Re-renderizar el explorador ya ordenado por distancia
+    setTimeout(() => {
+      items = items.map(i => ({
+        ...i,
+        _dist: CITY_COORDS && CITY_COORDS[i.location]
+          ? distanceKm(userCoords.lat, userCoords.lng, CITY_COORDS[i.location].lat, CITY_COORDS[i.location].lng)
+          : (i.lat ? distanceKm(userCoords.lat, userCoords.lng, i.lat, i.lng) : 9999)
+      })).sort((a, b) => (a._dist||9999) - (b._dist||9999));
+      renderExplore(items);
+    }, 100);
+  }
+
+  // En segundo plano: actualizar coords (silencioso, sin re-renderizar si no cambiaron mucho)
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       pos => {
-        userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        sortByDistance = true;
-        const city = getNearestCityName ? getNearestCityName(userCoords.lat, userCoords.lng) : null;
-        const locationBar = document.getElementById('location-bar');
-        const locateLabel = document.getElementById('locate-label');
-        const locateIcon = document.getElementById('locate-icon');
-        if (locationBar) locationBar.style.display = 'flex';
-        if (locateLabel) locateLabel.textContent = 'Cerca de ' + (city || 'ti');
-        if (locateIcon) locateIcon.textContent = '✓';
-        // Recargar explorador con orden por distancia
-        setTimeout(async () => {
-          const fresh = await loadItemsFromSupabase();
-          const demoItems = ITEMS_DATA.map(i => ({...i, _isDemo: true}));
-          // Calcular distancia para items demo usando CITY_COORDS
-          const demoWithDist = demoItems.map(item => ({
-            ...item,
-            _dist: (userCoords && CITY_COORDS && CITY_COORDS[item.location])
-              ? distanceKm(userCoords.lat, userCoords.lng, CITY_COORDS[item.location].lat, CITY_COORDS[item.location].lng)
-              : 9999
-          }));
-          items = [...(fresh || []), ...demoWithDist].sort((a, b) => (a._dist||9999) - (b._dist||9999));
-          const countEl = document.getElementById('items-count');
-          if (countEl) countEl.textContent = items.length + ' objetos disponibles';
-          renderExplore(items);
-        }, 150);
+        const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const changed = !userCoords ||
+          Math.abs(newCoords.lat - userCoords.lat) > 0.01 ||
+          Math.abs(newCoords.lng - userCoords.lng) > 0.01;
+        applyGeoAndRender(newCoords);
+        if (changed) {
+          // Solo re-renderiza si la posición cambió significativamente
+          setTimeout(async () => {
+            const fresh = await loadItemsFromSupabase();
+            const demoItems = ITEMS_DATA.map(i => ({...i, _isDemo: true}));
+            const demoWithDist = demoItems.map(item => ({
+              ...item,
+              _dist: CITY_COORDS && CITY_COORDS[item.location]
+                ? distanceKm(userCoords.lat, userCoords.lng, CITY_COORDS[item.location].lat, CITY_COORDS[item.location].lng)
+                : 9999
+            }));
+            items = [...(fresh || []), ...demoWithDist].sort((a, b) => (a._dist||9999) - (b._dist||9999));
+            const countEl = document.getElementById('items-count');
+            if (countEl) countEl.textContent = items.length + ' objetos disponibles';
+            renderExplore(items);
+          }, 150);
+        }
       },
-      () => {} // Sin permiso, no pasa nada
+      () => {} // Sin permiso: se queda con las coords guardadas o sin orden
     );
   }
   // Pre-cargar objetos del usuario para el perfil
@@ -5996,8 +6023,11 @@ const CITY_COORDS = {
   'Ceuta':{lat:35.8893,lng:-5.3213},'Melilla':{lat:35.2923,lng:-2.9381},'España':{lat:40.4168,lng:-3.7038}
 };
 
-let userCoords = null;
-let sortByDistance = false;
+// Recuperar coords guardadas en sesión anterior
+let _savedCoords = null;
+try { _savedCoords = JSON.parse(localStorage.getItem('truquo_coords')); } catch(e) {}
+let userCoords = _savedCoords || null;
+let sortByDistance = !!userCoords; // activo por defecto si ya tenemos coords
 
 function goToPubStep2() {
   const name = document.getElementById('pub-name').value.trim();
