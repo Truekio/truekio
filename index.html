@@ -428,7 +428,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .photo-upload-camera:hover{border-color:var(--green);background:var(--green-l);}
 
 /* ── PUBLISH FLOW (Wallapop style) ── */
-.pub-flow{display:flex;flex-direction:column;height:100dvh;height:100vh;background:var(--white);}
+.pub-flow{display:flex;flex-direction:column;min-height:100svh;background:var(--white);}
 .pub-flow-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--white);}
 .pub-flow-back{width:36px;height:36px;border-radius:50%;background:var(--bg2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
 .pub-flow-back:hover{background:var(--bg3);}
@@ -438,7 +438,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .pub-flow-body{flex:1;overflow-y:auto;padding:24px 20px;-webkit-overflow-scrolling:touch;}
 .pub-screen-title{font-family:'Playfair Display',serif;font-weight:700;font-size:1.5rem;margin-bottom:6px;letter-spacing:-.02em;}
 .pub-screen-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
-.pub-flow-foot{padding:14px 20px max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--border);flex-shrink:0;background:var(--white);}
+.pub-flow-foot{padding:14px 20px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid var(--border);flex-shrink:0;background:var(--white);position:sticky;bottom:0;}
 
 /* ── CITY AUTOCOMPLETE ── */
 .city-autocomplete{position:relative;}
@@ -3443,7 +3443,14 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(v === 'publish') { setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300); }
+  if(v === 'publish') {
+    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+  }
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
@@ -3461,7 +3468,14 @@ function navToActivity(tab) {
   if(tab) switchMatchTab(tab);
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(v === 'publish') { setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300); }
+  if(v === 'publish') {
+    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+  }
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
@@ -3669,7 +3683,14 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(v === 'publish') { setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300); }
+  if(v === 'publish') {
+    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+  }
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
@@ -3687,7 +3708,14 @@ function navToActivity(tab) {
   if(tab) switchMatchTab(tab);
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(v === 'publish') { setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300); }
+  if(v === 'publish') {
+    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+  }
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
