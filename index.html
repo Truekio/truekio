@@ -795,7 +795,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .filter-scroll::-webkit-scrollbar{display:none;}
 .filter-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:99px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .18s;white-space:nowrap;box-shadow:var(--sh);flex-shrink:0;}
 .filter-btn.active{color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.2);}
-.filter-btn.active[data-cat="Todos"]{background:var(--accent);border-color:var(--accent);}
+.filter-btn.active[data-sort]{background:var(--accent);border-color:var(--accent);}
 .filter-btn.active[data-cat="Electrónica"]{background:var(--cat-electronica);border-color:var(--cat-electronica);}
 .filter-btn.active[data-cat="Música"]{background:var(--cat-musica);border-color:var(--cat-musica);}
 .filter-btn.active[data-cat="Deporte"]{background:var(--cat-deporte);border-color:var(--cat-deporte);}
@@ -2778,14 +2778,10 @@ function fdApply() {
   if (btn) btn.classList.toggle('active', activeCount > 0);
   if (badge) { badge.textContent = activeCount; badge.style.display = activeCount > 0 ? 'inline-flex' : 'none'; }
 
-  // Actualizar también el filtro de categoría pills
-  if (fdState.cat) {
-    currentFilter = fdState.cat;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === fdState.cat));
-  } else {
-    currentFilter = 'Todos';
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === 'Todos'));
-  }
+  // Actualizar currentFilter con la categoría del drawer
+  currentFilter = fdState.cat || 'Todos';
+  // Sincronizar sort pills del explorador
+  document.querySelectorAll('.filter-btn[data-sort]').forEach(b => b.classList.toggle('active', b.dataset.sort === (fdState.sort || 'relevance')));
 
   // Renderizar chips activos
   _fdRenderActiveChips();
@@ -3463,7 +3459,7 @@ function clearAllFilters() {
   document.querySelectorAll('.sp-chip.on').forEach(c=>c.classList.remove('on'));
   applyFilter('', 'Todos');
   currentFilter = 'Todos';
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat==='Todos'));
+  document.querySelectorAll('.filter-btn[data-sort]').forEach(b=>b.classList.toggle('active',b.dataset.sort==='relevance'));
   renderActiveFilterChips();
   updateFilterBadge();
 }
@@ -3701,7 +3697,7 @@ function clearAllFilters() {
   document.querySelectorAll('.sp-chip.on').forEach(c=>c.classList.remove('on'));
   applyFilter('', 'Todos');
   currentFilter = 'Todos';
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat==='Todos'));
+  document.querySelectorAll('.filter-btn[data-sort]').forEach(b=>b.classList.toggle('active',b.dataset.sort==='relevance'));
   renderActiveFilterChips();
   updateFilterBadge();
 }
@@ -3755,19 +3751,28 @@ function showToast(msg) {
 function buildFilters() {
   const row = document.getElementById('filter-row');
   row.className = 'filter-scroll';
-  row.innerHTML = CATS.map(c => `
-    <button class="filter-btn${c==='Todos'?' active':''}" data-cat="${c}" onclick="filterItems(this,'${c}')">
-      ${CAT_ICONS[c]} ${c}
-    </button>`).join('') +
-    `<button class="filter-btn" data-cat="Premium" onclick="filterItems(this,'Premium')" style="background:linear-gradient(135deg,#fef3c7,#fee2e2);border-color:rgba(245,158,11,.4);color:#92400e">✦ Premium</button>`;
+  const sorts = [
+    { val: 'relevance', icon: '✦', label: 'Relevancia' },
+    { val: 'match',     icon: '⚡', label: '% Match' },
+    { val: 'distance',  icon: '📍', label: 'Distancia' },
+    { val: 'recent',    icon: '🕒', label: 'Reciente' },
+    { val: 'trust',     icon: '⭐', label: 'Valorado' },
+  ];
+  row.innerHTML = sorts.map(s => `
+    <button class="filter-btn${s.val==='relevance'?' active':''}" data-sort="${s.val}" onclick="setSortFilter(this,'${s.val}')">
+      ${s.icon} ${s.label}
+    </button>`).join('');
 }
 
-function filterItems(btn, cat) {
+function setSortFilter(btn, sortVal) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  currentFilter = cat;
-  const q = document.getElementById('search-input').value;
-  applyFilter(q, cat);
+  spFilters.sort = sortVal;
+  fdState.sort = sortVal;
+  // Sincronizar el sort en el drawer también
+  document.querySelectorAll('#fd-sort-chips .fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === sortVal));
+  const q = document.getElementById('search-input')?.value || '';
+  applyFilter(q, currentFilter);
 }
 
 function searchItems(q) { applyFilter(q, currentFilter); }
@@ -4059,7 +4064,7 @@ function renderExplore(list) {
     g.innerHTML = premiumBanner + `<div style="grid-column:1/-1">` + emptyState({
       icon:'🔍', title:'Sin resultados',
       body:'Prueba con otro término, categoría o ajusta los filtros. También puedes publicar lo que buscas en tu lista de deseos.',
-      cta:'Limpiar filtros', ctaAction:"clearAllFilters();filterItems(document.querySelector('[data-cat=Todos]'),'Todos')",
+      cta:'Limpiar filtros', ctaAction:"clearAllFilters()",
       ctaSecondary:'Añadir a lista de deseos', ctaSecondaryAction:"navTo('activity');switchMatchTab('wishlist-act')",
     }) + `</div>`;
     return;
