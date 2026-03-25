@@ -5554,6 +5554,7 @@ function openDetail(itemId) {
     item.user === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0])
   );
 
+  const safeUserName = (item.user || '').replace(/['"\\]/g, '');
   document.getElementById('detail-user-row').innerHTML = `
     <div style="width:42px;height:42px;border-radius:50%;background:${uBg};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;font-weight:700">${item.userEmoji || item.user?.charAt(0)?.toUpperCase()}</div>
     <div style="flex:1;min-width:0">
@@ -5564,7 +5565,7 @@ function openDetail(itemId) {
         <span style="font-size:10px;color:var(--muted)">· 📍 ${item.location||''}</span>
       </div>
     </div>
-    ${!isOwnRow ? `<button onclick="openUserProfile('${item.user_id||''}','${item.user?.replace(/'/g,'\\'')}',${item.id})"
+    ${!isOwnRow ? `<button onclick="openUserProfile('${item.user_id||''}','${safeUserName}',${JSON.stringify(item.id)})"
       style="background:var(--accent-l);color:var(--accent);border:none;padding:6px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">
       Ver perfil →
     </button>` : ''}
