@@ -3722,15 +3722,9 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const isOwnItem = currentUser && (
-    String(item.user_id) === String(currentUser.id) ||
-    item.user === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0])
-  );
-  const topBadge = isOwnItem
-    ? `<div class="item-own-badge">Tuyo</div>`
-    : isPremium && !isMatch
-      ? `<div class="item-premium-badge">✦ Premium</div>`
-      : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
+  const topBadge = isPremium && !isMatch
+    ? `<div class="item-premium-badge">✦ Premium</div>`
+    : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
@@ -3949,24 +3943,80 @@ function filterItems(btn, cat) {
 function searchItems(q) { applyFilter(q, currentFilter); }
 
 function applyFilter(q, cat) {
+  const myId = currentUser?.id;
+  const myName = currentUser ? (currentUser.user_metadata?.name || currentUser.email?.split('@')[0]) : null;
+
+  // Mis objetos que busco (para calcular matches)
+  const myWants = myItems.flatMap(i => (i.wants || [])).map(w => w.toLowerCase());
+  const myCats  = [...new Set(myItems.map(i => i.cat).filter(Boolean))];
+
   let f = items.filter(i => {
+    // ── Ocultar objetos propios ──
+    if (myId && String(i.user_id) === String(myId)) return false;
+    if (myName && i.user === myName) return false;
+
     const isPremium = i.price && parseInt(i.price) >= 300;
-    const bc = cat==='Todos' || cat==='' || (cat==='Premium' ? isPremium : i.cat===cat);
-    const bq = !q || i.name.toLowerCase().includes(q.toLowerCase()) || i.location.toLowerCase().includes(q.toLowerCase()) || i.wants.some(w=>w.toLowerCase().includes(q.toLowerCase()));
-    // Advanced panel filters
-    const bCat = !spFilters.cat || i.cat===spFilters.cat;
+    const bc   = cat==='Todos' || cat==='' || (cat==='Premium' ? isPremium : i.cat===cat);
+    const bq   = !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.location||'').toLowerCase().includes(q.toLowerCase()) || (i.wants||[]).some(w=>w.toLowerCase().includes(q.toLowerCase()));
+    const bCat  = !spFilters.cat || i.cat===spFilters.cat;
     const bCity = !spFilters.city || i.location===spFilters.city;
-    const bMin = !spFilters.minVal || !i.price || parseInt(i.price)>=parseInt(spFilters.minVal);
-    const bMax = !spFilters.maxVal || !i.price || parseInt(i.price)<=parseInt(spFilters.maxVal);
+    const bMin  = !spFilters.minVal || !i.price || parseInt(i.price)>=parseInt(spFilters.minVal);
+    const bMax  = !spFilters.maxVal || !i.price || parseInt(i.price)<=parseInt(spFilters.maxVal);
     const bCond = !spFilters.conditions.length || spFilters.conditions.includes(i.condition);
     const bShip = !spFilters.shipping.length || spFilters.shipping.includes(i.shipping);
     return bc && bq && bCat && bCity && bMin && bMax && bCond && bShip;
   });
-  if(sortByDistance && userCoords) {
-    f = f.map(i => ({...i, _dist: getItemDistance(i)})).sort((a,b) => a._dist - b._dist);
+
+  // ── Algoritmo de relevancia ──
+  // Calcular distancia una sola vez
+  if (userCoords) {
+    f = f.map(i => ({ ...i, _dist: getItemDistance(i) }));
   }
+
+  const now = Date.now();
+  const H48 = 48 * 60 * 60 * 1000; // 48 horas en ms
+
+  f = f.map(i => {
+    let score = 0;
+
+    // 1. MATCH — el objeto encaja con lo que busco (peso 40)
+    const itemName = (i.name || '').toLowerCase();
+    const itemCat  = (i.cat  || '').toLowerCase();
+    const isMatch  = matches.some(m => m.theirItem?.name === i.name);
+    if (isMatch) score += 40;
+    else if (myWants.some(w => itemName.includes(w) || w.includes(itemName.split(' ')[0]))) score += 30;
+    else if (myCats.some(c => c.toLowerCase() === itemCat)) score += 10;
+
+    // 2. PUNTUACIÓN DEL VENDEDOR (peso 25)
+    const trust = USER_TRUST[i.user] || 0;
+    score += Math.round(trust * 0.25);
+
+    // 3. PROXIMIDAD (peso 20) — inversamente proporcional a distancia
+    if (userCoords && i._dist != null && i._dist !== Infinity) {
+      const proxScore = Math.max(0, 20 - Math.min(i._dist, 100) * 0.2);
+      score += proxScore;
+    } else if (!userCoords) {
+      score += 10; // sin coords, neutral
+    }
+
+    // 4. FRESCURA — últimas 48h (peso 15)
+    if (i.created_at || i.createdAt) {
+      const created = new Date(i.created_at || i.createdAt).getTime();
+      if (!isNaN(created) && (now - created) < H48) score += 15;
+    }
+
+    // 5. TIENE FOTO — siempre por delante de los que no (peso 8)
+    const hasPhoto = (i.photos && i.photos.length) || (i.images && i.images.length);
+    if (hasPhoto) score += 8;
+
+    return { ...i, _score: score };
+  });
+
+  // Ordenar por score descendente
+  f.sort((a, b) => b._score - a._score);
+
   const countEl = document.getElementById('sp-results-n');
-  if(countEl) countEl.textContent = f.length;
+  if (countEl) countEl.textContent = f.length;
   renderExplore(f);
 }
 
@@ -4009,15 +4059,9 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const isOwnItem = currentUser && (
-    String(item.user_id) === String(currentUser.id) ||
-    item.user === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0])
-  );
-  const topBadge = isOwnItem
-    ? `<div class="item-own-badge">Tuyo</div>`
-    : isPremium && !isMatch
-      ? `<div class="item-premium-badge">✦ Premium</div>`
-      : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
+  const topBadge = isPremium && !isMatch
+    ? `<div class="item-premium-badge">✦ Premium</div>`
+    : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
