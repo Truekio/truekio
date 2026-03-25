@@ -3029,6 +3029,7 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadReviews(), 400);
   // Cargar stats reales del perfil (trueques, ahorro, puntuación)
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
+  if(currentUser) { _discardedLoaded = false; _loadDiscarded(); } // cargar descartados del usuario
   // Cargar favoritos
   if(currentUser) setTimeout(() => loadFavorites(), 300);
   // Cargar deseos del usuario desde Supabase
@@ -3226,6 +3227,28 @@ let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.ot
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
 let favorites = []; // IDs de items guardados como favoritos
+let _discardedSet = new Set(); // Set global de matches descartados
+let _discardedLoaded = false;  // flag para saber si ya se cargó del localStorage
+
+function _discardedKey() {
+  return 'truquo_discarded_' + (currentUser?.id || 'anon');
+}
+function _loadDiscarded() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(_discardedKey()) || '[]');
+    _discardedSet = new Set(arr.filter(e => typeof e === 'string'));
+  } catch(e) { _discardedSet = new Set(); }
+  _discardedLoaded = true;
+}
+function _saveDiscarded() {
+  try { localStorage.setItem(_discardedKey(), JSON.stringify([..._discardedSet])); }
+  catch(e) {}
+}
+function _getDiscarded() {
+  if (!_discardedLoaded) _loadDiscarded();
+  return _discardedSet;
+}
+
 
 // ── Favoritos ──
 async function loadFavorites() {
@@ -4254,20 +4277,23 @@ window.loadMatches = async function loadMatches() {
   console.log('loadMatches: iniciando...');
 
   // 1. Mis objetos publicados
-  const { data: myItems } = await db.from('items').select('*').eq('user_id', currentUser.id);
+  const { data: myItems, error: myItemsErr } = await db.from('items').select('*').eq('user_id', currentUser.id);
+  console.log('[LM] myItems:', myItems?.length, myItemsErr?.message);
   // 2. Mis deseos
   const myWishNames = wishlist.map(w => w.name.toLowerCase());
   const myWishCats = wishlist.map(w => w.cat.toLowerCase());
+  console.log('[LM] wishlist:', wishlist.length);
 
-  if (!myItems || !myItems.length) { matches = []; renderMatches(); return; }
+  if (!myItems || !myItems.length) { console.log('[LM] sin objetos propios'); matches = []; renderMatches(); return; }
 
   const foundMatches = [];
   const seenPairs = new Set();
 
   // ── Tipo A: mis objetos coinciden con los deseos de otro usuario ──
-  const { data: othersWishes } = await db.from('wishes')
+  const { data: othersWishes, error: wishErr } = await db.from('wishes')
     .select('*')
     .neq('user_id', currentUser.id);
+  console.log('[LM] othersWishes:', othersWishes?.length, wishErr?.message);
 
   if (othersWishes) {
     for (const wish of othersWishes) {
@@ -4371,8 +4397,8 @@ window.loadMatches = async function loadMatches() {
   }
 
   // ── Tipo C: cruzar campo "wants" de mis items con items de otros ──
-  // Mi item dice qué acepta → buscar items de otros que coincidan
   const { data: allOthersItems } = await db.from('items').select('*').neq('user_id', currentUser.id);
+  console.log('[LM] allOthersItems:', allOthersItems?.length, '| foundMatches hasta ahora:', foundMatches.length);
   if (allOthersItems && myItems.length) {
     for (const myItem of myItems) {
       if (!myItem.wants) continue;
@@ -4416,23 +4442,15 @@ window.loadMatches = async function loadMatches() {
     }
   }
 
-  // Ordenar por score descendente, eliminar duplicados de mismo userId
-  // Cargar IDs descartados
-  let discardedIds = new Set();
-  try {
-    const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
-    const arr = JSON.parse(localStorage.getItem(key) || '[]');
-    // Solo guardar IDs con formato match-xxx (limpiar entradas raras de versiones anteriores)
-    const clean = arr.filter(e => typeof e === 'string' && (e.startsWith('match-') || e.startsWith('wish-') || e.startsWith('c-')));
-    discardedIds = new Set(clean);
-    console.log('[Truquo] descartados:', discardedIds.size);
-  } catch(e) {}
+  // Filtrar descartados
+  const discarded = _getDiscarded();
+  console.log('[Truquo] descartados:', discarded.size);
 
   const seenFinal = new Set();
   matches = foundMatches
     .sort((a, b) => b.score - a.score)
     .filter(m => {
-      if (discardedIds.has(m.id)) return false;
+      if (discarded.has(m.id)) return false;
       const dedup = m.userId + '::' + m.myItem.name;
       if (seenFinal.has(dedup)) return false;
       seenFinal.add(dedup);
@@ -4463,11 +4481,7 @@ function renderMatches() {
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
 
   if(!matches.length) {
-    let discardedCount = 0;
-    try {
-      const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
-      discardedCount = JSON.parse(localStorage.getItem(key) || '[]').length;
-    } catch(e) {}
+    const discardedCount = _getDiscarded().size;
 
     const restoreTip = discardedCount > 0
       ? `Has descartado <strong>${discardedCount}</strong> match${discardedCount > 1 ? 'es' : ''} · <button class="btn btn-ghost btn-sm" style="display:inline;padding:2px 8px;font-size:12px" onclick="restoreDiscardedMatches()">↩ Restaurarlos</button>`
@@ -4532,13 +4546,8 @@ function renderMatches() {
 }
 
 function discardMatch(id) {
-  console.log('[Truquo] discardMatch:', id);
-  try {
-    const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
-    const arr = JSON.parse(localStorage.getItem(key) || '[]');
-    if (!arr.includes(id)) arr.push(id);
-    localStorage.setItem(key, JSON.stringify(arr));
-  } catch(e) {}
+  _discardedSet.add(id);
+  _saveDiscarded();
   matches = matches.filter(m => m.id !== id);
   renderMatches();
   showToast('✕ Match descartado');
@@ -4574,12 +4583,11 @@ async function proposeFromMatch(theirItemId, matchId) {
 }
 
 function restoreDiscardedMatches() {
-  try {
-    const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
-    localStorage.removeItem(key);
-  } catch(e) {}
+  _discardedSet.clear();
+  _discardedLoaded = true;
+  _saveDiscarded();
   showToast('↩ Descartados restaurados · Recargando matches...');
-  setTimeout(() => loadMatches(), 600);
+  setTimeout(() => loadMatches(), 400);
 }
 
 // ═══ CHAINS ═══
