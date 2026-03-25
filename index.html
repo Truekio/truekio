@@ -2698,6 +2698,17 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
 
+    <div class="fd-section">
+      <div class="fd-label">Ordenar por</div>
+      <div class="fd-cat-grid" id="fd-sort-chips">
+        <button class="fd-cat-btn on" data-val="relevance" onclick="fdSelectSort(this)"><span class="fd-cat-ico">✦</span><span class="fd-cat-lbl">Relevancia</span></button>
+        <button class="fd-cat-btn" data-val="match" onclick="fdSelectSort(this)"><span class="fd-cat-ico">⚡</span><span class="fd-cat-lbl">% Match</span></button>
+        <button class="fd-cat-btn" data-val="distance" onclick="fdSelectSort(this)"><span class="fd-cat-ico">📍</span><span class="fd-cat-lbl">Distancia</span></button>
+        <button class="fd-cat-btn" data-val="recent" onclick="fdSelectSort(this)"><span class="fd-cat-ico">🕒</span><span class="fd-cat-lbl">Reciente</span></button>
+        <button class="fd-cat-btn" data-val="trust" onclick="fdSelectSort(this)"><span class="fd-cat-ico">⭐</span><span class="fd-cat-lbl">Valorado</span></button>
+      </div>
+    </div>
+
   </div>
   <div class="fd-foot">
     <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar</button>
@@ -2707,7 +2718,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <script>
 // ── FILTER DRAWER LOGIC ──
-let fdState = { cat: '', conditions: [], shipping: [] };
+let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance' };
 
 function openFilterDrawer() {
   document.getElementById('filter-drawer').classList.add('open');
@@ -2726,7 +2737,11 @@ function closeFilterDrawer() {
 }
 function fdSelectCat(btn) {
   fdState.cat = btn.dataset.val;
-  document.querySelectorAll('.fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
+  document.querySelectorAll('#filter-drawer .fd-cat-grid:first-of-type .fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
+}
+function fdSelectSort(btn) {
+  fdState.sort = btn.dataset.val;
+  document.querySelectorAll('#fd-sort-chips .fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
 }
 function fdToggleChip(btn, type, val) {
   const arr = type === 'condition' ? fdState.conditions : fdState.shipping;
@@ -2735,20 +2750,18 @@ function fdToggleChip(btn, type, val) {
   btn.classList.toggle('on', arr.includes(val));
 }
 function fdClearAll() {
-  fdState = { cat: '', conditions: [], shipping: [] };
+  fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance' };
   _fdSyncUI();
 }
 function _fdSyncUI() {
   // Categoría
-  document.querySelectorAll('.fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === fdState.cat));
+  document.querySelectorAll('#filter-drawer .fd-cat-grid:first-of-type .fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === fdState.cat));
+  // Sort
+  document.querySelectorAll('#fd-sort-chips .fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === (fdState.sort || 'relevance')));
   // Chips
   document.querySelectorAll('.fd-chip').forEach(b => {
-    const isCondition = ['Como nuevo','Muy bueno','Bueno','Aceptable'].includes(b.textContent.trim());
-    const arr = isCondition ? fdState.conditions : fdState.shipping;
-    const val = b.textContent.trim().replace(/^.+ /,''); // quita emoji
     b.classList.toggle('on', fdState.conditions.includes(b.textContent.trim()) || fdState.shipping.includes(b.textContent.trim()));
   });
-  // Precio
 }
 function fdApply() {
 
@@ -2756,6 +2769,7 @@ function fdApply() {
   spFilters.cat = fdState.cat;
   spFilters.conditions = [...fdState.conditions];
   spFilters.shipping = [...fdState.shipping];
+  spFilters.sort = fdState.sort || 'relevance';
 
   // Actualizar botón de filtros
   const activeCount = (fdState.cat ? 1 : 0) + fdState.conditions.length + fdState.shipping.length;
