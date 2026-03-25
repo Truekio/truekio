@@ -1573,25 +1573,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <!-- Notif panel -->
   <div class="notif-panel" id="notif-panel">
     <div class="notif-head"><span>Notificaciones</span><button onclick="closeNotif()">Cerrar</button></div>
-    <div class="notif-item" onclick="navTo('wishlist');switchWishTab('alerts');closeNotif()">
-      <div class="notif-icon" style="background:#f5f3ff">✦</div>
-      <div class="notif-txt"><h5>3 alertas en tu lista de deseos</h5><p>Alguien publicó un MacBook Pro M1 — está en tu lista.</p><small>Hace 8 min</small></div>
-    </div>
-    <div class="notif-item" onclick="navTo('matches');switchMatchTab('chain');closeNotif()">
-      <div class="notif-icon" style="background:#f5f3ff">🔗</div>
-      <div class="notif-txt"><h5>¡Nueva cadena detectada!</h5><p>Cadena de 3 personas: recibirías un MacBook Pro M1.</p><small>Hace 2 min</small></div>
-    </div>
-    <div class="notif-item" onclick="navTo('matches');closeNotif()">
-      <div class="notif-icon" style="background:#fef9c3">⚡</div>
-      <div class="notif-txt"><h5>¡Nuevo match!</h5><p>Tu guitarra hace match con el Teclado Roland de Rosa T.</p><small>Hace 5 min</small></div>
-    </div>
-    <div class="notif-item" onclick="navTo('messages');closeNotif()">
-      <div class="notif-icon" style="background:#eff6ff">💬</div>
-      <div class="notif-txt"><h5>Nuevo mensaje</h5><p>Laura G.: "¿El objetivo está en buen estado?"</p><small>Hace 18 min</small></div>
-    </div>
-    <div class="notif-item">
-      <div class="notif-icon" style="background:#f0fdf4">✅</div>
-      <div class="notif-txt"><h5>Trueque completado</h5><p>¡El intercambio con Pedro V. fue confirmado!</p><small>Hace 2 horas</small></div>
+    <div id="notif-list">
+      <div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No tienes notificaciones nuevas</div>
     </div>
   </div>
 </nav>
@@ -3200,91 +3183,13 @@ const USER_PHOTOS = {
 };
 const ITEMS_DATA = []; // Demo data eliminado — solo datos reales de Supabase
 
-const MATCHES_DATA = [
-  {id:'m1',myItem:{emoji:'🎸',name:'Guitarra Fender'},theirItem:{emoji:'🎹',name:'Teclado Roland FP-30X'},user:'Rosa T.',userEmoji:'👩‍🎤',score:98,reasons:['Guitarra en su lista de deseos','Tu guitarra acepta teclados'],location:'Zaragoza'},
-  {id:'m2',myItem:{emoji:'🎸',name:'Guitarra Fender'},theirItem:{emoji:'📸',name:'Cámara Canon EOS 90D'},user:'Laura G.',userEmoji:'👩‍🎨',score:87,reasons:['Cámara en tu lista','Guitarra en su lista'],location:'Barcelona'},
-  {id:'m3',myItem:{emoji:'💻',name:'MacBook Air 2020'},theirItem:{emoji:'⌚',name:'Apple Watch Series 8'},user:'José L.',userEmoji:'👨‍💼',score:74,reasons:['Tu Mac acepta electrónica','Watch en tu wish list'],location:'Málaga'},
-];
+const MATCHES_DATA = [];
 
-const CHAINS_DATA = [
-  {
-    id:'ch1',
-    score:91,
-    steps:[
-      {emoji:'🎸',name:'Guitarra Fender',user:'Tú',userEmoji:'😎',isMe:true},
-      {emoji:'🎮',name:'PlayStation 5',user:'Mario S.',userEmoji:'🎮',isMe:false},
-      {emoji:'💻',name:'MacBook Pro M1',user:'Paco R.',userEmoji:'🧑‍💻',isMe:false},
-    ],
-    // Tú das guitarra a Mario, Mario da PS5 a Paco, Paco da MacBook a ti
-    gives:['Guitarra Fender','PlayStation 5','MacBook Pro M1'],
-    receives:['MacBook Pro M1','Guitarra Fender','PlayStation 5'],
-    myReceive:{emoji:'💻',name:'MacBook Pro M1'},
-    participants:3,
-    status:'pending', // pending | accepted | active
-    myAccepted:false,
-    otherAccepted:[false,false],
-  },
-  {
-    id:'ch2',
-    score:83,
-    steps:[
-      {emoji:'🎸',name:'Guitarra Fender',user:'Tú',userEmoji:'😎',isMe:true},
-      {emoji:'📚',name:'Colección HP (7 vols.)',user:'Marta F.',userEmoji:'📚',isMe:false},
-      {emoji:'🎧',name:'Sony WH-1000XM5',user:'Luis P.',userEmoji:'🎵',isMe:false},
-      {emoji:'🎮',name:'Nintendo Switch',user:'Ane B.',userEmoji:'🚴‍♀️',isMe:false},
-    ],
-    gives:['Guitarra Fender','Libros HP','Sony XM5','Nintendo Switch'],
-    receives:['Nintendo Switch','Guitarra Fender','Libros HP','Sony XM5'],
-    myReceive:{emoji:'🎮',name:'Nintendo Switch'},
-    participants:4,
-    status:'pending',
-    myAccepted:false,
-    otherAccepted:[false,false,false],
-  },
-];
+const CHAINS_DATA = [];
 
-const CONFIRMATIONS_DATA = [
-  {
-    id:'cf1',
-    myItem:{emoji:'🎸',name:'Guitarra Fender Stratocaster'},
-    theirItem:{emoji:'🎹',name:'Teclado Roland FP-30X'},
-    user:'Rosa T.',userEmoji:'👩‍🎤',
-    agreedDate:'10 mar 2025',
-    myConfirmed:false,
-    theirConfirmed:true,
-    status:'pending_me', // pending_me | pending_them | done | issue
-    shipping:'Correos Express',
-    trackingCode:'CE123456789ES',
-  },
-  {
-    id:'cf2',
-    myItem:{emoji:'💻',name:'MacBook Air 2020'},
-    theirItem:{emoji:'📱',name:'iPhone 14 Pro'},
-    user:'Carmen R.',userEmoji:'👩‍💻',
-    agreedDate:'8 mar 2025',
-    myConfirmed:true,
-    theirConfirmed:false,
-    status:'pending_them',
-    shipping:'MRW',
-    trackingCode:'MRW987654',
-  },
-];
+const CONFIRMATIONS_DATA = [];
 
-const CONVS_DATA = [
-  {id:'c1',user:'Laura G.',userEmoji:'👩‍🎨',subject:'Cámara ↔ Guitarra',time:'14:32',unread:2,messages:[
-    {from:'them',text:'¡Hola! Vi tu guitarra y me encantaría intercambiarla por mi cámara 📸',time:'14:10'},
-    {type:'proposal',myItem:{emoji:'🎸',name:'Guitarra Fender'},theirItem:{emoji:'📸',name:'Cámara Canon'},accepted:false,time:'14:15'},
-    {from:'them',text:'¿El objetivo está en buen estado? ¿Cuántos disparos tiene aproximadamente?',time:'14:32'},
-  ]},
-  {id:'c2',user:'Carlos M.',userEmoji:'🧑‍💻',subject:'MacBook ↔ iPad Pro',time:'11:45',unread:1,messages:[
-    {from:'me',text:'Hola Carlos! Te propongo mi MacBook Air 2020, está en perfecto estado.',time:'11:20'},
-    {from:'them',text:'¡Interesante! ¿El Mac tiene arañazos? ¿Qué batería le queda?',time:'11:45'},
-  ]},
-  {id:'c3',user:'Pedro V.',userEmoji:'🧔',subject:'PS5 ↔ Bici ✅',time:'Ayer',unread:0,messages:[
-    {from:'me',text:'¡Todo perfecto! La PS5 llegó en perfectas condiciones 🙌',time:'18:00'},
-    {from:'them',text:'¡Genial! La bici también llegó perfecta. ¡Un placer hacer trueque contigo!',time:'18:30'},
-  ]},
-];
+const CONVS_DATA = [];
 
 const REVIEWS_DATA = []; // Se rellena desde Supabase en loadReviews()
 
@@ -3304,12 +3209,7 @@ const WISHLIST_DATA = [
 ];
 
 const WISH_ALERTS_DATA = [
-  {id:'wa1',emoji:'💻',title:'¡Alguien publicó un MacBook Pro M1!',desc:'Paco R. de Valencia acaba de publicar un MacBook Pro M1 2021 en buen estado. Está en tu lista de deseos.',time:'Hace 8 min',unread:true,itemId:3,cat:'Electrónica'},
-  {id:'wa2',emoji:'🎹',title:'Nueva oferta de teclado MIDI en Madrid',desc:'Rosa T. publicó un teclado Roland FP-30X. Puede que encaje con lo que buscas.',time:'Hace 1 hora',unread:true,itemId:7,cat:'Música'},
-  {id:'wa3',emoji:'🩺',title:'Clases de inglés disponibles cerca',desc:'3 nuevos usuarios con clases de inglés en Madrid esta semana. Tu deseo tiene alta demanda.',time:'Hace 3 horas',unread:true,itemId:null,cat:'Servicios'},
-  {id:'wa4',emoji:'📷',title:'2 cámaras Sony publicadas esta semana',desc:'Hay 2 nuevas cámaras Sony en Explorar que podrían interesarte.',time:'Hace 2 días',unread:false,itemId:null,cat:'Electrónica'},
-  {id:'wa5',emoji:'💻',title:'Match potencial para tu MacBook Air',desc:'Laura G. de Barcelona busca exactamente lo que tienes. Podrías proponerle el trueque.',time:'Hace 3 días',unread:false,itemId:2,cat:'Electrónica'},
-];
+          ];
 
 const SUPPLY_DEMAND_DATA = [
   {emoji:'💻',name:'MacBook / Portátil',demand:94,count:47,cat:'Electrónica'},
@@ -4042,14 +3942,7 @@ function renderHomePersonalized() {
 }
 
 // ═══ STORIES FEED ═══
-const STORIES_DATA = [
-  {type:'direct',user1:'Alex M.',u1e:'👨‍🎤',user2:'Rosa T.',u2e:'👩‍🎤',item1:{emoji:'🎸',name:'Guitarra Fender'},item2:{emoji:'🎹',name:'Teclado Roland'},city1:'Madrid',city2:'Zaragoza',value:480,time:'Hace 12 min'},
-  {type:'chain',user1:'Paco R.',u1e:'🧑‍💻',user2:'Mario S.',u2e:'🎮',user3:'Ane B.',u3e:'🚴‍♀️',item1:{emoji:'💻',name:'MacBook Pro M1'},item2:{emoji:'🎮',name:'PS5'},item3:{emoji:'🚲',name:'Bici eléctrica'},value:1200,time:'Hace 1 hora'},
-  {type:'service',user1:'Carmen S.',u1e:'👩‍⚕️',user2:'Jordi E.',u2e:'👷',item1:{emoji:'🩺',name:'Revisión dental'},item2:{emoji:'🔧',name:'Instalación eléctrica'},city1:'Madrid',city2:'Barcelona',value:320,time:'Hace 2 horas'},
-  {type:'book',user1:'Marta F.',u1e:'📚',user2:'Carles P.',u2e:'🕵️',item1:{emoji:'📚',name:'Harry Potter (7 vols.)'},item2:{emoji:'📖',name:'Lote thriller x20'},city1:'Madrid',city2:'Barcelona',value:95,time:'Hace 3 horas'},
-  {type:'direct',user1:'Laura G.',u1e:'👩‍🎨',user2:'José L.',u2e:'👨‍💼',item1:{emoji:'📸',name:'Cámara Canon EOS'},item2:{emoji:'⌚',name:'Apple Watch S8'},city1:'Barcelona',city2:'Málaga',value:650,time:'Hace 5 horas'},
-  {type:'direct',user1:'Irene V.',u1e:'👩‍🔬',user2:'Rubén M.',u2e:'🥷',item1:{emoji:'🔬',name:'Colección Cosmos'},item2:{emoji:'📕',name:'Manga One Piece'},city1:'Valencia',city2:'Sevilla',value:110,time:'Ayer'},
-];
+const STORIES_DATA = [];
 
 function renderStories() {
   const el = document.getElementById('stories-feed');
@@ -5838,13 +5731,8 @@ const TRUST_LEVELS = {
   elite:   {label:'ÉLITE ✦',  cls:'trust-level-elite',   miniCls:'trust-mini-elite',   min:90,  max:100},
 };
 
-// Fake trust scores for demo users
-const USER_TRUST = {
-  'Alex M.':87,'Laura G.':72,'Paco R.':45,'Mario S.':91,'Ane B.':38,'José L.':95,
-  'Rosa T.':83,'Marta F.':62,'Carles P.':29,'Irene V.':77,'Rubén M.':55,
-  'Dra. Carmen S.':96,'Jordi E.':88,'Ana N.':41,'Luis A.':93,'Mikel C.':79,
-  'Tú':87,
-};
+// Trust scores — se calculan dinámicamente desde Supabase
+const USER_TRUST = {};
 
 function getTrustLevel(score) {
   if(score >= 90) return 'elite';
@@ -6030,13 +5918,7 @@ function renderProfile() {
   }
 
   // Completed trades with rating
-  const completedTrades = [
-    {emoji:'🚲',name:'Bicicleta MTB Trek',cat:'Deporte',user:'Pedro V.',userEmoji:'🧔',date:'Feb 2025',value:320,rating:5},
-    {emoji:'🎮',name:'Nintendo Switch',cat:'Electrónica',user:'Carmen R.',userEmoji:'👩‍💻',date:'Ene 2025',value:250,rating:5},
-    {emoji:'📚',name:'Colección Tolkien',cat:'Libros',user:'Marta F.',userEmoji:'📚',date:'Dic 2024',value:45,rating:4},
-    {emoji:'📱',name:'iPhone 12',cat:'Electrónica',user:'Luis P.',userEmoji:'🎵',date:'Nov 2024',value:380,rating:5},
-    {emoji:'🎸',name:'Guitarra acústica Yamaha',cat:'Música',user:'Rosa T.',userEmoji:'👩‍🎤',date:'Oct 2024',value:180,rating:5},
-  ];
+  const completedTrades = [];
   document.getElementById('done-grid').innerHTML = `
     <div class="card" style="padding:20px;margin-bottom:14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-color:#86efac">
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
