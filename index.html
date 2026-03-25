@@ -4398,9 +4398,17 @@ window.loadMatches = async function loadMatches() {
 
   // Ordenar por score descendente, eliminar duplicados de mismo userId
   const seenUsers = new Set();
+  // Cargar descartados desde localStorage
+  let discarded = [];
+  try {
+    const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
+    discarded = JSON.parse(localStorage.getItem(key) || '[]');
+  } catch(e) {}
+
   matches = foundMatches
     .sort((a, b) => b.score - a.score)
     .filter(m => {
+      if (discarded.includes(m.id)) return false;
       if (seenUsers.has(m.userId + m.myItem.name)) return false;
       seenUsers.add(m.userId + m.myItem.name);
       return true;
@@ -4428,6 +4436,17 @@ function renderMatches() {
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
 
   if(!matches.length) {
+    // Ver si hay descartados para ofrecer restaurarlos
+    let discardedCount = 0;
+    try {
+      const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
+      discardedCount = JSON.parse(localStorage.getItem(key) || '[]').length;
+    } catch(e) {}
+
+    const restoreBtn = discardedCount > 0
+      ? `<button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="restoreDiscardedMatches()">↩ Restaurar ${discardedCount} descartado${discardedCount > 1 ? 's' : ''}</button>`
+      : '';
+
     list.innerHTML = emptyState({
       icon: '⚡',
       title: 'Aún no tienes matches',
@@ -4437,7 +4456,7 @@ function renderMatches() {
       ctaSecondary: 'Ver cadenas de trueque',
       ctaSecondaryAction: "switchMatchTab('chain')",
       tip: 'Los usuarios con 3+ opciones de cambio tienen un 4× más de probabilidad de encontrar match en las primeras 24h.'
-    });
+    }) + restoreBtn;
   } else {
     list.innerHTML = matches.map(m => {
       const avatarHtml = m.userAvatar
@@ -4487,9 +4506,26 @@ function renderMatches() {
 }
 
 function discardMatch(id) {
+  // Guardar en localStorage para que no vuelva a aparecer
+  try {
+    const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
+    const discarded = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!discarded.includes(id)) discarded.push(id);
+    if (discarded.length > 200) discarded.splice(0, discarded.length - 200);
+    localStorage.setItem(key, JSON.stringify(discarded));
+  } catch(e) {}
   matches = matches.filter(m => m.id !== id);
   renderMatches();
-  showToast('Match descartado');
+  showToast('✕ Match descartado · No volverá a aparecer');
+}
+
+function restoreDiscardedMatches() {
+  try {
+    const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
+    localStorage.removeItem(key);
+  } catch(e) {}
+  showToast('↩ Descartados restaurados · Recargando matches...');
+  setTimeout(() => loadMatches(), 600);
 }
 
 // ═══ CHAINS ═══
