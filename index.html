@@ -4205,13 +4205,14 @@ function switchMatchTab(tab) {
   if(tab === 'wishlist-act') { renderActivityWishlist(); loadWishAlerts(); }
   if(tab === 'confirm') renderConfirmations();
   if(tab === 'direct') {
-    // Solo recargar si no hay matches cargados o han pasado más de 5 minutos
     const now = Date.now();
     const lastLoad = window._matchesLastLoad || 0;
+    const sinceLoad = Math.round((now - lastLoad) / 1000);
+    console.log('[SMT] direct | matches:', matches.length, '| hace', sinceLoad, 's | recarga:', !matches.length || sinceLoad > 300);
     if (!matches.length || (now - lastLoad) > 5 * 60 * 1000) {
       loadMatches();
     } else {
-      renderMatches(); // solo re-renderizar con los que ya hay
+      renderMatches();
     }
   }
 }
