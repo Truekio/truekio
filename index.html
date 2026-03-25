@@ -4253,15 +4253,24 @@ window.loadMatches = async function loadMatches() {
 
   if (!myItems || !myItems.length) { matches = []; renderMatches(); return; }
 
-  // 2. Propuestas ya enviadas por mí — para excluir esos pares de matches
+  // 2. Propuestas ya enviadas por mí — excluir pares pending, accepted y rejected
   const { data: myProposals } = await db.from('proposals')
-    .select('item_id, owner_id')
+    .select('item_id, owner_id, status')
     .eq('offerer_id', currentUser.id)
-    .in('status', ['pending', 'accepted']);
-  // Set de owner_ids a los que ya propuse (cualquier objeto)
-  const alreadyProposedTo = new Set((myProposals || []).map(p => p.owner_id).filter(Boolean));
-  // Set de item_ids específicos que ya propuse
-  const alreadyProposedItems = new Set((myProposals || []).map(p => String(p.item_id)).filter(Boolean));
+    .in('status', ['pending', 'accepted', 'rejected']);
+
+  // pending/accepted: excluir todo el usuario (propuesta activa)
+  const alreadyProposedTo = new Set(
+    (myProposals || []).filter(p => p.status !== 'rejected').map(p => p.owner_id).filter(Boolean)
+  );
+  // rejected: excluir solo ese item concreto (no otros objetos del mismo usuario)
+  const rejectedItems = new Set(
+    (myProposals || []).filter(p => p.status === 'rejected').map(p => String(p.item_id)).filter(Boolean)
+  );
+  // pending/accepted: excluir también el item específico
+  const alreadyProposedItems = new Set(
+    (myProposals || []).filter(p => p.status !== 'rejected').map(p => String(p.item_id)).filter(Boolean)
+  );
 
   const foundMatches = [];
   const seenPairs = new Set();
@@ -4423,9 +4432,12 @@ window.loadMatches = async function loadMatches() {
     .sort((a, b) => b.score - a.score)
     .filter(m => {
       if (m.score < 50) return false;
-      // Excluir si ya propuse a este usuario o este objeto específico
+      // Excluir si hay propuesta activa (pending/accepted) con ese usuario
       if (alreadyProposedTo.has(m.userId)) return false;
+      // Excluir si ese item específico ya fue propuesto (pending/accepted)
       if (m.theirItem?.id && alreadyProposedItems.has(String(m.theirItem.id))) return false;
+      // Excluir si ese item específico fue rechazado
+      if (m.theirItem?.id && rejectedItems.has(String(m.theirItem.id))) return false;
       const dedup = m.userId + '::' + m.myItem.name;
       if (seenFinal.has(dedup)) return false;
       seenFinal.add(dedup);
