@@ -268,6 +268,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 /* ── ITEM CARDS — redesigned ── */
 /* ── EXPLORER GRID — 2 col Wallapop style ── */
 .items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
+.explore-sticky{position:sticky;top:58px;z-index:90;background:var(--white);border-bottom:1px solid var(--border);}
 .item-card{display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden;transition:all .2s cubic-bezier(.22,1,.36,1);background:var(--white);border:1px solid var(--border);}
 .item-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md);}
 .item-card.is-premium{border-color:rgba(245,158,11,.35);}
@@ -2038,22 +2039,31 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- EXPLORE -->
 <div class="view" id="view-explore">
-  <div class="wrap page-pad">
-    <!-- Header row -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-      <div style="font-size:13px;color:var(--muted)" id="items-count">16 objetos disponibles en Barcelona</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div class="search-bar" style="min-width:200px;max-width:260px">
-          <span style="color:var(--muted);font-size:15px">🔍</span>
-          <input placeholder="Buscar en Truquo..." oninput="searchItems(this.value)" id="search-input">
+  <!-- Barra sticky: buscador + filtros + pills -->
+  <div class="explore-sticky">
+    <div class="wrap">
+      <!-- Header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;padding-bottom:10px;flex-wrap:wrap;gap:10px">
+        <div style="font-size:12px;color:var(--muted)" id="items-count">16 objetos disponibles</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="search-bar" style="min-width:160px;max-width:240px">
+            <span style="color:var(--muted);font-size:15px">🔍</span>
+            <input placeholder="Buscar en Truquo..." oninput="searchItems(this.value)" id="search-input">
+          </div>
+          <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
+            ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
+          </button>
         </div>
-        <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
-          ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
-        </button>
       </div>
+      <!-- Active filter chips -->
+      <div class="active-filters" id="active-filters"></div>
+      <!-- Sort pills -->
+      <div class="filter-row" id="filter-row" style="padding-bottom:10px"></div>
     </div>
+  </div>
 
-    <!-- Advanced search panel -->
+  <!-- Advanced search panel (hidden) -->
+  <div class="wrap">
     <div class="search-panel hidden" id="search-panel">
       <div style="font-weight:700;font-size:.9rem;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
         Filtros avanzados
@@ -2070,7 +2080,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
             <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
           </select>
         </div>
-<div class="sp-col">
+        <div class="sp-col">
           <div class="sp-label">Ciudad</div>
           <select class="sp-select" id="sp-city" onchange="applySearchPanel()">
             <option value="">Barcelona</option>
@@ -2095,14 +2105,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Active filter chips -->
-    <div class="active-filters" id="active-filters"></div>
-
-    <!-- Category filters -->
-    <div class="filter-row" id="filter-row"></div>
-
-    <!-- Grid -->
+  <!-- Grid scrollable -->
+  <div class="wrap" style="padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)))">
     <div class="items-grid" id="explore-grid"></div>
   </div>
 </div>
