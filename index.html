@@ -3235,10 +3235,34 @@ function _discardedKey() {
 }
 function _loadDiscarded() {
   try {
-    const arr = JSON.parse(localStorage.getItem(_discardedKey()) || '[]');
-    _discardedSet = new Set(arr.filter(e => typeof e === 'string'));
+    // Limpiar key 'anon' si existe y tenemos usuario real
+    if (currentUser?.id) {
+      const anonKey = 'truquo_discarded_anon';
+      const anonData = localStorage.getItem(anonKey);
+      if (anonData) {
+        // Migrar entradas anon al usuario real si son válidas
+        try {
+          const anonArr = JSON.parse(anonData);
+          if (Array.isArray(anonArr) && anonArr.length > 0) {
+            const existing = JSON.parse(localStorage.getItem(_discardedKey()) || '[]');
+            const merged = [...new Set([...existing, ...anonArr])];
+            localStorage.setItem(_discardedKey(), JSON.stringify(merged));
+          }
+        } catch(e) {}
+        localStorage.removeItem(anonKey);
+      }
+    }
+    const raw = JSON.parse(localStorage.getItem(_discardedKey()) || '[]');
+    // Solo IDs válidos de match (formato match-xxx, match-wish-xxx, match-c-xxx)
+    const valid = raw.filter(e => typeof e === 'string' && e.startsWith('match-'));
+    _discardedSet = new Set(valid);
+    // Limpiar entradas inválidas si había
+    if (valid.length !== raw.length) {
+      localStorage.setItem(_discardedKey(), JSON.stringify(valid));
+    }
   } catch(e) { _discardedSet = new Set(); }
   _discardedLoaded = true;
+  console.log('[Truquo] descartados cargados:', _discardedSet.size);
 }
 function _saveDiscarded() {
   try { localStorage.setItem(_discardedKey(), JSON.stringify([..._discardedSet])); }
