@@ -283,6 +283,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .item-cat-pill{position:absolute;top:8px;left:8px;display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;backdrop-filter:blur(10px);background:rgba(255,255,255,.88);box-shadow:0 1px 4px rgba(0,0,0,.1);}
 .item-match-badge{position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
 @keyframes matchPulse{0%,100%{box-shadow:0 2px 8px rgba(78,143,186,.3);}50%{box-shadow:0 2px 16px rgba(78,143,186,.8);}}
+.item-own-badge{position:absolute;top:8px;right:8px;background:rgba(26,42,58,.75);color:rgba(255,255,255,.9);font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;backdrop-filter:blur(8px);letter-spacing:.04em;}
 .item-premium-badge{position:absolute;top:8px;right:8px;background:var(--elite-1);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
 .item-verified{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.9);color:var(--green);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;}
 .item-value-tag{position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,.78);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;}
@@ -3674,9 +3675,15 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const topBadge = isPremium && !isMatch
-    ? `<div class="item-premium-badge">✦ Premium</div>`
-    : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
+  const isOwnItem = currentUser && (
+    String(item.user_id) === String(currentUser.id) ||
+    item.user === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0])
+  );
+  const topBadge = isOwnItem
+    ? `<div class="item-own-badge">Tuyo</div>`
+    : isPremium && !isMatch
+      ? `<div class="item-premium-badge">✦ Premium</div>`
+      : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
@@ -3955,9 +3962,15 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const topBadge = isPremium && !isMatch
-    ? `<div class="item-premium-badge">✦ Premium</div>`
-    : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
+  const isOwnItem = currentUser && (
+    String(item.user_id) === String(currentUser.id) ||
+    item.user === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0])
+  );
+  const topBadge = isOwnItem
+    ? `<div class="item-own-badge">Tuyo</div>`
+    : isPremium && !isMatch
+      ? `<div class="item-premium-badge">✦ Premium</div>`
+      : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
@@ -5512,7 +5525,24 @@ function openDetail(itemId) {
   // Mostrar con display:flex en vez de clase open
   const overlay = document.getElementById('detail-overlay');
   overlay.style.display = 'flex';
-}
+
+  // Botón inferior — distinto si es tu propio objeto
+  const isOwn = currentUser && (
+    String(item.user_id) === String(currentUser.id) ||
+    item.user === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0])
+  );
+  const footerBtn = overlay.querySelector('[onclick="proposeFromDetail()"]');
+  if (footerBtn) {
+    if (isOwn) {
+      footerBtn.textContent = '✏️ Editar objeto';
+      footerBtn.onclick = () => { closeDetail(); openEditItem(item.id); };
+      footerBtn.className = 'btn btn-secondary btn-lg btn-full btn-r';
+    } else {
+      footerBtn.textContent = '🤝 Proponer trueque';
+      footerBtn.onclick = proposeFromDetail;
+      footerBtn.className = 'btn btn-primary btn-lg btn-full btn-r';
+    }
+  }
 
 function closeDetail() {
   document.getElementById('detail-overlay').style.display = 'none';
