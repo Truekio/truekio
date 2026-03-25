@@ -4417,37 +4417,35 @@ window.loadMatches = async function loadMatches() {
   }
 
   // Ordenar por score descendente, eliminar duplicados de mismo userId
-  const seenUsers = new Set();
+  const seenPairsFinal = new Set();
   let discarded = [];
   try {
     const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
-    discarded = JSON.parse(localStorage.getItem(key) || '[]');
-    console.log('[Truquo] descartados en localStorage:', discarded.length, 'entradas');
+    const raw = JSON.parse(localStorage.getItem(key) || '[]');
+    // Limpiar entradas antiguas con formato '|' (formato viejo inconsistente)
+    discarded = raw.filter(e => !e.includes('|') || e.includes('##'));
+    if (discarded.length !== raw.length) {
+      localStorage.setItem(key, JSON.stringify(discarded));
+      console.log('[Truquo] limpiadas', raw.length - discarded.length, 'entradas antiguas');
+    }
+    console.log('[Truquo] descartados guardados:', discarded.length);
   } catch(e) {}
 
   matches = foundMatches
     .sort((a, b) => b.score - a.score)
     .filter(m => {
-      // Filtrar por ID directo
-      if (discarded.includes(m.id)) {
-        console.log('[Truquo] filtrado por ID:', m.id);
-        return false;
-      }
-      // Filtrar por par estable userId+myItemName (fallback si el ID cambió)
-      const stableKey = `${m.userId}|${m.myItem.name}`;
-      if (discarded.includes(stableKey)) {
-        console.log('[Truquo] filtrado por par estable:', stableKey);
-        return false;
-      }
-      if (seenUsers.has(m.userId + m.myItem.name)) return false;
-      seenUsers.add(m.userId + m.myItem.name);
+      // Filtrar descartados por ID exacto
+      if (discarded.includes(m.id)) return false;
+      // Filtrar descartados por par estable (separador único ##)
+      const stable = m.userId + '##' + m.myItem.name;
+      if (discarded.includes(stable)) return false;
+      // Deduplicar: no mostrar el mismo par usuario+miObjeto dos veces
+      if (seenPairsFinal.has(stable)) return false;
+      seenPairsFinal.add(stable);
       return true;
     });
 
   console.log('[Truquo] matches finales:', matches.length);
-
-  window._matchesLastLoad = Date.now();
-  renderMatches();
 }
 
 function renderMatches() {
@@ -4539,19 +4537,19 @@ function renderMatches() {
 
 function discardMatch(id) {
   const match = matches.find(m => m.id === id);
-  console.log('[Truquo] discardMatch id:', id, '| match:', match?.myItem?.name, '↔', match?.theirItem?.name);
+  console.log('[Truquo] discardMatch:', id, match?.myItem?.name, '↔', match?.theirItem?.name);
   try {
     const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
     const discarded = JSON.parse(localStorage.getItem(key) || '[]');
-    // Guardar el ID y también el par estable userId+myItemName como fallback
-    const entries = [id];
-    if (match) entries.push(`${match.userId}|${match.myItem.name}`);
-    for (const e of entries) {
-      if (!discarded.includes(e)) discarded.push(e);
+    if (!discarded.includes(id)) discarded.push(id);
+    // También guardar el par estable con separador único
+    if (match) {
+      const stable = match.userId + '##' + match.myItem.name;
+      if (!discarded.includes(stable)) discarded.push(stable);
     }
     if (discarded.length > 400) discarded.splice(0, discarded.length - 400);
     localStorage.setItem(key, JSON.stringify(discarded));
-    console.log('[Truquo] descartados guardados:', discarded.length, 'entradas');
+    console.log('[Truquo] total descartados:', discarded.length);
   } catch(e) { console.error('discardMatch error:', e); }
   matches = matches.filter(m => m.id !== id);
   renderMatches();
