@@ -267,7 +267,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 
 /* ── ITEM CARDS — redesigned ── */
 /* ── EXPLORER GRID — 2 col Wallapop style ── */
-.items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
 .item-card{display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden;transition:all .2s cubic-bezier(.22,1,.36,1);background:var(--white);border:1px solid var(--border);}
 .item-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md);}
 .item-card.is-premium{border-color:rgba(245,158,11,.35);}
@@ -3864,6 +3864,9 @@ function applyFilter(q, cat) {
   const countEl = document.getElementById('sp-results-n');
   if (countEl) countEl.textContent = f.length;
   renderExplore(f);
+  // Scroll al inicio del grid al cambiar filtro/ordenado
+  const grid = document.getElementById('explore-grid');
+  if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ═══ ITEM CARD HTML — redesigned ═══
