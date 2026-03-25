@@ -4440,6 +4440,8 @@ window.loadMatches = async function loadMatches() {
     });
 
   console.log('[Truquo] matches finales:', matches.length);
+  window._matchesLastLoad = Date.now();
+  renderMatches();
 }
 
 function renderMatches() {
