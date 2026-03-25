@@ -3029,7 +3029,7 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadReviews(), 400);
   // Cargar stats reales del perfil (trueques, ahorro, puntuación)
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
-  if (currentUser) loadHiddenMatches(); // cargar ocultos desde Supabase
+  if (currentUser) { hiddenMatchesLoaded = false; loadHiddenMatches(); } // cargar ocultos desde Supabase
   // Cargar favoritos
   if(currentUser) setTimeout(() => loadFavorites(), 300);
   // Cargar deseos del usuario desde Supabase
@@ -3230,6 +3230,7 @@ let favorites = []; // IDs de items guardados como favoritos
 // Matches ocultos — solo en memoria, se resetean al recargar
 // Matches ocultos — persisten en Supabase
 let hiddenMatchIds = new Set();
+let hiddenMatchesLoaded = false;
 
 async function loadHiddenMatches() {
   if (!currentUser) return;
@@ -3237,6 +3238,7 @@ async function loadHiddenMatches() {
     const { data } = await db.from('hidden_matches').select('match_id').eq('user_id', currentUser.id);
     hiddenMatchIds = new Set((data || []).map(r => r.match_id));
   } catch(e) { hiddenMatchIds = new Set(); }
+  hiddenMatchesLoaded = true;
 }
 
 
@@ -4214,15 +4216,7 @@ function switchMatchTab(tab) {
   if(tabContent) tabContent.style.display='block';
   if(tab === 'wishlist-act') { renderActivityWishlist(); loadWishAlerts(); }
   if(tab === 'confirm') renderConfirmations();
-  if(tab === 'direct') {
-    const now = Date.now();
-    const lastLoad = window._matchesLastLoad || 0;
-    if (!matches.length || (now - lastLoad) > 5 * 60 * 1000) {
-      loadMatches();
-    } else {
-      renderMatches();
-    }
-  }
+  if(tab === 'direct') loadMatches();
 }
 
 function renderActivityWishlist() {
@@ -4426,8 +4420,8 @@ window.loadMatches = async function loadMatches() {
     }
   }
 
-  // Cargar ocultos si no están listos
-  if (hiddenMatchIds.size === 0 && currentUser) await loadHiddenMatches();
+  // Cargar ocultos si no están listos aún
+  if (!hiddenMatchesLoaded && currentUser) await loadHiddenMatches();
 
   // Filtrar ocultos
   const seenFinal = new Set();
@@ -4441,7 +4435,6 @@ window.loadMatches = async function loadMatches() {
       return true;
     });
 
-  window._matchesLastLoad = Date.now();
   renderMatches();
 }
 
@@ -4541,6 +4534,7 @@ async function hideMatch(id) {
 async function showHiddenMatches() {
   await db.from('hidden_matches').delete().eq('user_id', currentUser.id);
   hiddenMatchIds.clear();
+  hiddenMatchesLoaded = true;
   showToast('👁 Mostrando todos los matches');
   loadMatches();
 }
