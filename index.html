@@ -4417,31 +4417,25 @@ window.loadMatches = async function loadMatches() {
   }
 
   // Ordenar por score descendente, eliminar duplicados de mismo userId
-  const seenPairsFinal = new Set();
-  let discarded = [];
+  // Cargar IDs descartados
+  let discardedIds = new Set();
   try {
     const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
-    const raw = JSON.parse(localStorage.getItem(key) || '[]');
-    // Limpiar entradas antiguas con formato '|' (formato viejo inconsistente)
-    discarded = raw.filter(e => !e.includes('|') || e.includes('##'));
-    if (discarded.length !== raw.length) {
-      localStorage.setItem(key, JSON.stringify(discarded));
-      console.log('[Truquo] limpiadas', raw.length - discarded.length, 'entradas antiguas');
-    }
-    console.log('[Truquo] descartados guardados:', discarded.length);
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    // Solo guardar IDs con formato match-xxx (limpiar entradas raras de versiones anteriores)
+    const clean = arr.filter(e => typeof e === 'string' && (e.startsWith('match-') || e.startsWith('wish-') || e.startsWith('c-')));
+    discardedIds = new Set(clean);
+    console.log('[Truquo] descartados:', discardedIds.size);
   } catch(e) {}
 
+  const seenFinal = new Set();
   matches = foundMatches
     .sort((a, b) => b.score - a.score)
     .filter(m => {
-      // Filtrar descartados por ID exacto
-      if (discarded.includes(m.id)) return false;
-      // Filtrar descartados por par estable (separador único ##)
-      const stable = m.userId + '##' + m.myItem.name;
-      if (discarded.includes(stable)) return false;
-      // Deduplicar: no mostrar el mismo par usuario+miObjeto dos veces
-      if (seenPairsFinal.has(stable)) return false;
-      seenPairsFinal.add(stable);
+      if (discardedIds.has(m.id)) return false;
+      const dedup = m.userId + '::' + m.myItem.name;
+      if (seenFinal.has(dedup)) return false;
+      seenFinal.add(dedup);
       return true;
     });
 
@@ -4536,24 +4530,16 @@ function renderMatches() {
 }
 
 function discardMatch(id) {
-  const match = matches.find(m => m.id === id);
-  console.log('[Truquo] discardMatch:', id, match?.myItem?.name, '↔', match?.theirItem?.name);
+  console.log('[Truquo] discardMatch:', id);
   try {
     const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
-    const discarded = JSON.parse(localStorage.getItem(key) || '[]');
-    if (!discarded.includes(id)) discarded.push(id);
-    // También guardar el par estable con separador único
-    if (match) {
-      const stable = match.userId + '##' + match.myItem.name;
-      if (!discarded.includes(stable)) discarded.push(stable);
-    }
-    if (discarded.length > 400) discarded.splice(0, discarded.length - 400);
-    localStorage.setItem(key, JSON.stringify(discarded));
-    console.log('[Truquo] total descartados:', discarded.length);
-  } catch(e) { console.error('discardMatch error:', e); }
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!arr.includes(id)) arr.push(id);
+    localStorage.setItem(key, JSON.stringify(arr));
+  } catch(e) {}
   matches = matches.filter(m => m.id !== id);
   renderMatches();
-  showToast('✕ Match descartado · No volverá a aparecer');
+  showToast('✕ Match descartado');
 }
 
 async function proposeFromMatch(theirItemId, matchId) {
