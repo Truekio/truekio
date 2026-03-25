@@ -2698,8 +2698,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     </div>
   <div class="fd-foot">
-    <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar</button>
-    <button class="btn btn-primary btn-md" style="flex:2" id="fd-apply-btn" onclick="fdApply()">Ver resultados</button>
+    <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar filtros</button>
+    <button class="btn btn-ghost btn-md" style="flex:1" onclick="closeFilterDrawer()">Cerrar</button>
   </div>
 </div>
 
@@ -2725,19 +2725,23 @@ function closeFilterDrawer() {
 function fdSelectCat(btn) {
   fdState.cat = btn.dataset.val;
   document.querySelectorAll('#filter-drawer .fd-cat-grid:first-of-type .fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
+  fdApply();
 }
 function fdSelectSort(btn) {
   fdState.sort = btn.dataset.val;
+  fdApply();
 }
 function fdToggleChip(btn, type, val) {
   const arr = type === 'condition' ? fdState.conditions : fdState.shipping;
   const idx = arr.indexOf(val);
   if (idx === -1) arr.push(val); else arr.splice(idx, 1);
   btn.classList.toggle('on', arr.includes(val));
+  fdApply();
 }
 function fdClearAll() {
   fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance' };
   _fdSyncUI();
+  fdApply();
 }
 function _fdSyncUI() {
   // Categoría
