@@ -441,6 +441,20 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .pub-screen-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
 .pub-flow-foot{padding:14px 20px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid var(--border);flex-shrink:0;background:var(--white);position:sticky;bottom:0;}
 
+/* ── USER PROFILE MODAL ── */
+.user-profile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;backdrop-filter:blur(4px);}
+.user-profile-overlay.open{display:flex;align-items:flex-end;justify-content:center;}
+@media(min-width:600px){.user-profile-overlay.open{align-items:center;}}
+.user-profile-sheet{background:var(--white);width:100%;max-width:520px;max-height:88vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;animation:slideUpSheet .3s cubic-bezier(.22,1,.36,1);}
+@media(min-width:600px){.user-profile-sheet{border-radius:var(--r-lg);max-height:82vh;}}
+@keyframes slideUpSheet{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+.user-profile-handle{width:36px;height:4px;background:var(--border2);border-radius:99px;margin:10px auto 0;flex-shrink:0;}
+.user-profile-head{padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.user-profile-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.user-profile-section{padding:16px 20px;border-bottom:1px solid var(--border);}
+.user-profile-section:last-child{border-bottom:none;padding-bottom:28px;}
+.user-profile-section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px;}
+
 /* ── CITY AUTOCOMPLETE ── */
 .city-autocomplete{position:relative;}
 .city-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--accent);border-top:none;border-radius:0 0 var(--r) var(--r);box-shadow:var(--sh-md);z-index:50;max-height:200px;overflow-y:auto;display:none;}
@@ -2631,6 +2645,39 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <button class="btn btn-primary btn-lg" style="flex:1;border-radius:var(--r)" id="pub-next-btn" onclick="pubNext(false)">Continuar →</button>
     </div>
 
+  </div>
+</div>
+
+<!-- USER PROFILE MODAL -->
+<div class="user-profile-overlay" id="user-profile-overlay" onclick="if(event.target===this)closeUserProfile()">
+  <div class="user-profile-sheet">
+    <div class="user-profile-handle"></div>
+    <div class="user-profile-head">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="up-avatar" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0"></div>
+          <div>
+            <div id="up-name" style="font-weight:700;font-size:1rem"></div>
+            <div id="up-trust" style="font-size:12px;margin-top:2px"></div>
+          </div>
+        </div>
+        <button onclick="closeUserProfile()" style="background:var(--bg2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--muted)">×</button>
+      </div>
+      <!-- Stats rápidos -->
+      <div id="up-stats" style="display:flex;gap:16px;margin-top:14px"></div>
+    </div>
+    <div class="user-profile-body">
+      <!-- Reviews -->
+      <div class="user-profile-section">
+        <div class="user-profile-section-title">⭐ Valoraciones</div>
+        <div id="up-reviews"></div>
+      </div>
+      <!-- Otros objetos -->
+      <div class="user-profile-section">
+        <div class="user-profile-section-title">📦 Otros objetos disponibles</div>
+        <div id="up-items"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -5495,11 +5542,33 @@ function openDetail(itemId) {
   document.getElementById('detail-price').textContent = item.price ? '~' + item.price + '€' : '';
   document.getElementById('detail-meta').textContent = [item.cat, item.condition, item.location].filter(Boolean).join(' · ');
 
-  // Usuario
+  // Usuario — con puntuación de confianza y botón ver perfil
   const uBg = `hsl(${strHash(item.user)%360},55%,70%)`;
+  const uScore = USER_TRUST[item.user] || 0;
+  const uLevel = getTrustLevel(uScore);
+  const uLevelData = TRUST_LEVELS[uLevel];
+  const trustIcons = {nuevo:'○',fiable:'◑',veterano:'◕',elite:'✦'};
+  const trustColors = {nuevo:'var(--muted)',fiable:'#2563eb',veterano:'#7c3aed',elite:'#d97706'};
+  const isOwnRow = currentUser && (
+    String(item.user_id) === String(currentUser.id) ||
+    item.user === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0])
+  );
+
   document.getElementById('detail-user-row').innerHTML = `
-    <div style="width:38px;height:38px;border-radius:50%;background:${uBg};display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0">${item.userEmoji}</div>
-    <div><div style="font-weight:700;font-size:13px">${item.user}</div><div style="font-size:11px;color:var(--muted)">📍 ${item.location||'Barcelona'}</div></div>`;
+    <div style="width:42px;height:42px;border-radius:50%;background:${uBg};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;font-weight:700">${item.userEmoji || item.user?.charAt(0)?.toUpperCase()}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:13px">${item.user}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+        <span style="font-size:11px;font-weight:700;color:${trustColors[uLevel]}">${trustIcons[uLevel]} ${uLevelData.label}</span>
+        ${uScore > 0 ? `<span style="font-size:10px;color:var(--muted)">· ${uScore} pts</span>` : ''}
+        <span style="font-size:10px;color:var(--muted)">· 📍 ${item.location||''}</span>
+      </div>
+    </div>
+    ${!isOwnRow ? `<button onclick="openUserProfile('${item.user_id||''}','${item.user?.replace(/'/g,'\\'')}',${item.id})"
+      style="background:var(--accent-l);color:var(--accent);border:none;padding:6px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">
+      Ver perfil →
+    </button>` : ''}
+  `;
 
   // Descripción
   const descBlock = document.getElementById('detail-desc-block');
@@ -5548,6 +5617,112 @@ function openDetail(itemId) {
 function closeDetail() {
   document.getElementById('detail-overlay').style.display = 'none';
   detailCurrentItem = null;
+}
+
+function closeUserProfile() {
+  document.getElementById('user-profile-overlay').classList.remove('open');
+}
+
+async function openUserProfile(userId, userName, excludeItemId) {
+  const overlay = document.getElementById('user-profile-overlay');
+  overlay.classList.add('open');
+
+  // Avatar y nombre
+  const uBg = `hsl(${strHash(userName)%360},55%,70%)`;
+  const uScore = USER_TRUST[userName] || 0;
+  const uLevel = getTrustLevel(uScore);
+  const uLevelData = TRUST_LEVELS[uLevel];
+  const trustColors = {nuevo:'var(--muted)',fiable:'#2563eb',veterano:'#7c3aed',elite:'#d97706'};
+  const trustIcons = {nuevo:'○',fiable:'◑',veterano:'◕',elite:'✦'};
+
+  document.getElementById('up-avatar').style.background = uBg;
+  document.getElementById('up-avatar').textContent = userName?.charAt(0)?.toUpperCase();
+  document.getElementById('up-name').textContent = userName;
+  document.getElementById('up-trust').innerHTML = `<span style="color:${trustColors[uLevel]};font-weight:700">${trustIcons[uLevel]} ${uLevelData.label}</span>${uScore > 0 ? ` · <span style="color:var(--muted)">${uScore} puntos de confianza</span>` : ''}`;
+
+  // Stats placeholder mientras carga
+  document.getElementById('up-stats').innerHTML = `
+    <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted)">Trueques</div></div>
+    <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted)">Valoraciones</div></div>
+    <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted)">Media ⭐</div></div>`;
+  document.getElementById('up-reviews').innerHTML = `<div style="color:var(--muted);font-size:13px">Cargando...</div>`;
+  document.getElementById('up-items').innerHTML = `<div style="color:var(--muted);font-size:13px">Cargando...</div>`;
+
+  // Cargar datos en paralelo
+  const queries = [
+    db.from('reviews').select('stars,comment,reviewer_name,created_at').eq('reviewed_user_id', userId || null).order('created_at', { ascending: false }).limit(10),
+    db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls').eq('user_id', userId || null).limit(8),
+  ];
+
+  // Fallback por nombre si no hay userId
+  const nameQueries = userId ? [] : [
+    db.from('reviews').select('stars,comment,reviewer_name,created_at').eq('reviewed_user_name', userName).order('created_at', { ascending: false }).limit(10),
+    db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls').eq('user_name', userName).limit(8),
+  ];
+
+  const [{ data: reviews }, { data: userItems }] = await Promise.all(queries);
+  let finalReviews = reviews || [];
+  let finalItems = userItems || [];
+
+  // Fallback por nombre
+  if (!finalReviews.length && !finalItems.length && !userId) {
+    const [{ data: rByName }, { data: iByName }] = await Promise.all(nameQueries);
+    finalReviews = rByName || [];
+    finalItems = iByName || [];
+  }
+
+  // Completados desde completed_trades
+  let tradesCount = 0;
+  if (userId) {
+    const { data: trades } = await db.from('completed_trades').select('id', { count: 'exact' }).or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+    tradesCount = (trades || []).length;
+  }
+
+  // Stats
+  const avgStars = finalReviews.length
+    ? (finalReviews.reduce((s, r) => s + r.stars, 0) / finalReviews.length).toFixed(1)
+    : '—';
+  document.getElementById('up-stats').innerHTML = `
+    <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:var(--text)">${tradesCount}</div><div style="font-size:10px;color:var(--muted)">Trueques</div></div>
+    <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:var(--text)">${finalReviews.length}</div><div style="font-size:10px;color:var(--muted)">Valoraciones</div></div>
+    <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:var(--text)">${avgStars !== '—' ? '⭐' + avgStars : '—'}</div><div style="font-size:10px;color:var(--muted)">Media</div></div>`;
+
+  // Reviews
+  if (finalReviews.length) {
+    document.getElementById('up-reviews').innerHTML = finalReviews.map(r => `
+      <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-weight:700;font-size:12px">${r.reviewer_name || 'Usuario'}</span>
+          <span style="color:#f59e0b;font-size:12px">${'⭐'.repeat(r.stars)}</span>
+        </div>
+        ${r.comment ? `<div style="font-size:13px;color:var(--text2);line-height:1.5">"${r.comment}"</div>` : ''}
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${new Date(r.created_at).toLocaleDateString('es-ES',{month:'short',year:'numeric'})}</div>
+      </div>`).join('');
+  } else {
+    document.getElementById('up-reviews').innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin valoraciones todavía.</div>`;
+  }
+
+  // Otros objetos (excluyendo el actual)
+  const otherItems = finalItems.filter(i => String(i.id) !== String(excludeItemId));
+  if (otherItems.length) {
+    document.getElementById('up-items').innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">` +
+      otherItems.map(i => {
+        const photo = i.photo_urls?.[0] || i.photos?.[0] || '';
+        const emoji = i.emoji || CAT_ICONS[i.category] || '📦';
+        return `<div onclick="closeUserProfile();setTimeout(()=>openDetail('${i.id}'),200)"
+          style="border-radius:10px;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform=''">
+          <div style="height:80px;background:var(--bg2);display:flex;align-items:center;justify-content:center;overflow:hidden">
+            ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:2rem">${emoji}</span>`}
+          </div>
+          <div style="padding:6px 8px">
+            <div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.title}</div>
+            ${i.estimated_value ? `<div style="font-size:10px;color:var(--accent);font-weight:700">~${i.estimated_value}€</div>` : ''}
+          </div>
+        </div>`;
+      }).join('') + `</div>`;
+  } else {
+    document.getElementById('up-items').innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">No tiene otros objetos publicados.</div>`;
+  }
 }
 
 function proposeFromDetail() {
