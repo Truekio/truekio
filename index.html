@@ -2071,6 +2071,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
             <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
           </select>
         </div>
+        <div class="sp-col">
+          <div class="sp-label">Ordenar por</div>
+          <select class="sp-select" id="sp-sort" onchange="applySearchPanel()">
+            <option value="relevance">✦ Relevancia</option>
+            <option value="match">⚡ % Match</option>
+            <option value="distance">📍 Distancia</option>
+            <option value="recent">🕒 Más reciente</option>
+            <option value="trust">⭐ Mejor valorado</option>
+          </select>
+        </div>
 <div class="sp-col">
           <div class="sp-label">Ciudad</div>
           <select class="sp-select" id="sp-city" onchange="applySearchPanel()">
@@ -3256,7 +3266,7 @@ let exchangeOptions = [];
 let pubImages = [];
 
 // ═══ SEARCH FILTER STATE ═══
-let spFilters = { cat:'', city:'', conditions:[], shipping:[] };
+let spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance' };
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', async () => {
@@ -3426,6 +3436,7 @@ function toggleSpChip(el, type, val) {
 function applySearchPanel() {
   spFilters.cat = document.getElementById('sp-cat')?.value || '';
   spFilters.city = document.getElementById('sp-city')?.value || '';
+  spFilters.sort = document.getElementById('sp-sort')?.value || 'relevance';
   const q = document.getElementById('search-input')?.value || '';
   applyFilter(q, currentFilter);
   renderActiveFilterChips();
@@ -3433,8 +3444,8 @@ function applySearchPanel() {
 }
 
 function clearAllFilters() {
-  spFilters = { cat:'', city:'', conditions:[], shipping:[] };
-  ['sp-cat','sp-city'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance' };
+  ['sp-cat','sp-city','sp-sort'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=(id==='sp-sort'?'relevance':'');});
   document.querySelectorAll('.sp-chip.on').forEach(c=>c.classList.remove('on'));
   applyFilter('', 'Todos');
   currentFilter = 'Todos';
@@ -3663,6 +3674,7 @@ function toggleSpChip(el, type, val) {
 function applySearchPanel() {
   spFilters.cat = document.getElementById('sp-cat')?.value || '';
   spFilters.city = document.getElementById('sp-city')?.value || '';
+  spFilters.sort = document.getElementById('sp-sort')?.value || 'relevance';
   const q = document.getElementById('search-input')?.value || '';
   applyFilter(q, currentFilter);
   renderActiveFilterChips();
@@ -3670,8 +3682,8 @@ function applySearchPanel() {
 }
 
 function clearAllFilters() {
-  spFilters = { cat:'', city:'', conditions:[], shipping:[] };
-  ['sp-cat','sp-city'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance' };
+  ['sp-cat','sp-city','sp-sort'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=(id==='sp-sort'?'relevance':'');});
   document.querySelectorAll('.sp-chip.on').forEach(c=>c.classList.remove('on'));
   applyFilter('', 'Todos');
   currentFilter = 'Todos';
@@ -3820,8 +3832,28 @@ function applyFilter(q, cat) {
     return { ...i, _score: score };
   });
 
-  // Ordenar por score descendente
-  f.sort((a, b) => b._score - a._score);
+  // ── Ordenar según criterio seleccionado ──
+  const sortMode = spFilters.sort || 'relevance';
+
+  if (sortMode === 'relevance') {
+    f.sort((a, b) => b._score - a._score);
+  } else if (sortMode === 'match') {
+    f.sort((a, b) => {
+      const sa = matchScoreByItemId.get(String(a.id)) || 0;
+      const sb = matchScoreByItemId.get(String(b.id)) || 0;
+      return sb - sa;
+    });
+  } else if (sortMode === 'distance') {
+    f.sort((a, b) => (a._dist ?? 9999) - (b._dist ?? 9999));
+  } else if (sortMode === 'recent') {
+    f.sort((a, b) => {
+      const da = new Date(a.created_at || a.createdAt || 0).getTime();
+      const db2 = new Date(b.created_at || b.createdAt || 0).getTime();
+      return db2 - da;
+    });
+  } else if (sortMode === 'trust') {
+    f.sort((a, b) => (USER_TRUST[b.user] || 0) - (USER_TRUST[a.user] || 0));
+  }
 
   const countEl = document.getElementById('sp-results-n');
   if (countEl) countEl.textContent = f.length;
