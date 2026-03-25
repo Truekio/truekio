@@ -3029,7 +3029,7 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadReviews(), 400);
   // Cargar stats reales del perfil (trueques, ahorro, puntuación)
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
-  // hiddenMatchIds se resetea en memoria — no necesita carga al login
+  if (currentUser) loadHiddenMatches(); // cargar ocultos desde Supabase
   // Cargar favoritos
   if(currentUser) setTimeout(() => loadFavorites(), 300);
   // Cargar deseos del usuario desde Supabase
@@ -3228,7 +3228,17 @@ let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
 let favorites = []; // IDs de items guardados como favoritos
 // Matches ocultos — solo en memoria, se resetean al recargar
+// Matches ocultos — persisten en Supabase
 let hiddenMatchIds = new Set();
+
+async function loadHiddenMatches() {
+  if (!currentUser) return;
+  try {
+    const { data } = await db.from('hidden_matches').select('match_id').eq('user_id', currentUser.id);
+    hiddenMatchIds = new Set((data || []).map(r => r.match_id));
+  } catch(e) { hiddenMatchIds = new Set(); }
+}
+
 
 
 // ── Favoritos ──
@@ -4416,6 +4426,9 @@ window.loadMatches = async function loadMatches() {
     }
   }
 
+  // Cargar ocultos si no están listos
+  if (hiddenMatchIds.size === 0 && currentUser) await loadHiddenMatches();
+
   // Filtrar ocultos
   const seenFinal = new Set();
   matches = foundMatches
@@ -4514,15 +4527,21 @@ function renderMatches() {
   renderConfirmations(); // async, fire and forget
 }
 
-function hideMatch(id) {
+async function hideMatch(id) {
   hiddenMatchIds.add(id);
   matches = matches.filter(m => m.id !== id);
   renderMatches();
-  showToast('👁 Match oculto · Puedes verlo en "Ocultos"');
+  showToast('👁 Match oculto');
+  // Guardar en Supabase
+  db.from('hidden_matches')
+    .upsert([{ user_id: currentUser.id, match_id: id }], { onConflict: 'user_id,match_id', ignoreDuplicates: true })
+    .then(({ error }) => { if (error) console.warn('hideMatch:', error.message); });
 }
 
-function showHiddenMatches() {
+async function showHiddenMatches() {
+  await db.from('hidden_matches').delete().eq('user_id', currentUser.id);
   hiddenMatchIds.clear();
+  showToast('👁 Mostrando todos los matches');
   loadMatches();
 }
 
