@@ -1594,6 +1594,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
+    <button class="bnav-btn" id="bnav-favorites" onclick="navTo('favorites')"><span>❤️</span><span class="bnav-label">Favoritos</span></button>
     <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
     <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
     <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
@@ -2105,6 +2106,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </div>
 
+<!-- FAVORITES -->
+<div class="view" id="view-favorites">
+  <div class="wrap page-pad">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.4rem">❤️ Favoritos</div>
+    </div>
+    <div id="favs-grid"></div>
+  </div>
+</div>
+
 <!-- ACTIVITY HUB -->
 <div class="view" id="view-activity">
   <div class="wrap page-pad">
@@ -2356,7 +2367,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="card profile-header-card" style="padding:0 28px 0;margin-bottom:20px">
       <div class="ptabs" style="border-top:none;padding-top:0;margin-top:0">
         <button class="ptab active" id="ptab-btn-items" onclick="switchPTab('items')">Mis objetos</button>
-        <button class="ptab" id="ptab-btn-favs" onclick="switchPTab('favs')">❤️ Favoritos</button>
+        <button class="ptab" id="ptab-btn-favs" style="display:none" onclick="switchPTab('favs')">❤️ Favoritos</button>
         <button class="ptab" id="ptab-btn-done" onclick="switchPTab('done')">Completados</button>
         <button class="ptab" id="ptab-btn-reviews" onclick="switchPTab('reviews')">Valoraciones <span style="font-size:10px;font-weight:800;background:var(--accent-l);color:var(--accent);padding:2px 6px;border-radius:99px;margin-left:3px" id="reviews-badge">0</span></button>
         <button class="ptab" id="ptab-btn-config" onclick="switchPTab('config')">Configuración</button>
@@ -3354,6 +3365,7 @@ function navTo(v) {
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
 }
 
 function navToActivity(tab) {
@@ -3380,6 +3392,7 @@ function navToActivity(tab) {
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3592,6 +3605,7 @@ function navTo(v) {
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
 }
 
 function navToActivity(tab) {
@@ -3618,6 +3632,7 @@ function navToActivity(tab) {
   if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
