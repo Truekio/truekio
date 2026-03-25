@@ -3370,7 +3370,7 @@ function navTo(v) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -3395,7 +3395,7 @@ function navToActivity(tab) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -3610,7 +3610,7 @@ function navTo(v) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -3635,7 +3635,7 @@ function navToActivity(tab) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -4189,7 +4189,16 @@ function switchMatchTab(tab) {
   if(tabContent) tabContent.style.display='block';
   if(tab === 'wishlist-act') { renderActivityWishlist(); loadWishAlerts(); }
   if(tab === 'confirm') renderConfirmations();
-  if(tab === 'direct') loadMatches();
+  if(tab === 'direct') {
+    // Solo recargar si no hay matches cargados o han pasado más de 5 minutos
+    const now = Date.now();
+    const lastLoad = window._matchesLastLoad || 0;
+    if (!matches.length || (now - lastLoad) > 5 * 60 * 1000) {
+      loadMatches();
+    } else {
+      renderMatches(); // solo re-renderizar con los que ya hay
+    }
+  }
 }
 
 function renderActivityWishlist() {
@@ -4414,6 +4423,7 @@ window.loadMatches = async function loadMatches() {
       return true;
     });
 
+  window._matchesLastLoad = Date.now();
   renderMatches();
 }
 
@@ -4444,7 +4454,10 @@ function renderMatches() {
     } catch(e) {}
 
     const restoreBtn = discardedCount > 0
-      ? `<button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="restoreDiscardedMatches()">↩ Restaurar ${discardedCount} descartado${discardedCount > 1 ? 's' : ''}</button>`
+      ? `<div style="margin-top:20px;padding:16px;background:var(--bg2);border-radius:var(--r);border:1.5px dashed var(--border2);text-align:center">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Has descartado <strong style="color:var(--text)">${discardedCount}</strong> match${discardedCount > 1 ? 'es' : ''} anteriormente</div>
+          <button class="btn btn-secondary btn-md" style="width:100%" onclick="restoreDiscardedMatches()">↩ Restaurar descartados</button>
+        </div>`
       : '';
 
     list.innerHTML = emptyState({
