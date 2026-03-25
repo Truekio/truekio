@@ -4253,6 +4253,16 @@ window.loadMatches = async function loadMatches() {
 
   if (!myItems || !myItems.length) { matches = []; renderMatches(); return; }
 
+  // 2. Propuestas ya enviadas por mí — para excluir esos pares de matches
+  const { data: myProposals } = await db.from('proposals')
+    .select('item_id, owner_id')
+    .eq('offerer_id', currentUser.id)
+    .in('status', ['pending', 'accepted']);
+  // Set de owner_ids a los que ya propuse (cualquier objeto)
+  const alreadyProposedTo = new Set((myProposals || []).map(p => p.owner_id).filter(Boolean));
+  // Set de item_ids específicos que ya propuse
+  const alreadyProposedItems = new Set((myProposals || []).map(p => String(p.item_id)).filter(Boolean));
+
   const foundMatches = [];
   const seenPairs = new Set();
 
@@ -4412,7 +4422,10 @@ window.loadMatches = async function loadMatches() {
   matches = foundMatches
     .sort((a, b) => b.score - a.score)
     .filter(m => {
-      if (m.score < 50) return false; // solo matches relevantes
+      if (m.score < 50) return false;
+      // Excluir si ya propuse a este usuario o este objeto específico
+      if (alreadyProposedTo.has(m.userId)) return false;
+      if (m.theirItem?.id && alreadyProposedItems.has(String(m.theirItem.id))) return false;
       const dedup = m.userId + '::' + m.myItem.name;
       if (seenFinal.has(dedup)) return false;
       seenFinal.add(dedup);
@@ -5747,6 +5760,14 @@ async function sendOffer() {
 
   closeModal();
   showToast('✦ Propuesta enviada correctamente');
+
+  // Quitar de matches el par con ese usuario/objeto (ya no tiene sentido mostrarlo)
+  if (ownerId) {
+    matches = matches.filter(m => m.userId !== ownerId || String(m.theirItem?.id) === String(activeModalItem.id));
+    // Si el objeto propuesto era un match específico, quitarlo también por id de objeto
+    matches = matches.filter(m => String(m.theirItem?.id) !== String(activeModalItem.id));
+    renderMatches();
+  }
 
   // Email al dueño del objeto
   const ownerEmail = await getUserEmail(ownerId);
