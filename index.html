@@ -3423,10 +3423,7 @@ async function toggleFavorite(itemId, itemName, e) {
 }
 let wishAlerts = [];
 let convs = CONVS_DATA.map(c=>({...c,messages:[...c.messages]}));
-let myItems = [
-  {id:101,emoji:'🎸',name:'Guitarra Fender Stratocaster',cat:'Música'},
-  {id:102,emoji:'💻',name:'MacBook Air 2020',cat:'Electrónica'},
-];
+let myItems = []; // se llena desde Supabase al hacer login
 let currentFilter = 'Todos';
 let selectedOfferIdx = null;
 let activeModalItem = null;
@@ -3952,8 +3949,14 @@ function applyFilter(q, cat) {
 
   let f = items.filter(i => {
     // ── Ocultar objetos propios ──
-    if (myId && String(i.user_id) === String(myId)) return false;
-    if (myName && i.user === myName) return false;
+    if (myId) {
+      if (String(i.user_id) === String(myId)) return false;
+    }
+    if (myName && !myId) {
+      if (i.user === myName || i.user_name === myName) return false;
+    }
+    // También excluir por los ids de myItems cargados
+    if (myItems.some(m => String(m.id) === String(i.id))) return false;
 
     const isPremium = i.price && parseInt(i.price) >= 300;
     const bc   = cat==='Todos' || cat==='' || (cat==='Premium' ? isPremium : i.cat===cat);
@@ -6185,6 +6188,18 @@ async function loadMyItems() {
     grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no has publicado nada.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="navTo(\'publish\')">Publicar ahora →</button></div>';
     return;
   }
+
+  // Actualizar la variable global myItems para que applyFilter pueda excluirlos
+  myItems = data.map(item => ({
+    id: item.id,
+    user_id: item.user_id,
+    emoji: item.emoji || '📦',
+    name: item.title || item.name || '',
+    cat: item.category || item.cat || '',
+    wants: item.wants ? (typeof item.wants === 'string' ? item.wants.split(',').map(w=>w.trim()) : item.wants) : [],
+  }));
+  // Re-renderizar el explorador con los nuevos datos
+  applyFilter(document.getElementById('search-input')?.value || '', currentFilter);
 
   // Actualizar contador
   const countEl = document.getElementById('tm-publicados');
