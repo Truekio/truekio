@@ -3029,7 +3029,6 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadReviews(), 400);
   // Cargar stats reales del perfil (trueques, ahorro, puntuación)
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
-  if (currentUser) { hiddenMatchesLoaded = false; loadHiddenMatches(); } // cargar ocultos desde Supabase
   // Cargar favoritos
   if(currentUser) setTimeout(() => loadFavorites(), 300);
   // Cargar deseos del usuario desde Supabase
@@ -3227,19 +3226,7 @@ let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.ot
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
 let favorites = []; // IDs de items guardados como favoritos
-// Matches ocultos — solo en memoria, se resetean al recargar
-// Matches ocultos — persisten en Supabase
-let hiddenMatchIds = new Set();
-let hiddenMatchesLoaded = false;
-
-async function loadHiddenMatches() {
-  if (!currentUser) return;
-  try {
-    const { data } = await db.from('hidden_matches').select('match_id').eq('user_id', currentUser.id);
-    hiddenMatchIds = new Set((data || []).map(r => r.match_id));
-  } catch(e) { hiddenMatchIds = new Set(); }
-  hiddenMatchesLoaded = true;
-}
+// (sistema de ocultos eliminado)
 
 
 
@@ -4420,15 +4407,12 @@ window.loadMatches = async function loadMatches() {
     }
   }
 
-  // Cargar ocultos si no están listos aún
-  if (!hiddenMatchesLoaded && currentUser) await loadHiddenMatches();
-
   // Filtrar ocultos
   const seenFinal = new Set();
   matches = foundMatches
     .sort((a, b) => b.score - a.score)
     .filter(m => {
-      if (hiddenMatchIds.has(m.id)) return false;
+      if (m.score < 50) return false; // solo matches relevantes
       const dedup = m.userId + '::' + m.myItem.name;
       if (seenFinal.has(dedup)) return false;
       seenFinal.add(dedup);
@@ -4457,20 +4441,15 @@ function renderMatches() {
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
 
   if(!matches.length) {
-    const hiddenCount = hiddenMatchIds.size;
-    const restoreTip = hiddenCount > 0
-      ? `Has ocultado <strong>${hiddenCount}</strong> match${hiddenCount > 1 ? 'es' : ''} · <button class="btn btn-ghost btn-sm" style="display:inline;padding:2px 8px;font-size:12px" onclick="showHiddenMatches()">👁 Ver ocultos</button>`
-      : null;
-
     list.innerHTML = emptyState({
       icon: '⚡',
-      title: 'No hay matches visibles',
-      body: 'El sistema busca coincidencias automáticamente. Para acelerar el proceso, publica objetos y especifica bien qué aceptas a cambio.',
+      title: 'No hay matches todavía',
+      body: 'El sistema busca coincidencias con más del 50% de compatibilidad. Publica objetos y añade deseos para aumentar tus probabilidades.',
       cta: '+ Publicar objeto',
       ctaAction: "navTo('publish')",
       ctaSecondary: 'Ver cadenas de trueque',
       ctaSecondaryAction: "switchMatchTab('chain')",
-      tip: restoreTip || 'Cuantas más opciones de cambio indiques, más matches encontrarás.'
+      tip: 'Cuantas más opciones de cambio indiques, más matches encontrarás.'
     });
   } else {
     list.innerHTML = matches.map(m => {
@@ -4509,7 +4488,6 @@ function renderMatches() {
       <div class="match-footer">
         <div class="match-reasons">${m.reasons.map(r=>`<div class="match-reason"><span>✓</span> ${r}</div>`).join('')}</div>
         <div class="match-actions">
-          <button class="btn btn-ghost btn-sm" style="color:var(--muted)" onclick="hideMatch('${m.id}')">👁 Ocultar</button>
           <button class="btn btn-primary btn-sm" onclick="proposeFromMatch('${m.theirItem.id}','${m.id}')">🤝 Proponer trueque</button>
         </div>
       </div>
@@ -4568,7 +4546,6 @@ async function proposeFromMatch(theirItemId, matchId) {
   openModal(item.id || theirItemId);
 }
 
-// showHiddenMatches definida arriba junto a hideMatch
 
 // ═══ CHAINS ═══
 function renderChains() {
