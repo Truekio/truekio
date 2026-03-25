@@ -2129,15 +2129,14 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <!-- Activity tabs -->
     <div style="overflow-x:auto;margin-bottom:0;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-left:-24px;margin-right:-24px;padding:0 24px;border-bottom:1px solid var(--border)">
       <div style="display:flex;gap:0;min-width:max-content">
-        <button class="match-tab active" id="mtab-direct" onclick="switchMatchTab('direct')">⚡ Matches <span class="nav-badge" style="background:var(--accent)" id="mtab-direct-count">3</span></button>
-        <button class="match-tab" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
+        <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
         <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
         <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
         <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
       </div>
     </div>
-    <div id="matches-direct" class="match-tab-content active" style="margin-top:24px"><div id="matches-list"></div></div>
-    <div id="matches-proposals" class="match-tab-content" style="display:none">
+    <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
+    <div id="matches-proposals" class="match-tab-content active" style="margin-top:24px">
       <div id="proposals-list"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
     </div>
     <div id="matches-chain" class="match-tab-content" style="display:none">
@@ -3027,10 +3026,10 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadMyItems(), 300);
   // Cargar valoraciones reales desde Supabase
   if(currentUser) setTimeout(() => loadReviews(), 400);
-  // Cargar stats reales del perfil (trueques, ahorro, puntuación)
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
-  // Cargar favoritos
   if(currentUser) setTimeout(() => loadFavorites(), 300);
+  // Cargar matches en background para badges en el explorador
+  if(currentUser) setTimeout(() => loadMatches(), 800);
   // Cargar deseos del usuario desde Supabase
   if (currentUser) {
     db.from('wishes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
@@ -3222,6 +3221,7 @@ const WISH_ALERTS_DATA = [
 // ═══ STATE ═══
 let items = []; // solo items reales de Supabase
 let matches = [];
+let matchScoreByItemId = new Map(); // score de match por item_id para el explorador
 let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.otherAccepted]}));
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
@@ -3361,7 +3361,7 @@ function navTo(v) {
   // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
   if(v === 'matches' || v === 'wishlist') {
-    const tab = v === 'wishlist' ? 'wishlist-act' : 'direct';
+    const tab = v === 'wishlist' ? 'wishlist-act' : 'proposals';
     navToActivity(tab);
     return;
   }
@@ -3398,7 +3398,8 @@ function navToActivity(tab) {
   document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
   const bn = document.getElementById('bnav-activity');
   if(bn) bn.classList.add('active');
-  if(tab) switchMatchTab(tab);
+  switchMatchTab(tab || 'proposals');
+  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') {
@@ -3520,7 +3521,8 @@ function showToast(msg) {
 
 // ═══ ITEM CARD HTML — redesigned ═══
 function itemCardHTML(item, isPremiumView=false) {
-  const isMatch = matches.some(m => m.theirItem.name === item.name);
+  const matchScore = matchScoreByItemId.get(String(item.id));
+  const isMatch = !!matchScore;
   const isPremium = item.price && parseInt(item.price) >= 300;
   const wantTags = item.wants.map(w => `<span class="wants-tag">${w}</span>`).join('');
   const catIcon = CAT_ICONS[item.cat] || '✦';
@@ -3559,7 +3561,7 @@ function itemCardHTML(item, isPremiumView=false) {
 
   const topBadge = isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
-    : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
+    : isMatch ? `<div class="item-match-badge">⚡ ${matchScore}% match</div>` : '';
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
@@ -3601,7 +3603,7 @@ function navTo(v) {
   // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
   if(v === 'matches' || v === 'wishlist') {
-    const tab = v === 'wishlist' ? 'wishlist-act' : 'direct';
+    const tab = v === 'wishlist' ? 'wishlist-act' : 'proposals';
     navToActivity(tab);
     return;
   }
@@ -3638,7 +3640,8 @@ function navToActivity(tab) {
   document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
   const bn = document.getElementById('bnav-activity');
   if(bn) bn.classList.add('active');
-  if(tab) switchMatchTab(tab);
+  switchMatchTab(tab || 'proposals');
+  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
   if(v === 'publish') {
@@ -3863,7 +3866,8 @@ function applyFilter(q, cat) {
 
 // ═══ ITEM CARD HTML — redesigned ═══
 function itemCardHTML(item, isPremiumView=false) {
-  const isMatch = matches.some(m => m.theirItem.name === item.name);
+  const matchScore = matchScoreByItemId.get(String(item.id));
+  const isMatch = !!matchScore;
   const isPremium = item.price && parseInt(item.price) >= 300;
   const wantTags = item.wants.map(w => `<span class="wants-tag">${w}</span>`).join('');
   const catIcon = CAT_ICONS[item.cat] || '✦';
@@ -3902,7 +3906,7 @@ function itemCardHTML(item, isPremiumView=false) {
 
   const topBadge = isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
-    : isMatch ? `<div class="item-match-badge">⚡ Match</div>` : '';
+    : isMatch ? `<div class="item-match-badge">⚡ ${matchScore}% match</div>` : '';
 
   return `
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
@@ -4203,7 +4207,7 @@ function switchMatchTab(tab) {
   if(tabContent) tabContent.style.display='block';
   if(tab === 'wishlist-act') { renderActivityWishlist(); loadWishAlerts(); }
   if(tab === 'confirm') renderConfirmations();
-  if(tab === 'direct') loadMatches();
+  if(tab === 'direct') { loadMatches(); return; } // matches se ven en explorador
 }
 
 function renderActivityWishlist() {
@@ -4444,6 +4448,12 @@ window.loadMatches = async function loadMatches() {
       return true;
     });
 
+  // Actualizar scores en el explorador
+  matchScoreByItemId.clear();
+  matches.forEach(m => {
+    if (m.theirItem?.id) matchScoreByItemId.set(String(m.theirItem.id), m.score);
+  });
+  renderExplore(items); // re-renderizar con badges de match
   renderMatches();
 }
 
@@ -4581,7 +4591,7 @@ function renderChains() {
       icon:'🔗', title:'No hay cadenas activas todavía',
       body:'Las cadenas conectan 3 o 4 usuarios en círculo cuando no hay match directo. El sistema las detecta automáticamente a medida que crece la comunidad.',
       cta:'+ Publicar objeto', ctaAction:"navTo('publish')",
-      ctaSecondary:'Ver mis matches directos', ctaSecondaryAction:"switchMatchTab('direct')",
+      ctaSecondary:'Ver matches en explorador', ctaSecondaryAction:"navTo('explore')",
       tip:'Publica objetos de distintas categorías para aumentar tus probabilidades de aparecer en una cadena.'
     });
     return;
@@ -4756,7 +4766,7 @@ async function renderConfirmations() {
     list.innerHTML = emptyState({
       icon:'📦', title:'Nada pendiente de confirmar',
       body:'Cuando acuerdes un trueque con alguien aparecerá aquí. Ambas partes debéis confirmar antes de cerrar el intercambio.',
-      cta:'Ver matches', ctaAction:"switchMatchTab('direct')",
+      cta:'Ver matches en explorador', ctaAction:"navTo('explore')",
       ctaSecondary:'Explorar objetos', ctaSecondaryAction:"navTo('explore')",
     });
     // Limpiar badge
