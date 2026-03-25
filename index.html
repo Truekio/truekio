@@ -2211,16 +2211,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <label>Categoría</label>
               <select id="wish-cat-input">
                 <option value="">— Cualquiera —</option>
-                <option>Electrónica</option><option>Música</option><option>Deporte</option>
-                <option>Ropa</option><option>Hogar</option>
-                <option value="Libros|Ficción">Libros · Ficción</option>
-                <option value="Libros|Ciencia ficción">Libros · Sci-Fi</option>
-                <option value="Libros|Fantasía">Libros · Fantasía</option>
-                <option value="Libros|Cómics y manga">Libros · Manga</option>
-                <option value="Servicios|Salud · Dentista">Servicios · Dentista</option>
-                <option value="Servicios|Construcción · Carpintero">Servicios · Carpintero</option>
-                <option value="Servicios|Educación · Profesor idiomas">Servicios · Idiomas</option>
-                <option value="Servicios|Tecnología · Diseño web">Servicios · Diseño web</option>
+                <option>Electrónica</option><option>Moda</option><option>Hogar</option>
+                <option>Libros</option><option>Juguetes</option><option>Mascotas</option>
+                <option>Deporte</option><option>Motor</option><option>Bricolaje</option>
+                <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
               </select>
             </div>
             <button class="btn btn-primary btn-md" onclick="addWishItem()" style="white-space:nowrap;height:42px;margin-bottom:0">+ Añadir</button>
@@ -3031,10 +3025,12 @@ window._enterApp = function() {
     db.from('wishes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
       .then(({ data }) => {
         if (data && data.length) {
-          wishlist = data.map(w => ({ id: w.id, emoji: w.emoji||'✦', name: w.name, cat: w.cat||'General', addedDate:'Guardado', notify: w.notify !== false, hasMatch:false, hasSupply:false, matchCount:0 }));
+          wishlist = data.map(w => ({ id: w.id, emoji: w.emoji||'✦', name: w.name, cat: w.cat||'General', addedDate: timeAgo ? timeAgo(w.created_at) : 'Guardado', notify: w.notify !== false, hasMatch:false, hasSupply:false, matchCount:0 }));
           renderWishlist();
         }
       });
+    // Cargar alertas de deseos
+    loadWishAlerts();
   }
 }
 
@@ -3211,20 +3207,6 @@ const WISHLIST_DATA = [
 const WISH_ALERTS_DATA = [
           ];
 
-const SUPPLY_DEMAND_DATA = [
-  {emoji:'💻',name:'MacBook / Portátil',demand:94,count:47,cat:'Electrónica'},
-  {emoji:'📱',name:'iPhone 14 / 15',demand:88,count:41,cat:'Electrónica'},
-  {emoji:'🎹',name:'Teclado / Piano digital',demand:76,count:31,cat:'Música'},
-  {emoji:'🩺',name:'Servicio dental',demand:72,count:28,cat:'Servicios'},
-  {emoji:'📚',name:'Libros sci-fi / fantasía',demand:65,count:24,cat:'Libros'},
-  {emoji:'🔧',name:'Electricista / fontanero',demand:61,count:22,cat:'Servicios'},
-  {emoji:'🎸',name:'Guitarra eléctrica',demand:58,count:20,cat:'Música'},
-  {emoji:'📷',name:'Cámara mirrorless',demand:54,count:18,cat:'Electrónica'},
-  {emoji:'🚲',name:'Bicicleta eléctrica',demand:49,count:16,cat:'Deporte'},
-  {emoji:'🌿',name:'Nutricionista / dietista',demand:44,count:14,cat:'Servicios'},
-  {emoji:'🎮',name:'Consola / Videojuegos',demand:41,count:13,cat:'Electrónica'},
-  {emoji:'📖',name:'Clases de idiomas',demand:38,count:12,cat:'Servicios'},
-];
 
 // ═══ STATE ═══
 let items = []; // solo items reales de Supabase
@@ -4205,7 +4187,7 @@ function switchMatchTab(tab) {
   document.querySelectorAll('.match-tab-content').forEach(el=>el.style.display='none');
   const tabContent = document.getElementById('matches-'+tab);
   if(tabContent) tabContent.style.display='block';
-  if(tab === 'wishlist-act') renderActivityWishlist();
+  if(tab === 'wishlist-act') { renderActivityWishlist(); loadWishAlerts(); }
   if(tab === 'confirm') renderConfirmations();
   if(tab === 'direct') loadMatches();
 }
@@ -7572,6 +7554,9 @@ async function publishItem() {
   document.getElementById('prof-stat-items').textContent = myItems.length;
   navTo('explore');
 
+  // Detectar coincidencias con deseos de otros usuarios (fire & forget)
+  checkWishMatches(name, pubCat, newItem.id);
+
   // Reset del formulario en background
   pubCurrentScreen = 1;
   setTimeout(() => pubGoTo(1), 400);
@@ -7581,6 +7566,93 @@ async function publishItem() {
 // ═══ WISHLIST SYSTEM ═══
 // ═══════════════════════════════════
 
+// Comprobar si un objeto recién publicado coincide con deseos de otros
+async function checkWishMatches(itemName, itemCat, itemId) {
+  if (!itemName || !currentUser) return;
+  try {
+    const { data: allWishes } = await db
+      .from('wishes')
+      .select('id, user_id, name, cat, notify')
+      .neq('user_id', currentUser.id)
+      .eq('notify', true);
+    if (!allWishes || !allWishes.length) return;
+
+    const nameLower = itemName.toLowerCase();
+    const matched = allWishes.filter(w => {
+      const wName = (w.name || '').toLowerCase();
+      return nameLower.includes(wName) ||
+             wName.includes(nameLower) ||
+             wName.split(' ').some(word => word.length > 3 && nameLower.includes(word));
+    });
+    if (!matched.length) return;
+
+    const publisher = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    const alerts = matched.map(w => ({
+      user_id: w.user_id,
+      wish_id: w.id,
+      item_id: String(itemId),
+      item_name: itemName,
+      item_cat: itemCat,
+      publisher_name: publisher,
+      read: false,
+    }));
+    await db.from('wish_alerts').insert(alerts);
+    console.log(`[Truquo] ${alerts.length} alertas de deseos generadas`);
+  } catch(e) { console.warn('checkWishMatches:', e.message); }
+}
+
+// Cargar alertas del usuario desde Supabase
+async function loadWishAlerts() {
+  if (!currentUser) return;
+  try {
+    const { data } = await db
+      .from('wish_alerts')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (!data) return;
+    wishAlerts = data.map(a => ({
+      id: a.id,
+      emoji: (typeof CAT_ICONS !== 'undefined' && CAT_ICONS[a.item_cat]) || '📦',
+      title: `¡Publicaron "${a.item_name}"!`,
+      desc: `${a.publisher_name} acaba de publicar algo que buscas.`,
+      time: timeAgo(a.created_at),
+      unread: !a.read,
+      itemId: a.item_id,
+    }));
+    renderWishAlerts();
+    updateWishBadges();
+  } catch(e) { console.warn('loadWishAlerts:', e.message); }
+}
+
+// Marcar alerta como leída en Supabase
+async function markWishAlertRead(alertId) {
+  try {
+    await db.from('wish_alerts').update({ read: true }).eq('id', alertId).eq('user_id', currentUser.id);
+  } catch(e) {}
+}
+
+// Marcar todas las alertas como leídas
+async function markAllWishAlertsRead() {
+  try {
+    await db.from('wish_alerts').update({ read: true }).eq('user_id', currentUser.id).eq('read', false);
+  } catch(e) {}
+  wishAlerts.forEach(a => a.unread = false);
+  renderWishAlerts();
+  updateWishBadges();
+  showToast('✓ Todas las alertas marcadas como leídas');
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return 'Ahora mismo';
+  if (diff < 3600) return `Hace ${Math.floor(diff/60)} min`;
+  if (diff < 86400) return `Hace ${Math.floor(diff/3600)} h`;
+  return `Hace ${Math.floor(diff/86400)} días`;
+}
+
 function switchWishTab(tab) {
   ['list','alerts','supply'].forEach(t => {
     document.getElementById('wtab-'+t).classList.remove('active');
@@ -7588,6 +7660,9 @@ function switchWishTab(tab) {
   });
   document.getElementById('wtab-'+tab).classList.add('active');
   document.getElementById('wtab-content-'+tab).style.display = 'block';
+  // Cargar datos al entrar en cada tab
+  if (tab === 'alerts') loadWishAlerts();
+  if (tab === 'supply') renderSupplyDemand();
 }
 
 function renderWishlist() {
@@ -7739,13 +7814,17 @@ function renderWishAlerts() {
 }
 
 function handleWishAlertClick(alertId, itemId) {
-  const alert = wishAlerts.find(a=>a.id===alertId);
-  if(alert) alert.unread = false;
+  const alert = wishAlerts.find(a => a.id === alertId);
+  if (alert) {
+    alert.unread = false;
+    markWishAlertRead(alertId); // fire & forget en Supabase
+  }
   renderWishAlerts();
   updateWishBadges();
-  if(itemId && itemId !== 'null') {
+  if (itemId && itemId !== 'null' && itemId !== 'undefined') {
+    closeDetail && closeDetail();
     navTo('explore');
-    showToast('Mostrando el objeto en Explorar');
+    setTimeout(() => openDetail(itemId), 400);
   }
 }
 
@@ -7756,20 +7835,48 @@ function markAllWishAlertsRead() {
   showToast('✓ Todas las alertas marcadas como leídas');
 }
 
-function renderSupplyDemand() {
+async function renderSupplyDemand() {
   const el = document.getElementById('supply-demand-grid');
-  el.innerHTML = SUPPLY_DEMAND_DATA.map(d => `
-  <div class="supply-card" onclick="filterAndExplore('${d.cat}')">
-    <div class="supply-card-top">
-      <div class="supply-card-emoji">${d.emoji}</div>
-      <div class="supply-card-info">
-        <div class="supply-card-name">${d.name}</div>
-        <div class="supply-card-user">${d.count} usuarios lo buscan</div>
-      </div>
-    </div>
-    <div class="supply-demand-bar"><div class="supply-demand-fill" style="width:${d.demand}%"></div></div>
-    <div class="supply-demand-label">${d.demand}% demanda · ${d.count > 30?'🔥 Muy alta':d.count>20?'⬆️ Alta':'📈 Media'}</div>
-  </div>`).join('');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">Cargando tendencias...</div>';
+  try {
+    const { data: allWishes } = await db.from('wishes').select('name, cat, emoji');
+    if (!allWishes || !allWishes.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">Sé el primero en añadir deseos para ver tendencias.</div>';
+      return;
+    }
+    // Agrupar y contar
+    const counts = {};
+    for (const w of allWishes) {
+      const key = (w.name || '').toLowerCase().trim();
+      if (!key || key.length < 3) continue;
+      if (!counts[key]) counts[key] = { name: w.name, cat: w.cat || 'Otros', emoji: w.emoji || '✦', count: 0 };
+      counts[key].count++;
+    }
+    const sorted = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12);
+    if (!sorted.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">Añade deseos para ver qué busca la comunidad.</div>';
+      return;
+    }
+    const maxCount = sorted[0].count;
+    el.innerHTML = sorted.map(d => {
+      const pct = Math.round((d.count / maxCount) * 100);
+      const icon = (typeof CAT_ICONS !== 'undefined' && CAT_ICONS[d.cat]) || d.emoji;
+      return `
+      <div class="supply-card" onclick="filterAndExplore('${d.cat}')">
+        <div class="supply-card-top">
+          <div class="supply-card-emoji">${icon}</div>
+          <div class="supply-card-info">
+            <div class="supply-card-name">${d.name}</div>
+            <div class="supply-card-user">${d.count} ${d.count === 1 ? 'usuario lo busca' : 'usuarios lo buscan'}</div>
+          </div>
+        </div>
+        <div class="supply-demand-bar"><div class="supply-demand-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">Error al cargar tendencias.</div>';
+  }
 }
 
 function filterAndExplore(cat) {
@@ -7780,21 +7887,6 @@ function filterAndExplore(cat) {
   });
   applyFilter('', cat);
   showToast('Mostrando: '+cat);
-}
-
-function checkWishlistMatchOnPublish(newItem) {
-  // When user publishes something, check if it matches other users' wishlists
-  const keywords = newItem.name.toLowerCase().split(' ');
-  const matchCount = Math.floor(Math.random()*4)+1;
-  if(matchCount > 0) {
-    const alert = {id:'wa'+Date.now(), emoji:newItem.emoji,
-      title:'Tu publicación interesa a '+matchCount+' usuarios',
-      desc:matchCount+' personas tienen "'+newItem.cat+'" en su lista de deseos y podrían proponerte un trueque pronto.',
-      time:'Ahora mismo', unread:true, itemId:null, cat:newItem.cat};
-    wishAlerts.unshift(alert);
-    updateWishBadges();
-    addNotification('✦','#f5f3ff',matchCount+' deseos coinciden','Tu nuevo objeto interesa a '+matchCount+' usuarios con lista de deseos activa.');
-  }
 }
 
 // ═══ PHOTO CAROUSEL ═══
