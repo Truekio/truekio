@@ -4301,7 +4301,7 @@ window.loadMatches = async function loadMatches() {
         foundMatches.push({
           id: `match-${myItem.id}-${wish.user_id}`,
           myItem: { emoji: myItem.emoji || '📦', name: myItem.title },
-          theirItem: { emoji: bestTheirItem.emoji || '📦', name: bestTheirItem.title },
+          theirItem: { id: bestTheirItem.id, emoji: bestTheirItem.emoji || '📦', name: bestTheirItem.title },
           user: wish.user_name || 'Usuario',
           userEmoji: '👤',
           userAvatar: bestTheirItem.user_avatar || null,
@@ -4345,7 +4345,7 @@ window.loadMatches = async function loadMatches() {
           foundMatches.push({
             id: `match-wish-${item.id}-${wish.name}`,
             myItem: { emoji: myBestItem?.emoji || '📦', name: myBestItem?.title || 'Tu objeto' },
-            theirItem: { emoji: item.emoji || '📦', name: item.title },
+            theirItem: { id: item.id, emoji: item.emoji || '📦', name: item.title },
             user: item.user_name || 'Usuario',
             userEmoji: '👤',
             userAvatar: item.user_avatar || null,
@@ -4392,7 +4392,7 @@ window.loadMatches = async function loadMatches() {
         foundMatches.push({
           id: `match-c-${myItem.id}-${theirItem.id}`,
           myItem: { emoji: myItem.emoji || '📦', name: myItem.title },
-          theirItem: { emoji: theirItem.emoji || '📦', name: theirItem.title },
+          theirItem: { id: theirItem.id, emoji: theirItem.emoji || '📦', name: theirItem.title },
           user: theirItem.user_name || 'Usuario',
           userEmoji: '👤',
           userAvatar: theirItem.user_avatar || null,
@@ -4508,7 +4508,7 @@ function renderMatches() {
         <div class="match-reasons">${m.reasons.map(r=>`<div class="match-reason"><span>✓</span> ${r}</div>`).join('')}</div>
         <div class="match-actions">
           <button class="btn btn-danger btn-sm" onclick="discardMatch('${m.id}')">Descartar</button>
-          <button class="btn btn-primary btn-sm" onclick="navTo('messages')">💬 Contactar</button>
+          <button class="btn btn-primary btn-sm" onclick="proposeFromMatch('${m.theirItem.id}','${m.id}')">🤝 Proponer trueque</button>
         </div>
       </div>
     </div>`;
@@ -4519,7 +4519,6 @@ function renderMatches() {
 }
 
 function discardMatch(id) {
-  // Guardar en localStorage para que no vuelva a aparecer
   try {
     const key = 'truquo_discarded_' + (currentUser?.id || 'anon');
     const discarded = JSON.parse(localStorage.getItem(key) || '[]');
@@ -4530,6 +4529,35 @@ function discardMatch(id) {
   matches = matches.filter(m => m.id !== id);
   renderMatches();
   showToast('✕ Match descartado · No volverá a aparecer');
+}
+
+async function proposeFromMatch(theirItemId, matchId) {
+  if (!theirItemId || theirItemId === 'undefined') {
+    showToast('⚠️ No se puede identificar el objeto'); return;
+  }
+  // Buscar el item en el array local primero
+  let item = items.find(i => String(i.id) === String(theirItemId));
+  // Si no está en local, buscar en Supabase
+  if (!item) {
+    const { data } = await db.from('items').select('*').eq('id', theirItemId).single();
+    if (data) {
+      item = {
+        id: data.id,
+        name: data.title || data.name || 'Objeto',
+        emoji: data.emoji || '📦',
+        cat: data.category || data.cat || '',
+        photos: data.photo_urls || [],
+        wants: data.wants ? data.wants.split(',').map(w => w.trim()) : [],
+        user: data.user_name || 'Usuario',
+        user_id: data.user_id,
+        location: data.location || '',
+        price: data.estimated_value ? String(data.estimated_value) : null,
+      };
+    }
+  }
+  if (!item) { showToast('⚠️ Objeto no encontrado'); return; }
+  // Abrir el modal de propuesta directamente
+  openModal(item.id || theirItemId);
 }
 
 function restoreDiscardedMatches() {
