@@ -3023,20 +3023,12 @@ window._enterApp = function() {
           Math.abs(newCoords.lng - userCoords.lng) > 0.01;
         applyGeoAndRender(newCoords);
         if (changed) {
-          // Solo re-renderiza si la posición cambió significativamente
           setTimeout(async () => {
             const fresh = await loadItemsFromSupabase();
-            const demoItems = ITEMS_DATA.map(i => ({...i, _isDemo: true}));
-            const demoWithDist = demoItems.map(item => ({
-              ...item,
-              _dist: CITY_COORDS && CITY_COORDS[item.location]
-                ? distanceKm(userCoords.lat, userCoords.lng, CITY_COORDS[item.location].lat, CITY_COORDS[item.location].lng)
-                : 9999
-            }));
-            items = [...(fresh || []), ...demoWithDist].sort((a, b) => (a._dist||9999) - (b._dist||9999));
+            items = fresh || [];
             const countEl = document.getElementById('items-count');
             if (countEl) countEl.textContent = items.length + ' objetos disponibles';
-            renderExplore(items);
+            applyFilter(document.getElementById('search-input')?.value || '', currentFilter);
           }, 150);
         }
       },
@@ -3206,56 +3198,7 @@ const USER_PHOTOS = {
   'Luis A.': 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=80&q=80',
   'Mikel C.': 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=80&q=80',
 };
-const ITEMS_DATA = [
-  {id:1,emoji:'🎸',name:'Guitarra Fender Stratocaster',cat:'Música',location:'Madrid',price:'480',
-   photos:['https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&q=80','https://images.unsplash.com/photo-1525201548942-d8732f6617a0?w=600&q=80','https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=600&q=80'],
-   wants:['Cámara réflex','Bicicleta','Portátil'],shipping:'ambas',verified:true,user:'Alex M.',userEmoji:'👨‍🎤',condition:'Muy bueno'},
-  {id:2,emoji:'📸',name:'Cámara Canon EOS 90D',cat:'Electrónica',location:'Barcelona',price:'650',
-   photos:['https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=600&q=80','https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80','https://images.unsplash.com/photo-1581591524425-c7e0978865fc?w=600&q=80'],
-   wants:['Guitarra eléctrica','Dron','Portátil gaming'],shipping:'envío',verified:true,user:'Laura G.',userEmoji:'👩‍🎨',condition:'Excelente'},
-  {id:3,emoji:'💻',name:'MacBook Pro M1 2021',cat:'Electrónica',location:'Valencia',price:'1200',
-   photos:['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80','https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=600&q=80','https://images.unsplash.com/photo-1541807360-cdb9e8b1b6e1?w=600&q=80'],
-   wants:['Moto eléctrica','Cámara 4K','iPad Pro'],shipping:'persona',verified:false,user:'Paco R.',userEmoji:'🧑‍💻',condition:'Bueno'},
-  {id:4,emoji:'🎮',name:'PlayStation 5 + 3 juegos',cat:'Electrónica',location:'Sevilla',price:'520',
-   photos:['https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=600&q=80','https://images.unsplash.com/photo-1593118247619-e2d6f056869e?w=600&q=80','https://images.unsplash.com/photo-1625805866449-d4f72c8b0d27?w=600&q=80'],
-   wants:['Xbox Series X','Portátil gaming','Bici eléctrica'],shipping:'ambas',verified:true,user:'Mario S.',userEmoji:'🎮',condition:'Muy bueno'},
-  {id:5,emoji:'🚲',name:'Bicicleta eléctrica Xiaomi',cat:'Deporte',location:'Bilbao',price:'380',
-   photos:['https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80','https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80','https://images.unsplash.com/photo-1622227922682-56c92e523e58?w=600&q=80'],
-   wants:['Scooter eléctrico','Portátil','GoPro'],shipping:'persona',verified:false,user:'Ane B.',userEmoji:'🚴‍♀️',condition:'Bueno'},
-  {id:6,emoji:'⌚',name:'Apple Watch Series 8',cat:'Electrónica',location:'Málaga',price:'290',
-   photos:['https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600&q=80','https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&q=80','https://images.unsplash.com/photo-1551816230-ef5deaed4a26?w=600&q=80'],
-   wants:['Auriculares Sony XM5','Tablet Android','Switch'],shipping:'envío',verified:true,user:'José L.',userEmoji:'👨‍💼',condition:'Excelente'},
-  {id:7,emoji:'🎹',name:'Teclado Roland FP-30X',cat:'Música',location:'Zaragoza',price:'420',
-   photos:['https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&q=80','https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&q=80','https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600&q=80'],
-   wants:['Guitarra acústica','Batería electrónica','Cámara'],shipping:'ambas',verified:true,user:'Rosa T.',userEmoji:'👩‍🎤',condition:'Como nuevo'},
-  {id:8,emoji:'📚',name:'Colección Harry Potter (7 vols.)',cat:'Libros',subcat:'Fantasía',location:'Madrid',
-   photos:['https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&q=80','https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=600&q=80','https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=600&q=80'],
-   wants:['Libros Juego de Tronos','Cómics y manga','Autoayuda'],shipping:'envío',verified:true,user:'Marta F.',userEmoji:'📚',condition:'Bueno'},
-  {id:9,emoji:'📖',name:'Lote 20 novelas de thriller',cat:'Libros',subcat:'Thriller y suspense',location:'Barcelona',
-   photos:['https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80','https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&q=80','https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&q=80'],
-   wants:['Novelas de terror','Ciencia ficción','Biografías'],shipping:'envío',verified:false,user:'Carles P.',userEmoji:'🕵️',condition:'Bueno'},
-  {id:10,emoji:'🔬',name:'Colección Cosmos + Sagan (8 libros)',cat:'Libros',subcat:'Ciencia',location:'Valencia',
-   photos:['https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80','https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=80','https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=600&q=80'],
-   wants:['Libros filosofía','Historia universal','Autoayuda'],shipping:'ambas',verified:true,user:'Irene V.',userEmoji:'👩‍🔬',condition:'Muy bueno'},
-  {id:11,emoji:'📕',name:'Pack manga One Piece vols. 1–30',cat:'Libros',subcat:'Cómics y manga',location:'Sevilla',
-   photos:['https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&q=80','https://images.unsplash.com/photo-1534430480872-3498386e7856?w=600&q=80','https://images.unsplash.com/photo-1612178991541-b48cc8e92a4d?w=600&q=80'],
-   wants:['Manga Dragon Ball','Cómics Marvel','Novela gráfica'],shipping:'envío',verified:true,user:'Rubén M.',userEmoji:'🥷',condition:'Muy bueno'},
-  {id:12,emoji:'🩺',name:'Revisión dental completa',cat:'Servicios',subcat:'Salud · Dentista',location:'Madrid',
-   photos:['https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=600&q=80','https://images.unsplash.com/photo-1588776814546-1ffedbe47425?w=600&q=80','https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&q=80'],
-   wants:['Clases de inglés','Diseño web','Masajes terapéuticos'],shipping:'persona',verified:true,user:'Dra. Carmen S.',userEmoji:'👩‍⚕️',condition:'Servicio'},
-  {id:13,emoji:'🔧',name:'Instalación eléctrica (4h)',cat:'Servicios',subcat:'Construcción · Electricista',location:'Barcelona',
-   photos:['https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80','https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80','https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600&q=80'],
-   wants:['Fontanería','Pintura interior','Clases matemáticas'],shipping:'persona',verified:true,user:'Jordi E.',userEmoji:'👷',condition:'Servicio'},
-  {id:14,emoji:'🌿',name:'Sesión de nutrición personalizada',cat:'Servicios',subcat:'Salud · Nutricionista',location:'Madrid',
-   photos:['https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80','https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80','https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&q=80'],
-   wants:['Fisioterapia','Yoga/pilates','Clases de cocina'],shipping:'persona',verified:false,user:'Ana N.',userEmoji:'🥗',condition:'Servicio'},
-  {id:15,emoji:'⚖️',name:'Consultoría legal (2h)',cat:'Servicios',subcat:'Legal · Abogado',location:'Valencia',
-   photos:['https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&q=80','https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80','https://images.unsplash.com/photo-1521791055366-0d553872952f?w=600&q=80'],
-   wants:['Asesoría fiscal','Diseño web','Fotografía profesional'],shipping:'persona',verified:true,user:'Luis A.',userEmoji:'👨‍⚖️',condition:'Servicio'},
-  {id:16,emoji:'✂️',name:'Carpintería · Mueble a medida',cat:'Servicios',subcat:'Construcción · Carpintero',location:'Bilbao',
-   photos:['https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80','https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&q=80','https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?w=600&q=80'],
-   wants:['Electricista','Fontanería','Clases inglés'],shipping:'persona',verified:true,user:'Mikel C.',userEmoji:'🪚',condition:'Servicio'},
-];
+const ITEMS_DATA = []; // Demo data eliminado — solo datos reales de Supabase
 
 const MATCHES_DATA = [
   {id:'m1',myItem:{emoji:'🎸',name:'Guitarra Fender'},theirItem:{emoji:'🎹',name:'Teclado Roland FP-30X'},user:'Rosa T.',userEmoji:'👩‍🎤',score:98,reasons:['Guitarra en su lista de deseos','Tu guitarra acepta teclados'],location:'Zaragoza'},
@@ -3384,7 +3327,7 @@ const SUPPLY_DEMAND_DATA = [
 ];
 
 // ═══ STATE ═══
-let items = [...ITEMS_DATA];
+let items = []; // solo items reales de Supabase
 let matches = [];
 let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.otherAccepted]}));
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
@@ -3485,8 +3428,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cargar items reales desde Supabase y mezclar con demo
   const supabaseItems = await loadItemsFromSupabase();
-  const demoItems = ITEMS_DATA.map(i => ({...i, _isDemo: true}));
-  items = [...(supabaseItems || []), ...demoItems];
+  items = supabaseItems || [];
   const countEl = document.getElementById('items-count');
   if (countEl) countEl.textContent = items.length + ' objetos disponibles';
 
@@ -4093,9 +4035,10 @@ function renderHomeItems() {
 
 function renderHomePersonalized() {
   const cat = obState.cat;
-  const filtered = cat ? ITEMS_DATA.filter(i=>i.cat===cat).slice(0,4) : ITEMS_DATA.slice(0,4);
+  const src = items.length ? items : [];
+  const filtered = cat ? src.filter(i=>i.cat===cat).slice(0,4) : src.slice(0,4);
   const grid = document.getElementById('home-items');
-  if(grid) grid.innerHTML = (filtered.length ? filtered : ITEMS_DATA.slice(0,4)).map(i=>itemCardHTML(i)).join('');
+  if(grid) grid.innerHTML = filtered.map(i=>itemCardHTML(i)).join('');
 }
 
 // ═══ STORIES FEED ═══
@@ -4160,7 +4103,7 @@ function shareStory(e, u1, item1, item2) {
 function renderPremiumSection() {
   const el = document.getElementById('premium-grid');
   if(!el) return;
-  const premiumItems = ITEMS_DATA.filter(i => i.price && parseInt(i.price) >= 200).slice(0,4);
+  const premiumItems = items.filter(i => i.price && parseInt(i.price) >= 200).slice(0,4);
   if(!premiumItems.length) { el.innerHTML = ''; return; }
   el.innerHTML = premiumItems.map(item => {
     const catColors = {
