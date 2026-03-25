@@ -3029,7 +3029,7 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadReviews(), 400);
   // Cargar stats reales del perfil (trueques, ahorro, puntuación)
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
-  if(currentUser) { _discardedLoaded = false; _loadDiscarded(); } // cargar descartados del usuario
+  // hiddenMatchIds se resetea en memoria — no necesita carga al login
   // Cargar favoritos
   if(currentUser) setTimeout(() => loadFavorites(), 300);
   // Cargar deseos del usuario desde Supabase
@@ -3227,51 +3227,8 @@ let chains = CHAINS_DATA.map(c=>({...c,steps:[...c.steps],otherAccepted:[...c.ot
 let confirmations = CONFIRMATIONS_DATA.map(c=>({...c}));
 let wishlist = [];
 let favorites = []; // IDs de items guardados como favoritos
-let _discardedSet = new Set(); // Set global de matches descartados
-let _discardedLoaded = false;  // flag para saber si ya se cargó del localStorage
-
-function _discardedKey() {
-  return 'truquo_discarded_' + (currentUser?.id || 'anon');
-}
-function _loadDiscarded() {
-  try {
-    // Limpiar key 'anon' si existe y tenemos usuario real
-    if (currentUser?.id) {
-      const anonKey = 'truquo_discarded_anon';
-      const anonData = localStorage.getItem(anonKey);
-      if (anonData) {
-        // Migrar entradas anon al usuario real si son válidas
-        try {
-          const anonArr = JSON.parse(anonData);
-          if (Array.isArray(anonArr) && anonArr.length > 0) {
-            const existing = JSON.parse(localStorage.getItem(_discardedKey()) || '[]');
-            const merged = [...new Set([...existing, ...anonArr])];
-            localStorage.setItem(_discardedKey(), JSON.stringify(merged));
-          }
-        } catch(e) {}
-        localStorage.removeItem(anonKey);
-      }
-    }
-    const raw = JSON.parse(localStorage.getItem(_discardedKey()) || '[]');
-    // Solo IDs válidos de match (formato match-xxx, match-wish-xxx, match-c-xxx)
-    const valid = raw.filter(e => typeof e === 'string' && e.startsWith('match-'));
-    _discardedSet = new Set(valid);
-    // Limpiar entradas inválidas si había
-    if (valid.length !== raw.length) {
-      localStorage.setItem(_discardedKey(), JSON.stringify(valid));
-    }
-  } catch(e) { _discardedSet = new Set(); }
-  _discardedLoaded = true;
-  console.log('[Truquo] descartados cargados:', _discardedSet.size);
-}
-function _saveDiscarded() {
-  try { localStorage.setItem(_discardedKey(), JSON.stringify([..._discardedSet])); }
-  catch(e) {}
-}
-function _getDiscarded() {
-  if (!_discardedLoaded) _loadDiscarded();
-  return _discardedSet;
-}
+// Matches ocultos — solo en memoria, se resetean al recargar
+let hiddenMatchIds = new Set();
 
 
 // ── Favoritos ──
@@ -4466,15 +4423,13 @@ window.loadMatches = async function loadMatches() {
     }
   }
 
-  // Filtrar descartados
-  const discarded = _getDiscarded();
-  console.log('[Truquo] descartados:', discarded.size);
-
+  // Filtrar ocultos
+  console.log('[Truquo] ocultos:', hiddenMatchIds.size);
   const seenFinal = new Set();
   matches = foundMatches
     .sort((a, b) => b.score - a.score)
     .filter(m => {
-      if (discarded.has(m.id)) return false;
+      if (hiddenMatchIds.has(m.id)) return false;
       const dedup = m.userId + '::' + m.myItem.name;
       if (seenFinal.has(dedup)) return false;
       seenFinal.add(dedup);
@@ -4505,21 +4460,20 @@ function renderMatches() {
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
 
   if(!matches.length) {
-    const discardedCount = _getDiscarded().size;
-
-    const restoreTip = discardedCount > 0
-      ? `Has descartado <strong>${discardedCount}</strong> match${discardedCount > 1 ? 'es' : ''} · <button class="btn btn-ghost btn-sm" style="display:inline;padding:2px 8px;font-size:12px" onclick="restoreDiscardedMatches()">↩ Restaurarlos</button>`
+    const hiddenCount = hiddenMatchIds.size;
+    const restoreTip = hiddenCount > 0
+      ? `Has ocultado <strong>${hiddenCount}</strong> match${hiddenCount > 1 ? 'es' : ''} · <button class="btn btn-ghost btn-sm" style="display:inline;padding:2px 8px;font-size:12px" onclick="showHiddenMatches()">👁 Ver ocultos</button>`
       : null;
 
     list.innerHTML = emptyState({
       icon: '⚡',
-      title: 'Aún no tienes matches',
-      body: 'El sistema busca coincidencias automáticamente. Para acelerar el proceso, publica objetos y especifica bien qué aceptas a cambio — cuantas más opciones, más matches.',
-      cta: '+ Publicar mi primer objeto',
+      title: 'No hay matches visibles',
+      body: 'El sistema busca coincidencias automáticamente. Para acelerar el proceso, publica objetos y especifica bien qué aceptas a cambio.',
+      cta: '+ Publicar objeto',
       ctaAction: "navTo('publish')",
       ctaSecondary: 'Ver cadenas de trueque',
       ctaSecondaryAction: "switchMatchTab('chain')",
-      tip: restoreTip || 'Los usuarios con 3+ opciones de cambio tienen un 4× más de probabilidad de encontrar match en las primeras 24h.'
+      tip: restoreTip || 'Cuantas más opciones de cambio indiques, más matches encontrarás.'
     });
   } else {
     list.innerHTML = matches.map(m => {
@@ -4558,7 +4512,7 @@ function renderMatches() {
       <div class="match-footer">
         <div class="match-reasons">${m.reasons.map(r=>`<div class="match-reason"><span>✓</span> ${r}</div>`).join('')}</div>
         <div class="match-actions">
-          <button class="btn btn-danger btn-sm" onclick="discardMatch('${m.id}')">Descartar</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--muted)" onclick="hideMatch('${m.id}')">👁 Ocultar</button>
           <button class="btn btn-primary btn-sm" onclick="proposeFromMatch('${m.theirItem.id}','${m.id}')">🤝 Proponer trueque</button>
         </div>
       </div>
@@ -4569,12 +4523,16 @@ function renderMatches() {
   renderConfirmations(); // async, fire and forget
 }
 
-function discardMatch(id) {
-  _discardedSet.add(id);
-  _saveDiscarded();
+function hideMatch(id) {
+  hiddenMatchIds.add(id);
   matches = matches.filter(m => m.id !== id);
   renderMatches();
-  showToast('✕ Match descartado');
+  showToast('👁 Match oculto · Puedes verlo en "Ocultos"');
+}
+
+function showHiddenMatches() {
+  hiddenMatchIds.clear();
+  loadMatches();
 }
 
 async function proposeFromMatch(theirItemId, matchId) {
@@ -4606,13 +4564,7 @@ async function proposeFromMatch(theirItemId, matchId) {
   openModal(item.id || theirItemId);
 }
 
-function restoreDiscardedMatches() {
-  _discardedSet.clear();
-  _discardedLoaded = true;
-  _saveDiscarded();
-  showToast('↩ Descartados restaurados · Recargando matches...');
-  setTimeout(() => loadMatches(), 400);
-}
+// showHiddenMatches definida arriba junto a hideMatch
 
 // ═══ CHAINS ═══
 function renderChains() {
