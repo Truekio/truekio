@@ -3381,7 +3381,7 @@ function navTo(v) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -3406,7 +3406,7 @@ function navToActivity(tab) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -3621,7 +3621,7 @@ function navTo(v) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -3646,7 +3646,7 @@ function navToActivity(tab) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { setTimeout(() => loadProposals(), 300); const _now = Date.now(); if(!matches.length || (_now - (window._matchesLastLoad||0)) > 5*60*1000) setTimeout(() => loadMatches(), 400); }
+  if(v === 'activity') { setTimeout(() => loadProposals(), 300); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
 }
@@ -4465,9 +4465,9 @@ function renderMatches() {
     } catch(e) {}
 
     const restoreBtn = discardedCount > 0
-      ? `<div style="margin-top:20px;padding:16px;background:var(--bg2);border-radius:var(--r);border:1.5px dashed var(--border2);text-align:center">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Has descartado <strong style="color:var(--text)">${discardedCount}</strong> match${discardedCount > 1 ? 'es' : ''} anteriormente</div>
-          <button class="btn btn-secondary btn-md" style="width:100%" onclick="restoreDiscardedMatches()">↩ Restaurar descartados</button>
+      ? `<div style="margin-top:16px;padding:16px;background:var(--bg2);border-radius:var(--r);border:1.5px dashed var(--border2)">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:12px;text-align:center">Has descartado <strong style="color:var(--text)">${discardedCount}</strong> match${discardedCount > 1 ? 'es' : ''}</div>
+          <button class="btn btn-secondary btn-md" style="width:100%;box-sizing:border-box" onclick="restoreDiscardedMatches()">↩ Restaurar descartados</button>
         </div>`
       : '';
 
