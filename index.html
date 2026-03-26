@@ -4089,7 +4089,7 @@ function applyFilter(q, cat) {
   renderExplore(f);
   // Scroll al inicio del grid al cambiar filtro/ordenado
   const grid = document.getElementById('explore-grid');
-  if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (grid) {} // no scroll al cambiar filtro — mantener posición actual
 }
 
 // ═══ ITEM CARD HTML — redesigned ═══
