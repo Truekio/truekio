@@ -4628,15 +4628,28 @@ window.loadMatches = async function loadMatches() {
         const myCat = (myItem.category || '').toLowerCase();
         const myTitle = (myItem.title || '').toLowerCase();
 
-        // Mi item acepta la categoría o nombre del item de ellos
-        const iWantTheirs = (theirCat && myWants.includes(theirCat))
-          || theirTitle.split(' ').some(w => w.length > 3 && myWants.includes(w));
+        // Función de matching flexible: compara raíces (quita plurales/sufijos)
+        const stem = w => w.replace(/[eos]$/, '').replace(/ción$/, 'cion').trim();
+        const fuzzyMatch = (haystack, needle) => {
+          if (!haystack || !needle) return false;
+          const h = haystack.toLowerCase();
+          const n = needle.toLowerCase();
+          // Coincidencia directa
+          if (h.includes(n) || n.includes(h)) return true;
+          // Coincidencia por raíz (quita última vocal/s para cubrir singular/plural)
+          const ns = stem(n);
+          if (ns.length > 3 && h.includes(ns)) return true;
+          // Coincidencia por tokens largos de la needle en el haystack
+          return n.split(/[\s,›·]+/).filter(t => t.length > 3).some(t => h.includes(stem(t)));
+        };
 
-        // Su item acepta la categoría o nombre de mi item
-        const theyWantMine = theirWants && (
-          (myCat && theirWants.includes(myCat))
-          || myTitle.split(' ').some(w => w.length > 3 && theirWants.includes(w))
-        );
+        // Mi item acepta la categoría o título del item de ellos
+        const iWantTheirs = fuzzyMatch(myWants, theirCat)
+          || fuzzyMatch(myWants, theirTitle);
+
+        // Su item acepta la categoría o título de mi item
+        const theyWantMine = fuzzyMatch(theirWants, myCat)
+          || fuzzyMatch(theirWants, myTitle);
 
         if (!iWantTheirs && !theyWantMine) continue;
         seenPairs.add(pairKey);
