@@ -2504,7 +2504,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="my-items-grid" id="my-items-grid"></div>
     </div>
     <div class="ptab-content" id="ptab-favs">
-      <div id="favs-grid"></div>
+      <div id="profile-favs-grid"></div>
     </div>
     <div class="ptab-content" id="ptab-done">
       <div id="done-grid"></div>
@@ -6533,34 +6533,40 @@ function switchPTab(tab) {
 }
 
 async function renderFavorites() {
-  const grid = document.getElementById('favs-grid');
-  if (!grid) return;
+  const grids = [
+    document.getElementById('favs-grid'),
+    document.getElementById('profile-favs-grid')
+  ].filter(Boolean);
+  if (!grids.length) return;
+
   if (!currentUser) {
-    grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Inicia sesión para ver tus favoritos.</div>';
+    const msg = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Inicia sesión para ver tus favoritos.</div>';
+    grids.forEach(g => g.innerHTML = msg);
     return;
   }
   if (favorites.length === 0) {
-    grid.innerHTML = `<div style="padding:50px 20px;text-align:center;color:var(--muted)">
+    const empty = `<div style="padding:50px 20px;text-align:center;color:var(--muted)">
       <div style="font-size:2.5rem;margin-bottom:12px">❤️</div>
       <div style="font-weight:700;font-size:.95rem;margin-bottom:6px;color:var(--text)">Sin favoritos todavía</div>
       <div style="font-size:13px;line-height:1.6">Pulsa el ❤️ en cualquier objeto del explorador para guardarlo aquí.</div>
     </div>`;
+    grids.forEach(g => g.innerHTML = empty);
     return;
   }
-  // Cargar los items favoritos desde Supabase
+
   const { data } = await db.from('favorites')
     .select('item_id, item_name, created_at')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
-  if (!data || !data.length) { grid.innerHTML = ''; return; }
+  if (!data || !data.length) { grids.forEach(g => g.innerHTML = ''); return; }
 
-  // Buscar en el array local de items
   const favItems = data.map(f => {
     const found = items.find(i => String(i.id) === String(f.item_id));
     return found || { id: f.item_id, name: f.item_name, emoji: '📦', cat: '—', location: '—', wants: [], _placeholder: true };
   });
 
-  grid.innerHTML = `<div class="items-grid">${favItems.map(i => itemCardHTML(i)).join('')}</div>`;
+  const html = `<div class="items-grid">${favItems.map(i => itemCardHTML(i)).join('')}</div>`;
+  grids.forEach(g => g.innerHTML = html);
 }
 
 // ── Actualiza todos los avatares de la UI con foto o inicial
