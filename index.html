@@ -2681,6 +2681,15 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <select id="wants-subcat"><option value="">— Selecciona categoría primero —</option></select>
             </div>
           </div>
+          <div class="field" id="wants-lang-field" style="display:none;margin-bottom:10px">
+            <label>Idioma del libro</label>
+            <select id="wants-lang">
+              <option value="">— Cualquier idioma —</option>
+              <option>Español</option><option>Inglés</option><option>Catalán</option>
+              <option>Francés</option><option>Alemán</option><option>Italiano</option>
+              <option>Portugués</option><option>Otro idioma</option>
+            </select>
+          </div>
           <div class="wants-input-row" style="margin-bottom:10px">
             <input id="wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D)">
           </div>
@@ -7445,6 +7454,11 @@ function updateSubcat() {
   const cat = document.getElementById('wants-cat').value;
   const sub = document.getElementById('wants-subcat');
   const btn = document.getElementById('btn-add-cat');
+  const langField = document.getElementById('wants-lang-field');
+
+  // Mostrar/ocultar campo idioma solo para Libros
+  if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
+
   if(!cat) {
     sub.innerHTML = '<option value="">— Selecciona categoría primero —</option>';
     sub.disabled = true;
@@ -7795,6 +7809,7 @@ function addExchangeOption() {
   const inp = document.getElementById('wants-input');
   const rawCat = document.getElementById('wants-cat').value;
   const subcat = document.getElementById('wants-subcat').value;
+  const lang = document.getElementById('wants-lang')?.value || '';
   const mainName = inp.value.trim();
 
   let cat = rawCat, parsedSubcat = subcat;
@@ -7803,16 +7818,20 @@ function addExchangeOption() {
     cat = parts[0]; parsedSubcat = parts[1];
   }
 
+  // Para libros: incluir idioma en el label si se seleccionó
   let label = mainName || (parsedSubcat ? cat + ' › ' + parsedSubcat : cat) || '';
+  if (cat === 'Libros' && lang && !mainName) label = label + ' · ' + lang;
   if(!label) { showToast('⚠️ Escribe o selecciona qué aceptas'); return; }
 
-  exchangeOptions.push({label, items:[label], isBundle:false, cat, subcat:parsedSubcat});
+  exchangeOptions.push({label, items:[label], isBundle:false, cat, subcat:parsedSubcat, lang});
   renderExchangeOptions();
 
   // Reset
   inp.value = '';
   document.getElementById('wants-cat').value = '';
   document.getElementById('wants-subcat').innerHTML = '<option value="">— Selecciona categoría primero —</option>';
+  if(document.getElementById('wants-lang')) document.getElementById('wants-lang').value = '';
+  if(document.getElementById('wants-lang-field')) document.getElementById('wants-lang-field').style.display = 'none';
 }
 
 function renderExchangeOptions() {
@@ -8021,9 +8040,16 @@ async function publishItem() {
   // Recalcular matches con el nuevo item publicado
   setTimeout(() => loadMatches(), 1000);
 
-  // Reset del formulario en background
+  // Reset del formulario — inmediato y silencioso
   pubCurrentScreen = 1;
-  setTimeout(() => pubGoTo(1), 400);
+  document.getElementById('pub-screen-1').style.display = '';
+  document.getElementById('pub-screen-2').style.display = 'none';
+  const _fill = document.getElementById('pub-flow-fill');
+  if (_fill) _fill.style.width = '50%';
+  const _back = document.getElementById('pub-back-btn');
+  if (_back) _back.style.visibility = 'hidden';
+  const _next = document.getElementById('pub-next-btn');
+  if (_next) { _next.textContent = 'Continuar →'; _next.onclick = () => pubNext(false); }
 }
 
 // ═══════════════════════════════════
