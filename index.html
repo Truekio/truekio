@@ -269,6 +269,23 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 /* ── EXPLORER GRID — 2 col Wallapop style ── */
 .items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
 .explore-sticky{position:sticky;top:58px;z-index:90;background:var(--white);border-bottom:1px solid var(--border);}
+.filter-row{transition:max-height .25s ease, opacity .25s ease, padding .25s ease; overflow:hidden;}
+.filter-row.hidden-pills{max-height:0!important;opacity:0;padding:0!important;}
+/* FAB publicar — solo móvil */
+.fab-publish{display:none;}
+@media(max-width:640px){
+  .fab-publish{
+    display:flex;align-items:center;justify-content:center;
+    position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));right:16px;
+    width:52px;height:52px;border-radius:50%;
+    background:var(--accent);color:#fff;font-size:1.5rem;font-weight:700;
+    border:none;cursor:pointer;z-index:190;
+    box-shadow:0 4px 16px rgba(78,143,186,.45);
+    transition:transform .18s ease;
+  }
+  .fab-publish:active{transform:scale(.93);}
+  .explore-sticky{top:0;}
+}
 .item-card{display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden;transition:all .2s cubic-bezier(.22,1,.36,1);background:var(--white);border:1px solid var(--border);}
 .item-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md);}
 .item-card.is-premium{border-color:rgba(245,158,11,.35);}
@@ -819,6 +836,8 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   .nav-tabs{display:none;}
+  .nav-right{display:none;}
+  .logo{display:none;}
   .bottom-nav{display:block;}
   .hero-visual{display:none;}
   .hero-grid{grid-template-columns:1fr;gap:0;padding:44px 0;}
@@ -1591,6 +1610,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
   </div>
 </nav>
+
+<!-- FAB publicar (solo móvil) -->
+<button class="fab-publish" onclick="navTo('publish')" title="Publicar objeto">+</button>
 
 <!-- BOTTOM NAV (mobile) -->
 <div class="bottom-nav">
@@ -3343,6 +3365,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('.icon-btn');
     if(panel.classList.contains('open') && !panel.contains(e.target) && !btn) closeNotif();
   });
+
+  // ── Scroll: ocultar pills al bajar, mostrar al subir (solo móvil) ──
+  let _lastScrollY = 0;
+  window.addEventListener('scroll', () => {
+    if (window.innerWidth > 640) return;
+    const currentY = window.scrollY;
+    const filterRow = document.getElementById('filter-row');
+    if (!filterRow) return;
+    if (currentY > _lastScrollY && currentY > 80) {
+      filterRow.classList.add('hidden-pills');
+    } else {
+      filterRow.classList.remove('hidden-pills');
+    }
+    _lastScrollY = currentY;
+  }, { passive: true });
 });
 
 // ═══ NAV ═══
