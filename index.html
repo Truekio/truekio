@@ -2317,7 +2317,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- WISHLIST -->
 <div class="view" id="view-wishlist">
-  <div class="wrap page-pad">
+  <div class="wrap page-pad" style="padding-bottom:140px">
     <div class="wishlist-view">
 
       <!-- Hero banner -->
@@ -3518,6 +3518,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       _scrollTicking = false;
     });
   }, { passive: true });
+
+  // ── Forzar padding inferior en todas las vistas para cubrir la bottom nav ──
+  const bnav = document.querySelector('.bottom-nav');
+  const bnavH = bnav ? bnav.offsetHeight + 20 : 100;
+  const safePad = Math.max(120, bnavH) + 'px';
+  document.querySelectorAll('.page-pad').forEach(el => {
+    el.style.paddingBottom = safePad;
+  });
 });
 
 // ═══ NAV ═══
