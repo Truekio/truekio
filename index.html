@@ -4552,8 +4552,8 @@ window.loadMatches = async function loadMatches() {
             theirItem.title.toLowerCase().split(' ').some(w => myItem.wants.toLowerCase().includes(w))
           );
 
-          const score = (nameMatch ? 30 : 0) + (catMatch ? 20 : 0) + (myWantMatch ? 30 : 0) + (wantsMatch ? 20 : 0);
-          if (score > bestScore) { bestScore = score; bestTheirItem = theirItem; }
+          const score = Math.min(99, (nameMatch ? 40 : 0) + (catMatch ? 15 : 0) + (myWantMatch ? 30 : 0) + (wantsMatch ? 15 : 0));
+          if (score < 25) continue;
         }
 
         seenPairs.add(pairKey);
@@ -4600,7 +4600,8 @@ window.loadMatches = async function loadMatches() {
           );
           const myBestItem = wantsMatch || myItems[0];
 
-          const score = Math.min(99, (nameMatch ? 40 : 0) + (catMatch ? 25 : 0) + (wantsMatch ? 35 : 0));
+          const score = Math.min(99, (nameMatch ? 45 : 0) + (catMatch ? 15 : 0) + (wantsMatch ? 40 : 0));
+          if (score < 25) continue;
           const reasons = [];
           if (nameMatch) reasons.push(`"${wish.name}" en tu lista de deseos`);
           if (catMatch) reasons.push(`${item.category} — coincide con tu deseo`);
@@ -4659,21 +4660,33 @@ window.loadMatches = async function loadMatches() {
           return n.split(/[\s,›·]+/).filter(t => t.length > 3).some(t => h.includes(stem(t)));
         };
 
-        // Mi item acepta la categoría o título del item de ellos
-        const iWantTheirs = fuzzyMatch(myWants, theirCat)
-          || fuzzyMatch(myWants, theirTitle);
+        // Mi item acepta el título específico del item de ellos (más valioso que solo categoría)
+        const iWantTheirsByTitle = fuzzyMatch(myWants, theirTitle);
+        const iWantTheirsByCat  = fuzzyMatch(myWants, theirCat);
+        const iWantTheirs = iWantTheirsByTitle || iWantTheirsByCat;
 
-        // Su item acepta la categoría o título de mi item
-        const theyWantMine = fuzzyMatch(theirWants, myCat)
-          || fuzzyMatch(theirWants, myTitle);
+        // Su item acepta el título específico de mi item
+        const theyWantMineByTitle = fuzzyMatch(theirWants, myTitle);
+        const theyWantMineByCat   = fuzzyMatch(theirWants, myCat);
+        const theyWantMine = theyWantMineByTitle || theyWantMineByCat;
 
         if (!iWantTheirs && !theyWantMine) continue;
         seenPairs.add(pairKey);
 
-        const score = Math.min(99, (iWantTheirs ? 50 : 0) + (theyWantMine ? 50 : 0));
+        // Score: título específico vale más que categoría genérica
+        let score = 0;
+        if (iWantTheirsByTitle) score += 45;       // quiero exactamente ese objeto
+        else if (iWantTheirsByCat) score += 20;    // acepto esa categoría (genérico)
+        if (theyWantMineByTitle) score += 45;      // quieren exactamente mi objeto
+        else if (theyWantMineByCat) score += 20;   // aceptan mi categoría (genérico)
+        score = Math.min(99, score);
+
+        // Filtrar matches muy débiles (solo coincidencia de categoría por un lado)
+        if (score < 25) continue;
+
         const reasons = [];
-        if (iWantTheirs) reasons.push(`Tu ${myItem.title} acepta ${theirItem.category || theirItem.title}`);
-        if (theyWantMine) reasons.push(`${theirItem.user_name || 'Otro usuario'} busca ${myItem.category || myItem.title}`);
+        if (iWantTheirs) reasons.push(`Tu ${myItem.title} acepta ${iWantTheirsByTitle ? theirItem.title : theirItem.category}`);
+        if (theyWantMine) reasons.push(`${theirItem.user_name || 'Otro usuario'} busca ${theyWantMineByTitle ? myItem.title : myItem.category}`);
 
         foundMatches.push({
           id: `match-c-${myItem.id}-${theirItem.id}`,
