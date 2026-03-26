@@ -68,7 +68,7 @@ input::placeholder,textarea::placeholder{color:var(--muted2);}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
 
 /* ── ANIMATIONS ── */
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeUp{from{opacity:0;}to{opacity:1;}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.97);}to{opacity:1;transform:scale(1);}}
 @keyframes floatA{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-12px) rotate(-2deg);}}
 @keyframes floatB{0%,100%{transform:translateY(-5px) rotate(2deg);}50%{transform:translateY(7px) rotate(2deg);}}
@@ -2257,11 +2257,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <!-- ACTIVITY HUB -->
 <div class="view" id="view-activity">
   <div class="wrap page-pad">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:14px">
-      <div>
-        <h2 style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.7rem;letter-spacing:-.03em;margin-bottom:3px">Actividad</h2>
-        <div style="font-size:13px;color:var(--muted)">Matches, cadenas, confirmaciones y deseos</div>
-      </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px">
       <div class="badge badge-accent" id="match-count-badge">6 elementos activos</div>
     </div>
     <!-- Activity tabs -->
@@ -2415,7 +2411,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="messages-layout">
       <div class="card conv-list">
         <div class="conv-head">
-          <h3>Mensajes</h3>
           <div class="conv-search"><span style="color:var(--muted)">🔍</span><input placeholder="Buscar conversación..."></div>
         </div>
         <div id="conv-list-items"></div>
