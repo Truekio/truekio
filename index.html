@@ -3123,7 +3123,7 @@ window._enterApp = function() {
           ? distanceKm(userCoords.lat, userCoords.lng, CITY_COORDS[i.location].lat, CITY_COORDS[i.location].lng)
           : (i.lat ? distanceKm(userCoords.lat, userCoords.lng, i.lat, i.lng) : 9999)
       })).sort((a, b) => (a._dist||9999) - (b._dist||9999));
-      renderExplore(items);
+      applyFilter(document.getElementById('search-input')?.value||'', currentFilter);
     }, 100);
   }
 
@@ -3457,7 +3457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const countEl = document.getElementById('items-count');
   if (countEl) countEl.textContent = items.length + ' objetos disponibles';
 
-  renderExplore(items);
+  applyFilter('', 'Todos');
   renderMatches();
   renderConvList();
   renderProfile();
@@ -4714,7 +4714,7 @@ window.loadMatches = async function loadMatches() {
   matches.forEach(m => {
     if (m.theirItem?.id) matchScoreByItemId.set(String(m.theirItem.id), m.score);
   });
-  renderExplore(items); // re-renderizar con badges de match
+  applyFilter(document.getElementById('search-input')?.value||'', currentFilter); // re-renderizar con badges de match
   renderMatches();
 }
 
@@ -7941,7 +7941,7 @@ async function publishItem() {
 
   showToast('✦ ¡Publicado en Truquo!');
   navTo('explore');
-  renderExplore(items);
+  applyFilter('', currentFilter);
   renderProfile();
   document.getElementById('prof-stat-items').textContent = myItems.length;
 
