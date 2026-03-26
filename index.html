@@ -280,21 +280,44 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
   .explore-search-row{padding:6px 0 4px;}
   .filter-toggle-btn{padding:6px 10px;font-size:12px;white-space:nowrap;}
 }
-/* FAB publicar — solo móvil */
-.fab-publish{display:none;}
-@media(max-width:640px){
-  .fab-publish{
-    display:flex;align-items:center;justify-content:center;
-    position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));right:16px;
-    width:52px;height:52px;border-radius:50%;
-    background:var(--accent);color:#fff;font-size:1.5rem;font-weight:700;
-    border:none;cursor:pointer;z-index:190;
-    box-shadow:0 4px 16px rgba(78,143,186,.45);
-    transition:transform .18s ease;
-  }
-  .fab-publish:active{transform:scale(.93);}
-  .explore-sticky{top:0;}
+/* Botón publicar central en bottom nav */
+.bnav-publish{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:0;background:none;border:none;cursor:pointer;
+  position:relative;top:-10px; /* elevado sobre la barra */
 }
+.bnav-publish-icon{
+  width:48px;height:48px;border-radius:50%;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(78,143,186,.45);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.bnav-publish-icon svg{width:22px;height:22px;color:#fff;display:block;}
+.bnav-publish:active .bnav-publish-icon{transform:scale(.92);box-shadow:0 2px 8px rgba(78,143,186,.3);}
+.bnav-publish .bnav-label{color:var(--accent)!important;font-size:9px;}
+
+/* Botón subir — centrado, aparece al scrollear */
+.scroll-top-btn{
+  display:none;position:fixed;
+  bottom:calc(72px + env(safe-area-inset-bottom) + 10px);
+  left:50%;transform:translateX(-50%) translateY(16px);
+  background:rgba(30,30,40,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  color:#fff;border:none;cursor:pointer;
+  border-radius:99px;padding:7px 16px 7px 12px;
+  display:none;align-items:center;gap:5px;
+  font-size:12px;font-weight:600;letter-spacing:.02em;
+  box-shadow:0 4px 16px rgba(0,0,0,.18);
+  transition:opacity .22s ease, transform .22s ease;
+  opacity:0;z-index:180;
+}
+.scroll-top-btn svg{width:14px;height:14px;flex-shrink:0;}
+.scroll-top-btn.visible{
+  display:flex!important;opacity:1;transform:translateX(-50%) translateY(0);
+}
+
+/* Quitar FAB */
+.fab-publish{display:none!important;}
 .item-card{display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden;transition:all .2s cubic-bezier(.22,1,.36,1);background:var(--white);border:1px solid var(--border);}
 .item-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md);}
 .item-card.is-premium{border-color:rgba(245,158,11,.35);}
@@ -1620,14 +1643,23 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </nav>
 
-<!-- FAB publicar (solo móvil) -->
-<button class="fab-publish" onclick="navTo('publish')" title="Publicar objeto">+</button>
-
 <!-- BOTTOM NAV (mobile) -->
+<!-- Botón subir — aparece al scrollear -->
+<button class="scroll-top-btn" id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Subir">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+  <span>Subir</span>
+</button>
+
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
     <button class="bnav-btn" id="bnav-favorites" onclick="navTo('favorites')"><span>❤️</span><span class="bnav-label">Favoritos</span></button>
+    <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
+      <span class="bnav-publish-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </span>
+      <span class="bnav-label" style="color:#fff;opacity:.85">Publicar</span>
+    </button>
     <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
     <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
     <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
@@ -3382,7 +3414,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.innerWidth > 640) return;
     const filterRow = document.getElementById('filter-row');
     if (!filterRow) return;
-    // Si el sentinel ya no es visible (hemos scrolleado más allá del inicio del grid) → ocultar pills
     if (!entry.isIntersecting) {
       filterRow.classList.add('hidden-pills');
     } else {
@@ -3391,6 +3422,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   }, { threshold: 0, rootMargin: '-80px 0px 0px 0px' });
 
   if (_sentinel) _pillsObserver.observe(_sentinel);
+
+  // ── Botón "Subir" — aparece tras 200px de scroll ──
+  const _scrollTopBtn = document.getElementById('scroll-top-btn');
+  let _scrollTicking = false;
+  window.addEventListener('scroll', () => {
+    if (_scrollTicking) return;
+    _scrollTicking = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      if (_scrollTopBtn) {
+        if (y > 200) _scrollTopBtn.classList.add('visible');
+        else _scrollTopBtn.classList.remove('visible');
+      }
+      _scrollTicking = false;
+    });
+  }, { passive: true });
 });
 
 // ═══ NAV ═══
