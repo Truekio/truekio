@@ -3361,7 +3361,7 @@ async function loadFavorites() {
 
 async function toggleFavorite(itemId, itemName, e) {
   e.stopPropagation();
-  if (!currentUser) { showToast('⚠️ Inicia sesión para guardar favoritos'); return; }
+  if (!currentUser) { requireAuth('favorites'); return; }
   const btn = e.currentTarget;
   const id = String(itemId);
   const isFaved = favorites.includes(id);
@@ -3514,6 +3514,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ═══ NAV ═══
+// ── requireAuth — redirige al registro si no hay sesión ──
+function requireAuth(intendedView) {
+  const messages = {
+    publish:   '✦ Crea tu cuenta para publicar objetos',
+    activity:  '✦ Inicia sesión para ver tu actividad',
+    messages:  '✦ Inicia sesión para ver tus mensajes',
+    profile:   '✦ Inicia sesión para ver tu perfil',
+    favorites: '✦ Inicia sesión para guardar favoritos',
+  };
+  showToast(messages[intendedView] || '✦ Inicia sesión para continuar');
+  setTimeout(() => showAuthScreen(), 600);
+}
+
 function navTo(v) {
   // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
@@ -3533,6 +3546,13 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
   if(v === 'publish') {
     setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
@@ -3560,6 +3580,13 @@ function navToActivity(tab) {
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
   if(v === 'publish') {
     setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
@@ -3767,6 +3794,13 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
   if(v === 'publish') {
     setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
@@ -3794,6 +3828,13 @@ function navToActivity(tab) {
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
   window.scrollTo({top:0,behavior:'smooth'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
   if(v === 'publish') {
     setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
@@ -5923,7 +5964,7 @@ function closeModalBg(e) { if(e.target===document.getElementById('modal-overlay'
 
 async function sendOffer() {
   if(selectedOfferIdx === null){ showToast('⚠️ Selecciona qué ofreces a cambio'); return; }
-  if(!currentUser){ showToast('⚠️ Debes iniciar sesión'); return; }
+  if(!currentUser){ requireAuth('messages'); return; }
 
   const offeredObj = window._offerObjects[selectedOfferIdx];
   const msg = document.getElementById('modal-msg-txt').value.trim();
