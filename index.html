@@ -498,16 +498,70 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 
 /* ── PUBLISH FLOW (Wallapop style) ── */
 .pub-flow{display:flex;flex-direction:column;min-height:100svh;background:var(--white);}
-.pub-flow-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--white);}
+.pub-flow-head{
+  display:grid;grid-template-columns:40px 1fr 40px;
+  align-items:center;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  flex-shrink:0;background:var(--white);
+}
 .pub-flow-back{width:36px;height:36px;border-radius:50%;background:var(--bg2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
 .pub-flow-back:hover{background:var(--bg3);}
-.pub-flow-bar{flex:1;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
+.pub-flow-bar{height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
 .pub-flow-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s ease;}
+.pub-flow-cancel{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--bg2);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .15s;color:var(--muted);
+  justify-self:end;
+}
+.pub-flow-cancel:hover{background:var(--bg3);color:var(--text);}
 .pub-flow-skip{background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px 8px;white-space:nowrap;flex-shrink:0;}
 .pub-flow-body{flex:1;overflow-y:auto;padding:24px 20px;-webkit-overflow-scrolling:touch;}
 .pub-screen-title{font-family:'Playfair Display',serif;font-weight:700;font-size:1.5rem;margin-bottom:6px;letter-spacing:-.02em;}
 .pub-screen-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
 .pub-flow-foot{padding:14px 20px;padding-bottom:max(20px,env(safe-area-inset-bottom));border-top:1px solid var(--border);flex-shrink:0;background:var(--white);position:sticky;bottom:0;}
+
+/* Fotos — botón + y previews en fila */
+.pub-photos-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.pub-photo-add{
+  width:80px;height:80px;border-radius:12px;
+  border:2px dashed var(--border2);background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--muted);flex-shrink:0;
+  transition:border-color .18s,background .18s;
+}
+.pub-photo-add:hover{border-color:var(--accent);background:var(--accent-l);color:var(--accent);}
+.pub-photo-add svg{width:28px;height:28px;}
+
+/* Action sheet fotos */
+.photo-sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;backdrop-filter:blur(2px);}
+.photo-sheet-overlay.open{display:block;}
+.photo-sheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:501;
+  background:var(--white);border-radius:20px 20px 0 0;
+  padding:0 16px max(20px,env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);
+}
+.photo-sheet.open{transform:translateY(0);transition:transform .32s cubic-bezier(.34,1.56,.64,1);}
+.photo-sheet-handle{width:36px;height:4px;border-radius:99px;background:var(--border2);margin:12px auto 20px;}
+.photo-sheet-title{font-weight:700;font-size:.95rem;text-align:center;margin-bottom:16px;color:var(--text);}
+.photo-sheet-btn{
+  width:100%;display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:14px;border:1.5px solid var(--border);
+  background:var(--bg);cursor:pointer;margin-bottom:10px;
+  font-size:15px;font-weight:600;color:var(--text);
+  font-family:inherit;transition:background .15s,border-color .15s;
+}
+.photo-sheet-btn:hover{background:var(--accent-l);border-color:var(--accent);}
+.photo-sheet-icon{font-size:1.4rem;flex-shrink:0;}
+.photo-sheet-cancel{
+  width:100%;padding:14px;border-radius:14px;
+  border:none;background:var(--bg2);cursor:pointer;
+  font-size:15px;font-weight:700;color:var(--muted);
+  font-family:inherit;margin-top:4px;transition:background .15s;
+}
+.photo-sheet-cancel:hover{background:var(--bg3);}
 
 /* ── USER PROFILE MODAL ── */
 .user-profile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;backdrop-filter:blur(4px);}
@@ -2526,44 +2580,40 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="view" id="view-publish">
   <div class="pub-flow">
 
-    <!-- Progress bar + header -->
+    <!-- Header: atrás + progreso + cancelar -->
     <div class="pub-flow-head">
-      <button class="pub-flow-back" id="pub-back-btn" onclick="pubBack()" style="display:none">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      <button class="pub-flow-back" id="pub-back-btn" onclick="pubBack()" style="visibility:hidden">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
       </button>
       <div class="pub-flow-bar">
         <div class="pub-flow-fill" id="pub-flow-fill"></div>
       </div>
-      <button class="pub-flow-skip" id="pub-skip-btn" onclick="pubNext(true)" style="display:none">Saltar</button>
+      <button class="pub-flow-cancel" onclick="pubCancel()" title="Cancelar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
 
     <!-- Pantallas -->
     <div class="pub-flow-body">
 
-      <!-- PANTALLA 1: Fotos -->
+      <!-- PANTALLA 1: Foto + título + categoría + estado -->
       <div class="pub-screen" id="pub-screen-1">
-        <div class="pub-screen-title">Añade fotos</div>
-        <div class="pub-screen-sub">La primera foto será la principal. Hasta 5 imágenes.</div>
-        <div class="photo-upload-row" style="margin-bottom:16px">
-          <label class="photo-upload-btn" for="pub-images">
-            <span style="font-size:1.6rem">🖼️</span>
-            <span style="font-size:12px;font-weight:700">Galería</span>
-            <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)" style="display:none">
-          </label>
-          <label class="photo-upload-btn photo-upload-camera" for="pub-camera">
-            <span style="font-size:1.6rem">📷</span>
-            <span style="font-size:12px;font-weight:700">Cámara</span>
-            <input type="file" id="pub-camera" accept="image/*" capture="environment" onchange="imgSelected(this)" style="display:none">
-          </label>
-        </div>
-        <div class="img-previews" id="img-previews"></div>
-        <div style="margin-top:16px;font-size:12px;color:var(--muted);text-align:center">Puedes continuar sin fotos y añadirlas después</div>
-      </div>
-
-      <!-- PANTALLA 2: Título y categoría -->
-      <div class="pub-screen" id="pub-screen-2" style="display:none">
         <div class="pub-screen-title">¿Qué ofreces?</div>
-        <div class="pub-screen-sub">Escribe un título claro y elige la categoría.</div>
+        <div class="pub-screen-sub">Añade fotos y describe tu objeto.</div>
+
+        <!-- Fotos con botón + y action sheet -->
+        <div class="pub-photos-row" id="pub-photos-row">
+          <button class="pub-photo-add" onclick="openPhotoSheet()" type="button">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="pub-photos-previews" id="img-previews"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:20px;text-align:center">Hasta 5 fotos · La primera será la principal</div>
+
+        <!-- Inputs ocultos -->
+        <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)" style="display:none">
+        <input type="file" id="pub-camera" accept="image/*" capture="environment" onchange="imgSelected(this)" style="display:none">
+
         <div class="field">
           <label>Nombre del objeto <span style="color:#e53e3e">*</span></label>
           <input id="pub-name" placeholder="Ej: Guitarra Fender Stratocaster 2019" style="font-size:16px"
@@ -2589,34 +2639,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <div id="pub-book-hint" style="display:none;padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:10px;font-size:12px;color:#92400e;font-weight:600">
           📚 Indica título, autor y estado en la descripción.
         </div>
+        <div class="field">
+          <label>Descripción <span style="font-size:11px;font-weight:500;color:var(--muted)">(opcional)</span></label>
+          <textarea id="pub-desc" placeholder="Estado, accesorios incluidos, años de uso..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:14px;outline:none;resize:none;min-height:90px;font-family:inherit;line-height:1.6;transition:border-color .18s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
       </div>
 
-      <!-- PANTALLA 3: Ciudad -->
-      <div class="pub-screen" id="pub-screen-3" style="display:none">
-        <div class="pub-screen-title">¿Dónde estás?</div>
-        <div class="pub-screen-sub">Ayuda a encontrar personas cerca de ti.</div>
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:12px">
-          <span style="font-size:1.1rem">📍</span>
-          <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2);flex:1">Escribe tu ciudad</div>
-          <button type="button" id="geo-btn" onclick="requestGeoLocation()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">📍 Detectar</button>
-        </div>
-        <div class="city-autocomplete">
-          <input id="pub-loc" placeholder="Escribe tu ciudad..." style="width:100%;box-sizing:border-box;font-size:16px" autocomplete="off"
-            oninput="cityAutocomplete(this.value)"
-            onkeydown="cityAutocompleteKey(event)"
-            onfocus="cityAutocomplete(this.value)"
-            onblur="setTimeout(()=>document.getElementById('city-suggestions').classList.remove('open'),180)">
-          <div class="city-suggestions" id="city-suggestions"></div>
-        </div>
-        <input type="hidden" id="pub-lat" value="">
-        <input type="hidden" id="pub-lng" value="">
-        <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
-      </div>
-
-      <!-- PANTALLA 4: Qué aceptas -->
-      <div class="pub-screen" id="pub-screen-4" style="display:none">
-        <div class="pub-screen-title">¿Qué aceptas a cambio?</div>
-        <div class="pub-screen-sub">Añade una o más opciones. El sistema buscará matches automáticamente.</div>
+      <!-- PANTALLA 2: Qué aceptas + precio -->
+      <div class="pub-screen" id="pub-screen-2" style="display:none">
+        <div class="pub-screen-title">¿Qué aceptas?</div>
+        <div class="pub-screen-sub">El sistema buscará matches automáticamente.</div>
         <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
         <div style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg)">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">➕ Añadir opción</div>
@@ -2645,7 +2677,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
         <div id="btn-add-cat" style="display:none"></div>
         <div id="wants-chips" style="display:none"></div>
-        <!-- Demand panel -->
         <div id="demand-panel" class="card demand-panel" style="display:none;margin-top:16px">
           <div class="demand-header">
             <div class="demand-header-left">
@@ -2664,46 +2695,76 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
             <button class="btn btn-ghost btn-sm" onclick="skipDemandPanel()">Añadir manualmente →</button>
           </div>
         </div>
+
+        <!-- Precio estimado -->
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+          <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">Precio estimado <span style="font-size:11px;font-weight:500;color:var(--muted)">(opcional)</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Ayuda a encontrar matches de valor similar.</div>
+          <div style="position:relative;margin-bottom:12px">
+            <input id="pub-price" type="number" min="0" placeholder="Ej: 150" inputmode="decimal"
+              style="width:100%;box-sizing:border-box;padding-left:42px;font-size:22px;font-weight:700;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding-top:14px;padding-bottom:14px;outline:none;font-family:inherit;transition:border-color .18s"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+              oninput="updatePriceHint()">
+            <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:700;color:var(--muted);pointer-events:none">€</span>
+          </div>
+          <div id="price-hint" style="display:none;padding:12px 16px;background:var(--accent-l);border-radius:var(--r);font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px"></div>
+          <div class="field" style="margin-bottom:0">
+            <label>Flexibilidad</label>
+            <select id="pub-price-range" style="font-size:14px">
+              <option value="exact">Valor similar (±10%)</option>
+              <option value="flexible">Algo flexible (±25%)</option>
+              <option value="open">Abierto a negociar</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <!-- PANTALLA 5: Descripción (opcional) -->
-      <div class="pub-screen" id="pub-screen-5" style="display:none">
-        <div class="pub-screen-title">Descripción <span style="font-size:13px;font-weight:500;color:var(--muted)">(opcional)</span></div>
-        <div class="pub-screen-sub">Estado, accesorios incluidos, años de uso, detalles importantes...</div>
-        <textarea id="pub-desc" placeholder="Ej: En perfecto estado, caja original incluida, comprado en 2022..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;font-size:15px;outline:none;resize:none;min-height:160px;font-family:inherit;line-height:1.6;transition:border-color .18s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-      </div>
-
-      <!-- PANTALLA 6: Precio (opcional) -->
-      <div class="pub-screen" id="pub-screen-6" style="display:none">
-        <div class="pub-screen-title">Precio estimado <span style="font-size:13px;font-weight:500;color:var(--muted)">(opcional)</span></div>
-        <div class="pub-screen-sub">Ayuda a encontrar matches de valor similar. Puedes dejarlo en blanco.</div>
-        <div style="position:relative;margin-bottom:16px">
-          <input id="pub-price" type="number" min="0" placeholder="Ej: 150" inputmode="decimal"
-            style="width:100%;box-sizing:border-box;padding-left:42px;font-size:22px;font-weight:700;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding-top:14px;padding-bottom:14px;outline:none;font-family:inherit;transition:border-color .18s"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-            oninput="updatePriceHint()">
-          <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:700;color:var(--muted);pointer-events:none">€</span>
+      <!-- PANTALLA 3: Ubicación -->
+      <div class="pub-screen" id="pub-screen-3" style="display:none">
+        <div class="pub-screen-title">¿Dónde estás?</div>
+        <div class="pub-screen-sub">Ayuda a encontrar personas cerca de ti.</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:12px">
+          <span style="font-size:1.1rem">📍</span>
+          <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2);flex:1">Escribe tu ciudad</div>
+          <button type="button" id="geo-btn" onclick="requestGeoLocation()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">📍 Detectar</button>
         </div>
-        <div id="price-hint" style="display:none;padding:12px 16px;background:var(--accent-l);border-radius:var(--r);font-size:13px;color:var(--accent);font-weight:600;margin-bottom:16px">
+        <div class="city-autocomplete">
+          <input id="pub-loc" placeholder="Escribe tu ciudad..." style="width:100%;box-sizing:border-box;font-size:16px" autocomplete="off"
+            oninput="cityAutocomplete(this.value)"
+            onkeydown="cityAutocompleteKey(event)"
+            onfocus="cityAutocomplete(this.value)"
+            onblur="setTimeout(()=>document.getElementById('city-suggestions').classList.remove('open'),180)">
+          <div class="city-suggestions" id="city-suggestions"></div>
         </div>
-        <div class="field" style="margin-bottom:0">
-          <label>Flexibilidad de precio</label>
-          <select id="pub-price-range" style="font-size:14px">
-            <option value="exact">Valor similar (±10%)</option>
-            <option value="flexible">Algo flexible (±25%)</option>
-            <option value="open">Abierto a negociar</option>
-          </select>
-        </div>
+        <input type="hidden" id="pub-lat" value="">
+        <input type="hidden" id="pub-lng" value="">
+        <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
       </div>
 
     </div>
 
-    <!-- Botones sticky -->
+    <!-- Botón sticky -->
     <div class="pub-flow-foot">
-      <button class="btn btn-primary btn-lg" style="flex:1;border-radius:var(--r)" id="pub-next-btn" onclick="pubNext(false)">Continuar →</button>
+      <button class="btn btn-primary btn-lg" style="width:100%;border-radius:var(--r)" id="pub-next-btn" onclick="pubNext(false)">Continuar →</button>
     </div>
 
   </div>
+</div>
+
+<!-- Action sheet fotos -->
+<div class="photo-sheet-overlay" id="photo-sheet-overlay" onclick="closePhotoSheet()"></div>
+<div class="photo-sheet" id="photo-sheet">
+  <div class="photo-sheet-handle"></div>
+  <div class="photo-sheet-title">Añadir foto</div>
+  <button class="photo-sheet-btn" onclick="document.getElementById('pub-images').click();closePhotoSheet()">
+    <span class="photo-sheet-icon">🖼️</span>
+    <span>Elegir de la galería</span>
+  </button>
+  <button class="photo-sheet-btn" onclick="document.getElementById('pub-camera').click();closePhotoSheet()">
+    <span class="photo-sheet-icon">📷</span>
+    <span>Hacer una foto</span>
+  </button>
+  <button class="photo-sheet-cancel" onclick="closePhotoSheet()">Cancelar</button>
 </div>
 
 <!-- USER PROFILE MODAL -->
@@ -6793,14 +6854,12 @@ let userCoords = _savedCoords || null;
 let sortByDistance = !!userCoords; // activo por defecto si ya tenemos coords
 
 // ── PUBLISH FLOW ──
-const PUB_SCREENS = 6;
+// PUB_SCREENS definido más abajo
 let pubCurrentScreen = 1;
-
-// Pantallas opcionales que se pueden saltar
-const PUB_OPTIONAL = { 1: false, 2: false, 3: false, 4: false, 5: true, 6: true };
+const PUB_SCREENS = 3;
+const PUB_OPTIONAL = { 1: false, 2: false, 3: false };
 
 function pubGoTo(n) {
-  // Ocultar todas
   for (let i = 1; i <= PUB_SCREENS; i++) {
     const el = document.getElementById('pub-screen-' + i);
     if (el) el.style.display = i === n ? '' : 'none';
@@ -6811,13 +6870,9 @@ function pubGoTo(n) {
   const fill = document.getElementById('pub-flow-fill');
   if (fill) fill.style.width = Math.round((n / PUB_SCREENS) * 100) + '%';
 
-  // Botón atrás
+  // Botón atrás — invisible en pantalla 1, visible en 2 y 3
   const back = document.getElementById('pub-back-btn');
-  if (back) back.style.display = n > 1 ? '' : 'none';
-
-  // Botón saltar (solo en opcionales)
-  const skip = document.getElementById('pub-skip-btn');
-  if (skip) skip.style.display = PUB_OPTIONAL[n] ? '' : 'none';
+  if (back) back.style.visibility = n > 1 ? 'visible' : 'hidden';
 
   // Botón siguiente / publicar
   const next = document.getElementById('pub-next-btn');
@@ -6831,26 +6886,25 @@ function pubGoTo(n) {
     }
   }
 
-  // Scroll al inicio de la pantalla
+  // Scroll al inicio
   const body = document.querySelector('.pub-flow-body');
   if (body) body.scrollTop = 0;
 }
 
 function pubNext(skip = false) {
-  // Validar pantalla actual si no se está saltando
   if (!skip) {
-    if (pubCurrentScreen === 2) {
+    if (pubCurrentScreen === 1) {
       const name = document.getElementById('pub-name').value.trim();
       if (!name) { showToast('⚠️ Escribe el nombre del objeto'); return; }
       const cat = document.getElementById('pub-cat').value;
       if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
     }
+    if (pubCurrentScreen === 2) {
+      if (!exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
+    }
     if (pubCurrentScreen === 3) {
       const city = document.getElementById('pub-loc').value.trim();
       if (!city) { showToast('⚠️ Escribe tu ciudad'); return; }
-    }
-    if (pubCurrentScreen === 4) {
-      if (!exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
     }
   }
   if (pubCurrentScreen < PUB_SCREENS) pubGoTo(pubCurrentScreen + 1);
@@ -6859,12 +6913,31 @@ function pubNext(skip = false) {
 
 function pubBack() {
   if (pubCurrentScreen > 1) pubGoTo(pubCurrentScreen - 1);
-  else navTo('explore');
+}
+
+function pubCancel() {
+  const name = document.getElementById('pub-name')?.value?.trim();
+  if (name) {
+    if (!confirm('¿Seguro que quieres cancelar? Perderás los datos introducidos.')) return;
+  }
+  navTo('explore');
+}
+
+// Action sheet fotos
+function openPhotoSheet() {
+  document.getElementById('photo-sheet-overlay').classList.add('open');
+  document.getElementById('photo-sheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePhotoSheet() {
+  document.getElementById('photo-sheet-overlay').classList.remove('open');
+  document.getElementById('photo-sheet').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // Compatibilidad con código antiguo
 function goToPubStep1() { pubGoTo(1); }
-function goToPubStep2() { pubGoTo(5); }
+function goToPubStep2() { pubGoTo(2); }
 
 
 function autoDetectCity() {
