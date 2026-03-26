@@ -4687,7 +4687,7 @@ window.loadMatches = async function loadMatches() {
       if (m.theirItem?.id && alreadyProposedItems.has(String(m.theirItem.id))) return false;
       // Excluir si ese item específico fue rechazado
       if (m.theirItem?.id && rejectedItems.has(String(m.theirItem.id))) return false;
-      const dedup = m.userId + '::' + m.myItem.name;
+      const dedup = m.userId + '::' + m.theirItem.id;
       if (seenFinal.has(dedup)) return false;
       seenFinal.add(dedup);
       return true;
