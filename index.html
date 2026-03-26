@@ -331,22 +331,22 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .item-card.is-premium:hover{box-shadow:0 8px 28px rgba(245,158,11,.18),var(--sh-md);}
 
 /* Foto cuadrada dominante */
-.item-img{aspect-ratio:1/1;position:relative;overflow:hidden;background:var(--bg2);}
+.item-img{aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--bg2);}
 .item-img-bg{position:absolute;inset:0;opacity:.12;}
 .item-img-emoji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.6rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.08));transition:transform .3s ease;}
 .item-card:hover .item-img-emoji{transform:scale(1.06);}
 
 /* Badges sobre la foto */
-.item-cat-pill{position:absolute;top:8px;left:8px;display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;backdrop-filter:blur(10px);background:rgba(255,255,255,.88);box-shadow:0 1px 4px rgba(0,0,0,.1);}
-.item-match-badge{position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
+.item-cat-pill{display:none;}
+.item-match-badge{position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;letter-spacing:.02em;}
 @keyframes matchPulse{0%,100%{box-shadow:0 2px 8px rgba(78,143,186,.3);}50%{box-shadow:0 2px 16px rgba(78,143,186,.8);}}
 .item-own-badge{position:absolute;top:8px;right:8px;background:rgba(26,42,58,.75);color:rgba(255,255,255,.9);font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;backdrop-filter:blur(8px);letter-spacing:.04em;}
 .item-premium-badge{position:absolute;top:8px;right:8px;background:var(--elite-1);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
 .item-verified{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.9);color:var(--green);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;}
-.item-value-tag{position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,.78);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;}
+.item-value-tag{position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,.72);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;}
 
 /* Botón corazón flotante sobre foto */
-.fav-btn{position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.fav-btn{position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.82);backdrop-filter:blur(8px);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.1);}
 .fav-btn:hover{background:#fff;transform:scale(1.1);}
 .fav-btn:hover svg{stroke:var(--accent);}
 .fav-btn.faved{background:rgba(255,255,255,.96);}
@@ -354,12 +354,12 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .fav-heart{width:14px;height:14px;stroke:rgba(80,80,80,.5);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:all .2s;}
 
 /* Info debajo de la foto — compacta */
-.item-body{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
+.item-body{padding:7px 9px 8px;display:flex;flex-direction:column;}
 .item-user-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
 .item-user-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;flex-shrink:0;color:#fff;font-weight:700;}
 .item-user-name{font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.item-name{font-weight:700;font-size:.85rem;margin-bottom:3px;line-height:1.3;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.item-location{font-size:10px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.item-name{font-weight:700;font-size:.82rem;margin-bottom:2px;line-height:1.3;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.item-location{font-size:10px;color:var(--muted);margin:0;display:flex;align-items:center;gap:3px;}
 .wants-label{font-size:9px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
 .wants-tags{display:flex;gap:4px;flex-wrap:wrap;flex:1;}
 .wants-tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;}
@@ -3654,19 +3654,13 @@ function itemCardHTML(item, isPremiumView=false) {
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
     <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
-      <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
-      <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"\`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
-      <div class="item-location">📍 ${item.location}${(sortByDistance && item._dist != null && item._dist !== Infinity) ? ` · <span class="dist-badge">${item._dist < 1 ? '<1' : Math.round(item._dist)} km</span>` : ''}</div>
-      <div class="wants-tags">
-        ${item.exchangeOptions ? item.exchangeOptions.slice(0,2).map(o =>
-          `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}</span>`
-        ).join('') + (item.exchangeOptions.length > 2 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-2}</span>` : '') : item.wants.slice(0,2).map(w=>`<span class="wants-tag">${w}</span>`).join('')}
-      </div>
+      ${(sortByDistance && item._dist != null && item._dist !== Infinity) ? `<div class="item-location">📍 ${item._dist < 1 ? '<1' : Math.round(item._dist)} km</div>` : ''}
     </div>
   </div>`;
 }
@@ -4027,19 +4021,13 @@ function itemCardHTML(item, isPremiumView=false) {
   <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
     <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
-      <div class="item-cat-pill">${catIcon} ${item.subcat ? item.subcat.split(' · ').pop() : item.cat}${item.verified ? ' ✓' : ''}</div>
       ${topBadge}
       ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
-      <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"\`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
       <div class="item-name">${item.name}</div>
-      <div class="item-location">📍 ${item.location}${(sortByDistance && item._dist != null && item._dist !== Infinity) ? ` · <span class="dist-badge">${item._dist < 1 ? '<1' : Math.round(item._dist)} km</span>` : ''}</div>
-      <div class="wants-tags">
-        ${item.exchangeOptions ? item.exchangeOptions.slice(0,2).map(o =>
-          `<span class="wants-tag">${o.isBundle?'📦 ':''}${o.label}</span>`
-        ).join('') + (item.exchangeOptions.length > 2 ? `<span class="wants-tag" style="background:var(--bg2);color:var(--muted)">+${item.exchangeOptions.length-2}</span>` : '') : item.wants.slice(0,2).map(w=>`<span class="wants-tag">${w}</span>`).join('')}
-      </div>
+      ${(sortByDistance && item._dist != null && item._dist !== Infinity) ? `<div class="item-location">📍 ${item._dist < 1 ? '<1' : Math.round(item._dist)} km</div>` : ''}
     </div>
   </div>`;
 }
