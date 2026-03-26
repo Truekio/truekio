@@ -343,7 +343,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .item-own-badge{position:absolute;top:8px;right:8px;background:rgba(26,42,58,.75);color:rgba(255,255,255,.9);font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;backdrop-filter:blur(8px);letter-spacing:.04em;}
 .item-premium-badge{position:absolute;top:8px;right:8px;background:var(--elite-1);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;}
 .item-verified{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.9);color:var(--green);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;}
-.item-value-tag{position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,.72);backdrop-filter:blur(8px);color:#fff;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;}
+.item-value-tag{display:none;}
 
 /* Botón corazón flotante sobre foto */
 .fav-btn{position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.82);backdrop-filter:blur(8px);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.1);}
@@ -1758,7 +1758,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div style="padding:20px 24px 16px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
           <h3 id="detail-title" style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;letter-spacing:-.02em"></h3>
-          <span id="detail-price" style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--accent);white-space:nowrap"></span>
+          <!-- precio eliminado -->
         </div>
         <div id="detail-meta" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
         <div id="detail-user-row" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg);border-radius:var(--r);margin-bottom:14px"></div>
@@ -1886,24 +1886,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <input type="hidden" id="edit-item-wants">
       </div>
 
-      <!-- Precio -->
-      <div class="form-row">
-        <div class="field" style="margin-bottom:0">
-          <label>Precio estimado (€)</label>
-          <div style="position:relative">
-            <input id="edit-item-price" type="number" min="0" placeholder="Ej: 150" style="padding-left:32px">
-            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);font-weight:700;pointer-events:none">€</span>
-          </div>
-        </div>
-        <div class="field" style="margin-bottom:0">
-          <label>Flexibilidad</label>
-          <select id="edit-item-price-range">
-            <option value="exact">Valor similar (±10%)</option>
-            <option value="flexible">Algo flexible (±25%)</option>
-            <option value="open">Abierto a negociar</option>
-          </select>
-        </div>
-      </div>
+      <!-- Precio eliminado -->
 
       <!-- Ciudad -->
       <div class="field" style="margin-bottom:0">
@@ -2711,27 +2694,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           </div>
         </div>
 
-        <!-- Precio estimado -->
-        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-          <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">Precio estimado <span style="font-size:11px;font-weight:500;color:var(--muted)">(opcional)</span></div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Ayuda a encontrar matches de valor similar.</div>
-          <div style="position:relative;margin-bottom:12px">
-            <input id="pub-price" type="number" min="0" placeholder="Ej: 150" inputmode="decimal"
-              style="width:100%;box-sizing:border-box;padding-left:42px;font-size:22px;font-weight:700;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding-top:14px;padding-bottom:14px;outline:none;font-family:inherit;transition:border-color .18s"
-              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-              oninput="updatePriceHint()">
-            <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:700;color:var(--muted);pointer-events:none">€</span>
-          </div>
-          <div id="price-hint" style="display:none;padding:12px 16px;background:var(--accent-l);border-radius:var(--r);font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px"></div>
-          <div class="field" style="margin-bottom:0">
-            <label>Flexibilidad</label>
-            <select id="pub-price-range" style="font-size:14px">
-              <option value="exact">Valor similar (±10%)</option>
-              <option value="flexible">Algo flexible (±25%)</option>
-              <option value="open">Abierto a negociar</option>
-            </select>
-          </div>
-        </div>
       </div>
 
       <!-- PANTALLA 3: Ubicación -->
@@ -3272,7 +3234,7 @@ async function loadItemsFromSupabase() {
     cat: row.category,
     emoji: row.emoji || '📦',
     condition: row.condition,
-    price: row.estimated_value ? String(row.estimated_value) : '',
+    price: '',
     wants: row.wants ? row.wants.split(',').map(w => w.trim()) : [],
     photos: row.photo_urls && row.photo_urls.length ? row.photo_urls : (row.photos ? [row.photos] : []),
     user: row.user_name || 'Usuario',
@@ -3476,8 +3438,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(wi) wi.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();addWant();} });
   const wni = document.getElementById('wish-name-input');
   if(wni) wni.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();addWishItem();} });
-  document.getElementById('pub-price').addEventListener('input', updatePriceHint);
-  document.getElementById('pub-price-range').addEventListener('change', updatePriceHint);
   document.addEventListener('click', e => {
     const panel = document.getElementById('notif-panel');
     const btn = e.target.closest('.icon-btn');
@@ -3764,7 +3724,7 @@ function itemCardHTML(item, isPremiumView=false) {
     <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
       ${topBadge}
-      ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
+
       <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"\`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
@@ -4163,7 +4123,7 @@ function itemCardHTML(item, isPremiumView=false) {
     <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
       ${imgContent}
       ${topBadge}
-      ${item.price ? `<div class="item-value-tag">~${item.price}€</div>` : ''}
+
       <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"\`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
     <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
@@ -5799,7 +5759,7 @@ function openDetail(itemId) {
 
   // Datos
   document.getElementById('detail-title').textContent = item.name;
-  document.getElementById('detail-price').textContent = item.price ? '~' + item.price + '€' : '';
+  if(document.getElementById('detail-price')) document.getElementById('detail-price').textContent = '';
   document.getElementById('detail-meta').textContent = [item.cat, item.condition, item.location].filter(Boolean).join(' · ');
 
   // Usuario — con puntuación de confianza y botón ver perfil
@@ -7910,7 +7870,6 @@ async function publishItem() {
     category: pubCat,
     emoji: autoEmoji,
     condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
-    estimated_value: parseInt(document.getElementById('pub-price').value) || null,
     wants: wantsFlat.join(', '),
     photos: photoUrls.length ? photoUrls[0] : '',
     photo_urls: photoUrls.length ? photoUrls : null,
@@ -7969,7 +7928,6 @@ async function publishItem() {
   if(document.getElementById('pub-book-lang')) document.getElementById('pub-book-lang').value = '';
   if(document.getElementById('pub-book-lang-field')) document.getElementById('pub-book-lang-field').style.display = 'none';
   document.getElementById('pub-cat').value = '';
-  document.getElementById('pub-price').value = '';
   document.getElementById('pub-loc').value = 'Barcelona';
   // Reset geo
   const geoLabel = document.getElementById('geo-label');
