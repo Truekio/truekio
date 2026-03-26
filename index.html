@@ -2518,7 +2518,22 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
         <div class="form-row">
           <div class="field"><label>Nombre</label><input id="edit-name" value=""></div>
-          <div class="field"><label>Ciudad</label><input id="edit-city" value=""></div>
+          <div class="field">
+            <label>Ciudad</label>
+            <div class="city-autocomplete">
+              <input id="edit-city" placeholder="Escribe tu ciudad..." autocomplete="off"
+                oninput="profileCityAutocomplete(this.value)"
+                onkeydown="profileCityAutocompleteKey(event)"
+                onfocus="profileCityAutocomplete(this.value)"
+                onblur="setTimeout(()=>document.getElementById('profile-city-suggestions').classList.remove('open'),180)">
+              <div class="city-suggestions" id="profile-city-suggestions"></div>
+            </div>
+            <input type="hidden" id="edit-lat" value="">
+            <input type="hidden" id="edit-lng" value="">
+            <div style="margin-top:6px">
+              <button type="button" onclick="requestProfileGeoLocation()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;cursor:pointer;font-family:inherit">📍 Detectar automáticamente</button>
+            </div>
+          </div>
         </div>
         <div class="field"><label>Sobre mí</label><textarea id="edit-bio" rows="3" placeholder="Cuéntale a la comunidad quién eres y qué tipo de trueques te interesan..."></textarea></div>
         <div class="field"><label>Email</label><input type="email" id="edit-email" value="" disabled style="opacity:.6;cursor:not-allowed"></div>
@@ -2694,28 +2709,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           </div>
         </div>
 
-      </div>
-
-      <!-- PANTALLA 3: Ubicación -->
-      <div class="pub-screen" id="pub-screen-3" style="display:none">
-        <div class="pub-screen-title">¿Dónde estás?</div>
-        <div class="pub-screen-sub">Ayuda a encontrar personas cerca de ti.</div>
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:12px">
-          <span style="font-size:1.1rem">📍</span>
-          <div id="geo-label" style="font-size:13px;font-weight:600;color:var(--text2);flex:1">Escribe tu ciudad</div>
-          <button type="button" id="geo-btn" onclick="requestGeoLocation()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">📍 Detectar</button>
-        </div>
-        <div class="city-autocomplete">
-          <input id="pub-loc" placeholder="Escribe tu ciudad..." style="width:100%;box-sizing:border-box;font-size:16px" autocomplete="off"
-            oninput="cityAutocomplete(this.value)"
-            onkeydown="cityAutocompleteKey(event)"
-            onfocus="cityAutocomplete(this.value)"
-            onblur="setTimeout(()=>document.getElementById('city-suggestions').classList.remove('open'),180)">
-          <div class="city-suggestions" id="city-suggestions"></div>
-        </div>
-        <input type="hidden" id="pub-lat" value="">
-        <input type="hidden" id="pub-lng" value="">
-        <div id="geo-sub" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
       </div>
 
     </div>
@@ -2904,6 +2897,72 @@ function fdRemoveChip(key) {
 // ── CITY AUTOCOMPLETE ──
 let _cityHighlight = -1;
 
+// ── Autocomplete ciudad en el perfil ──
+function profileCityAutocomplete(q) {
+  const box = document.getElementById('profile-city-suggestions');
+  if (!box) return;
+  const val = q.trim().toLowerCase();
+  if (!val) { box.classList.remove('open'); return; }
+  const all = typeof CITY_COORDS !== 'undefined' ? Object.keys(CITY_COORDS) : [];
+  const starts = all.filter(c => c.toLowerCase().startsWith(val));
+  const contains = all.filter(c => !c.toLowerCase().startsWith(val) && c.toLowerCase().includes(val));
+  const matches = [...starts, ...contains].slice(0, 8);
+  if (!matches.length) { box.classList.remove('open'); return; }
+  box.innerHTML = matches.map(city =>
+    `<div class="city-suggestion" data-city="${city}" onmousedown="profileCitySelect('${city.replace(/'/g,"\\'")}')">
+      <span>📍</span><span class="city-sug-name">${_cityHighlightMatch ? _cityHighlightMatch(city, q) : city}</span>
+    </div>`
+  ).join('');
+  box.classList.add('open');
+}
+
+function profileCitySelect(city) {
+  const input = document.getElementById('edit-city');
+  if (input) input.value = city;
+  const coords = typeof CITY_COORDS !== 'undefined' ? CITY_COORDS[city] : null;
+  if (coords) {
+    const lat = document.getElementById('edit-lat');
+    const lng = document.getElementById('edit-lng');
+    if (lat) lat.value = coords.lat;
+    if (lng) lng.value = coords.lng;
+  }
+  const box = document.getElementById('profile-city-suggestions');
+  if (box) box.classList.remove('open');
+}
+
+function profileCityAutocompleteKey(e) {
+  const box = document.getElementById('profile-city-suggestions');
+  if (!box || !box.classList.contains('open')) return;
+  const items = box.querySelectorAll('.city-suggestion');
+  if (e.key === 'ArrowDown') { e.preventDefault(); items[0]?.dispatchEvent(new Event('mousedown')); }
+  else if (e.key === 'Enter') {
+    const highlighted = box.querySelector('.highlighted');
+    if (highlighted) highlighted.dispatchEvent(new Event('mousedown'));
+  } else if (e.key === 'Escape') { box.classList.remove('open'); }
+}
+
+function requestProfileGeoLocation() {
+  if (!navigator.geolocation) { showToast('⚠️ Tu navegador no soporta geolocalización'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    // Buscar la ciudad más cercana en CITY_COORDS
+    let nearest = 'España', minDist = Infinity;
+    if (typeof CITY_COORDS !== 'undefined') {
+      for (const [city, coords] of Object.entries(CITY_COORDS)) {
+        const d = Math.hypot(coords.lat - lat, coords.lng - lng);
+        if (d < minDist) { minDist = d; nearest = city; }
+      }
+    }
+    const input = document.getElementById('edit-city');
+    if (input) input.value = nearest;
+    const latEl = document.getElementById('edit-lat');
+    const lngEl = document.getElementById('edit-lng');
+    if (latEl) latEl.value = lat;
+    if (lngEl) lngEl.value = lng;
+    showToast('📍 Ubicación detectada: ' + nearest);
+  }, () => { showToast('⚠️ No se pudo detectar tu ubicación'); });
+}
+
 function cityAutocomplete(q) {
   const box = document.getElementById('city-suggestions');
   if (!box) return;
@@ -3039,10 +3098,23 @@ window._enterApp = function() {
     const editCity  = document.getElementById('edit-city');
     const editBio   = document.getElementById('edit-bio');
     const editEmail = document.getElementById('edit-email');
+    const editLat   = document.getElementById('edit-lat');
+    const editLng   = document.getElementById('edit-lng');
     if (editName)  editName.value  = name;
     if (editCity)  editCity.value  = city;
     if (editBio)   editBio.value   = bio;
     if (editEmail) editEmail.value = currentUser.email;
+    if (editLat)   editLat.value   = currentUser.user_metadata?.lat || '';
+    if (editLng)   editLng.value   = currentUser.user_metadata?.lng || '';
+
+    // Usar coordenadas del perfil como ubicación del usuario
+    const profileLat = parseFloat(currentUser.user_metadata?.lat);
+    const profileLng = parseFloat(currentUser.user_metadata?.lng);
+    if (!isNaN(profileLat) && !isNaN(profileLng)) {
+      userCoords = { lat: profileLat, lng: profileLng };
+    } else if (city && typeof CITY_COORDS !== 'undefined' && CITY_COORDS[city]) {
+      userCoords = CITY_COORDS[city];
+    }
 
     const trustName = document.getElementById('trust-name');
     const trustMeta = document.getElementById('trust-meta');
@@ -3526,7 +3598,7 @@ function navTo(v) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    setTimeout(() => { pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -3561,7 +3633,7 @@ function navToActivity(tab) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    setTimeout(() => { pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -3773,7 +3845,7 @@ function navTo(v) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    setTimeout(() => { pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -3808,7 +3880,7 @@ function navToActivity(tab) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { autoDetectCity(); pubGoTo(1); }, 300);
+    setTimeout(() => { pubGoTo(1); }, 300);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -6747,15 +6819,18 @@ async function saveProfile() {
   const btn = document.querySelector('#ptab-config .btn-primary');
   if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
 
+  const lat = parseFloat(document.getElementById('edit-lat').value) || currentUser.user_metadata?.lat || null;
+  const lng = parseFloat(document.getElementById('edit-lng').value) || currentUser.user_metadata?.lng || null;
+
   const { error } = await db.auth.updateUser({
-    data: { ...currentUser.user_metadata, name, city, bio }
+    data: { ...currentUser.user_metadata, name, city, bio, lat, lng }
   });
 
   if (btn) { btn.textContent = 'Guardar cambios'; btn.disabled = false; }
 
   if (error) { showToast('⚠️ Error al guardar: ' + error.message); return; }
 
-  currentUser.user_metadata = { ...currentUser.user_metadata, name, city, bio };
+  currentUser.user_metadata = { ...currentUser.user_metadata, name, city, bio, lat, lng };
 
   // Actualizar UI
   const trustName = document.getElementById('trust-name');
@@ -6963,8 +7038,8 @@ let sortByDistance = !!userCoords; // activo por defecto si ya tenemos coords
 // ── PUBLISH FLOW ──
 // PUB_SCREENS definido más abajo
 let pubCurrentScreen = 1;
-const PUB_SCREENS = 3;
-const PUB_OPTIONAL = { 1: false, 2: false, 3: false };
+const PUB_SCREENS = 2;
+const PUB_OPTIONAL = { 1: false, 2: false };
 
 function pubGoTo(n) {
   for (let i = 1; i <= PUB_SCREENS; i++) {
@@ -6977,7 +7052,7 @@ function pubGoTo(n) {
   const fill = document.getElementById('pub-flow-fill');
   if (fill) fill.style.width = Math.round((n / PUB_SCREENS) * 100) + '%';
 
-  // Botón atrás — invisible en pantalla 1, visible en 2 y 3
+  // Botón atrás — invisible en pantalla 1
   const back = document.getElementById('pub-back-btn');
   if (back) back.style.visibility = n > 1 ? 'visible' : 'hidden';
 
@@ -7008,10 +7083,6 @@ function pubNext(skip = false) {
     }
     if (pubCurrentScreen === 2) {
       if (!exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
-    }
-    if (pubCurrentScreen === 3) {
-      const city = document.getElementById('pub-loc').value.trim();
-      if (!city) { showToast('⚠️ Escribe tu ciudad'); return; }
     }
   }
   if (pubCurrentScreen < PUB_SCREENS) pubGoTo(pubCurrentScreen + 1);
@@ -7121,8 +7192,7 @@ function requestGeoLocation() {
         btn.textContent = '✓';
         btn.style.background = 'var(--green)';
       } catch(e) {
-        document.getElementById('pub-loc').value = 'Barcelona';
-        label.textContent = '📍 Barcelona (por defecto)';
+              label.textContent = '📍 Barcelona (por defecto)';
         sub.textContent = 'No se pudo obtener la ciudad exacta';
         btn.textContent = '✓';
       }
@@ -7131,8 +7201,7 @@ function requestGeoLocation() {
     () => {
       label.textContent = 'No se pudo detectar la ubicación';
       sub.textContent = 'Usaremos Barcelona por defecto';
-      document.getElementById('pub-loc').value = 'Barcelona';
-      btn.textContent = 'Reintentar';
+          btn.textContent = 'Reintentar';
       btn.disabled = false;
     }
   );
@@ -7808,9 +7877,11 @@ function selectShip(el, mode) {
 async function publishItem() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
-  const city = document.getElementById('pub-loc').value.trim();
-  if(!city){showToast('⚠️ Indica la ciudad del objeto');return;}
   if(!exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
+
+  // Ciudad del perfil del usuario
+  const city = currentUser?.user_metadata?.city || '';
+  if(!city){showToast('⚠️ Añade tu ciudad en tu perfil antes de publicar');navTo('profile');return;}
 
   // Parse category — ahora son dos campos separados
   const pubCat = document.getElementById('pub-cat').value || 'Otro';
@@ -7877,8 +7948,8 @@ async function publishItem() {
     user_id: currentUser ? currentUser.id : null,
     user_avatar: currentUser?.user_metadata?.avatar_url || null,
     location: city,
-    lat: parseFloat(document.getElementById('pub-lat').value) || null,
-    lng: parseFloat(document.getElementById('pub-lng').value) || null,
+    lat: currentUser?.user_metadata?.lat || null,
+    lng: currentUser?.user_metadata?.lng || null,
   };
 
   // Guardar en Supabase
@@ -7928,14 +7999,7 @@ async function publishItem() {
   if(document.getElementById('pub-book-lang')) document.getElementById('pub-book-lang').value = '';
   if(document.getElementById('pub-book-lang-field')) document.getElementById('pub-book-lang-field').style.display = 'none';
   document.getElementById('pub-cat').value = '';
-  document.getElementById('pub-loc').value = 'Barcelona';
   // Reset geo
-  const geoLabel = document.getElementById('geo-label');
-  const geoSub = document.getElementById('geo-sub');
-  const geoBtn = document.getElementById('geo-btn');
-  if(geoLabel) geoLabel.textContent = 'Detectar mi ubicación automáticamente';
-  if(geoSub) geoSub.textContent = 'Haz clic para usar tu ubicación actual';
-  if(geoBtn) { geoBtn.textContent = 'Detectar'; geoBtn.style.background = 'var(--accent)'; geoBtn.disabled = false; }
   document.getElementById('price-hint').style.display = 'none';
   document.getElementById('pub-service-hint').style.display = 'none';
   document.getElementById('pub-book-hint').style.display = 'none';
