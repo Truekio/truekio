@@ -274,8 +274,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .explore-search-input{flex:1;min-width:0;}
 .items-count-desktop{display:block;}
 .filter-row{transition:max-height .28s cubic-bezier(.4,0,.2,1), opacity .28s ease, padding .28s ease;overflow:hidden;padding-bottom:8px;}
-.filter-row.hidden-pills{max-height:0!important;opacity:0;padding:0!important;}
-@media(max-width:640px){
+.filter-row.hidden-pills{max-height:0!important;opacity:0;padding:0!important;}@media(max-width:640px){
   .explore-sticky{top:0;background:rgba(245,248,251,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
   .items-count-desktop{display:none;}
   .explore-search-row{padding:6px 0 4px;}
@@ -3373,29 +3372,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(panel.classList.contains('open') && !panel.contains(e.target) && !btn) closeNotif();
   });
 
-  // ── Scroll: ocultar pills al bajar, mostrar al subir (solo móvil) ──
-  let _lastScrollY = 0;
-  let _ticking = false;
-  const _handleScroll = () => {
+  // ── Ocultar pills al hacer scroll — IntersectionObserver (más fiable que scroll event en móvil) ──
+  const _sentinel = document.createElement('div');
+  _sentinel.style.cssText = 'height:1px;pointer-events:none;';
+  const _grid = document.getElementById('explore-grid');
+  if (_grid) _grid.parentNode.insertBefore(_sentinel, _grid);
+
+  const _pillsObserver = new IntersectionObserver(([entry]) => {
     if (window.innerWidth > 640) return;
-    const currentY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0);
     const filterRow = document.getElementById('filter-row');
     if (!filterRow) return;
-    if (currentY > _lastScrollY && currentY > 50) {
+    // Si el sentinel ya no es visible (hemos scrolleado más allá del inicio del grid) → ocultar pills
+    if (!entry.isIntersecting) {
       filterRow.classList.add('hidden-pills');
-    } else if (currentY < _lastScrollY) {
+    } else {
       filterRow.classList.remove('hidden-pills');
     }
-    _lastScrollY = currentY;
-    _ticking = false;
-  };
-  window.addEventListener('scroll', () => {
-    if (!_ticking) { requestAnimationFrame(_handleScroll); _ticking = true; }
-  }, { passive: true });
-  // También escuchar en el html/body por si el scroll está ahí
-  document.documentElement.addEventListener('scroll', () => {
-    if (!_ticking) { requestAnimationFrame(_handleScroll); _ticking = true; }
-  }, { passive: true });
+  }, { threshold: 0, rootMargin: '-80px 0px 0px 0px' });
+
+  if (_sentinel) _pillsObserver.observe(_sentinel);
 });
 
 // ═══ NAV ═══
