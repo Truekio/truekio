@@ -4611,21 +4611,31 @@ window.loadMatches = async function loadMatches() {
   const { data: allOthersItems } = await db.from('items').select('*').neq('user_id', currentUser.id);
   if (allOthersItems && myItems.length) {
     for (const myItem of myItems) {
-      if (!myItem.wants) continue;
-      const myWants = myItem.wants.toLowerCase();
+      // wants puede ser string (Supabase) o array (local) — normalizar a string lowercase
+      const myWantsRaw = myItem.wants || '';
+      const myWants = Array.isArray(myWantsRaw)
+        ? myWantsRaw.join(' ').toLowerCase()
+        : myWantsRaw.toLowerCase();
+      if (!myWants) continue;
 
       for (const theirItem of allOthersItems) {
         const pairKey = `c-${myItem.id}-${theirItem.id}`;
         if (seenPairs.has(pairKey)) continue;
 
+        const theirCat = (theirItem.category || '').toLowerCase();
+        const theirTitle = (theirItem.title || '').toLowerCase();
+        const theirWants = (theirItem.wants || '').toLowerCase();
+        const myCat = (myItem.category || '').toLowerCase();
+        const myTitle = (myItem.title || '').toLowerCase();
+
         // Mi item acepta la categoría o nombre del item de ellos
-        const iWantTheirs = myWants.includes(theirItem.category?.toLowerCase() || '')
-          || theirItem.title.toLowerCase().split(' ').some(w => w.length > 3 && myWants.includes(w));
+        const iWantTheirs = (theirCat && myWants.includes(theirCat))
+          || theirTitle.split(' ').some(w => w.length > 3 && myWants.includes(w));
 
         // Su item acepta la categoría o nombre de mi item
-        const theyWantMine = theirItem.wants && (
-          theirItem.wants.toLowerCase().includes(myItem.category?.toLowerCase() || '')
-          || myItem.title.toLowerCase().split(' ').some(w => w.length > 3 && theirItem.wants.toLowerCase().includes(w))
+        const theyWantMine = theirWants && (
+          (myCat && theirWants.includes(myCat))
+          || myTitle.split(' ').some(w => w.length > 3 && theirWants.includes(w))
         );
 
         if (!iWantTheirs && !theyWantMine) continue;
@@ -7843,7 +7853,7 @@ async function publishItem() {
     name,
     cat: pubCat,
     subcat: pubSubcat,
-    location: 'Barcelona',
+    location: city,
     price: row.estimated_value ? String(row.estimated_value) : null,
     desc: row.description,
     wants: wantsFlat,
@@ -7854,6 +7864,8 @@ async function publishItem() {
     user: userName,
     userEmoji: '😎',
     condition: row.condition,
+    created_at: new Date().toISOString(),
+    user_id: currentUser?.id || null,
   };
   items.unshift(newItem);
   myItems.push({id: newItem.id, emoji: autoEmoji, name, cat: pubCat});
@@ -7892,6 +7904,9 @@ async function publishItem() {
 
   // Detectar coincidencias con deseos de otros usuarios (fire & forget)
   checkWishMatches(name, pubCat, newItem.id);
+
+  // Recalcular matches con el nuevo item publicado
+  setTimeout(() => loadMatches(), 1000);
 
   // Reset del formulario en background
   pubCurrentScreen = 1;
