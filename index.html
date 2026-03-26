@@ -3598,7 +3598,8 @@ function navTo(v) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { pubGoTo(1); }, 300);
+    pubCurrentScreen = 1;
+    pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -3633,7 +3634,8 @@ function navToActivity(tab) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { pubGoTo(1); }, 300);
+    pubCurrentScreen = 1;
+    pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -3845,7 +3847,8 @@ function navTo(v) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { pubGoTo(1); }, 300);
+    pubCurrentScreen = 1;
+    pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -3880,7 +3883,8 @@ function navToActivity(tab) {
   }
 
   if(v === 'publish') {
-    setTimeout(() => { pubGoTo(1); }, 300);
+    pubCurrentScreen = 1;
+    pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
