@@ -7821,10 +7821,10 @@ async function publishItem() {
   if(btn) { btn.textContent = originalText; btn.disabled = false; }
 
   showToast('✦ ¡Publicado en Truquo!');
+  navTo('explore');
   renderExplore(items);
   renderProfile();
   document.getElementById('prof-stat-items').textContent = myItems.length;
-  navTo('explore');
 
   // Detectar coincidencias con deseos de otros usuarios (fire & forget)
   checkWishMatches(name, pubCat, newItem.id);
