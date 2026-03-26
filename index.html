@@ -282,20 +282,27 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 }
 /* Botón publicar central en bottom nav */
 .bnav-publish{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:0;background:none;border:none;cursor:pointer;
-  position:relative;top:-10px; /* elevado sobre la barra */
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:3px;padding:0;background:none;border:none;cursor:pointer;
+  padding-top:0;
 }
 .bnav-publish-icon{
-  width:48px;height:48px;border-radius:50%;
+  width:46px;height:46px;border-radius:50%;
   background:var(--accent);
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 14px rgba(78,143,186,.45);
+  box-shadow:0 4px 14px rgba(78,143,186,.4);
   transition:transform .15s ease, box-shadow .15s ease;
+  margin-top:-14px; /* sube el círculo por encima de la barra */
+  flex-shrink:0;
 }
-.bnav-publish-icon svg{width:22px;height:22px;color:#fff;display:block;}
-.bnav-publish:active .bnav-publish-icon{transform:scale(.92);box-shadow:0 2px 8px rgba(78,143,186,.3);}
-.bnav-publish .bnav-label{color:var(--accent)!important;font-size:9px;}
+.bnav-publish-icon svg{
+  width:20px;height:20px;
+  stroke:#fff;
+  display:block;
+  position:relative;
+}
+.bnav-publish:active .bnav-publish-icon{transform:scale(.93);box-shadow:0 2px 8px rgba(78,143,186,.3);}
+.bnav-publish .bnav-label{color:var(--accent)!important;font-size:9px;font-weight:600;letter-spacing:.02em;}
 
 /* Botón subir — centrado, aparece al scrollear */
 .scroll-top-btn{
@@ -1621,7 +1628,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="ntab-explore" onclick="navTo('explore')">Explorar</button>
-      <button class="nav-tab" id="ntab-favorites" onclick="navTo('favorites')">❤️ Favoritos</button>
       <button class="nav-tab" id="ntab-activity" onclick="navTo('activity')">
         <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
         <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent)">6</span>
@@ -1653,14 +1659,13 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
-    <button class="bnav-btn" id="bnav-favorites" onclick="navTo('favorites')"><span>❤️</span><span class="bnav-label">Favoritos</span></button>
+    <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
     <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
       <span class="bnav-publish-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </span>
-      <span class="bnav-label" style="color:#fff;opacity:.85">Publicar</span>
+      <span class="bnav-label" style="color:var(--accent)">Publicar</span>
     </button>
-    <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
     <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
     <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
   </div>
@@ -2434,7 +2439,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="card profile-header-card" style="padding:0 28px 0;margin-bottom:20px">
       <div class="ptabs" style="border-top:none;padding-top:0;margin-top:0">
         <button class="ptab active" id="ptab-btn-items" onclick="switchPTab('items')">Mis objetos</button>
-        <button class="ptab" id="ptab-btn-favs" style="display:none" onclick="switchPTab('favs')">❤️ Favoritos</button>
+        <button class="ptab" id="ptab-btn-favs" onclick="switchPTab('favs')">❤️ Favoritos</button>
         <button class="ptab" id="ptab-btn-done" onclick="switchPTab('done')">Completados</button>
         <button class="ptab" id="ptab-btn-reviews" onclick="switchPTab('reviews')">Valoraciones <span style="font-size:10px;font-weight:800;background:var(--accent-l);color:var(--accent);padding:2px 6px;border-radius:99px;margin-left:3px" id="reviews-badge">0</span></button>
         <button class="ptab" id="ptab-btn-config" onclick="switchPTab('config')">Configuración</button>
