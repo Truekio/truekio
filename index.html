@@ -3278,6 +3278,7 @@ async function loadItemsFromSupabase() {
     lng: row.lng || null,
     shipping: 'persona',
     verified: false,
+    created_at: row.created_at || null,
   }));
 
   // Ordenar por cercanía si tenemos coordenadas del usuario
