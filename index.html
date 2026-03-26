@@ -1841,10 +1841,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <label>Categoría</label>
           <select id="edit-item-cat" onchange="updateEditSubcat()">
             <option value="">— Selecciona —</option>
-            <option>Electrónica</option><option>Moda</option><option>Hogar</option>
-            <option>Libros</option><option>Juguetes</option><option>Mascotas</option>
-            <option>Deporte</option><option>Motor</option><option>Bricolaje</option>
-            <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
+            <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
+            <option>Libros</option><option>Juguetes</option><option>Deporte</option>
+            <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
           </select>
         </div>
         <div class="field" style="margin-bottom:0">
@@ -1869,10 +1868,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <label>Categoría</label>
               <select id="edit-wants-cat" onchange="updateEditWantsSubcat()">
                 <option value="">— Cualquier categoría —</option>
-                <option>Electrónica</option><option>Moda</option><option>Hogar</option>
-                <option>Libros</option><option>Juguetes</option><option>Mascotas</option>
-                <option>Deporte</option><option>Motor</option><option>Bricolaje</option>
-                <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
+                <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
+                <option>Libros</option><option>Juguetes</option><option>Deporte</option>
+                <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
               </select>
             </div>
             <div class="field" style="margin-bottom:0">
@@ -2205,10 +2203,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <div class="sp-label">Categoría</div>
           <select class="sp-select" id="sp-cat" onchange="applySearchPanel()">
             <option value="">Todas</option>
-            <option>Electrónica</option><option>Moda</option><option>Hogar</option>
-            <option>Libros</option><option>Juguetes</option><option>Mascotas</option>
-            <option>Deporte</option><option>Motor</option><option>Bricolaje</option>
-            <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
+            <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
+            <option>Libros</option><option>Juguetes</option><option>Deporte</option>
+            <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
           </select>
         </div>
         <div class="sp-col">
@@ -2355,10 +2352,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <label>Categoría</label>
               <select id="wish-cat-input">
                 <option value="">— Cualquiera —</option>
-                <option>Electrónica</option><option>Moda</option><option>Hogar</option>
-                <option>Libros</option><option>Juguetes</option><option>Mascotas</option>
-                <option>Deporte</option><option>Motor</option><option>Bricolaje</option>
-                <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
+                <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
+                <option>Libros</option><option>Juguetes</option><option>Deporte</option>
+                <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
               </select>
             </div>
             <button class="btn btn-primary btn-md" onclick="addWishItem()" style="white-space:nowrap;height:42px;margin-bottom:0">+ Añadir</button>
@@ -2630,15 +2626,28 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <label>Categoría <span style="color:#e53e3e">*</span></label>
           <select id="pub-cat" onchange="updatePubSubcat()" style="font-size:15px">
             <option value="">— Selecciona —</option>
-            <option>Electrónica</option><option>Moda</option><option>Hogar</option>
-            <option>Libros</option><option>Juguetes</option><option>Mascotas</option>
-            <option>Deporte</option><option>Motor</option><option>Bricolaje</option>
-            <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
+            <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
+            <option>Libros</option><option>Juguetes</option><option>Deporte</option>
+            <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
           </select>
         </div>
         <div class="field" id="pub-subcat-field" style="display:none">
-          <label>Subcategoría</label>
+          <label id="pub-subcat-label">Subcategoría</label>
           <select id="pub-subcat"><option value="">— Opcional —</option></select>
+        </div>
+        <div class="field" id="pub-book-lang-field" style="display:none">
+          <label>Idioma del libro</label>
+          <select id="pub-book-lang">
+            <option value="">— Opcional —</option>
+            <option>Español</option>
+            <option>Inglés</option>
+            <option>Catalán</option>
+            <option>Francés</option>
+            <option>Alemán</option>
+            <option>Italiano</option>
+            <option>Portugués</option>
+            <option>Otro idioma</option>
+          </select>
         </div>
         <div id="pub-service-hint" style="display:none;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;font-weight:600">
           🤝 Servicio profesional — describe tu experiencia en el siguiente paso.
@@ -2664,10 +2673,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <label>Categoría</label>
               <select id="wants-cat" onchange="updateSubcat()">
                 <option value="">— Cualquier categoría —</option>
-                <option>Electrónica</option><option>Moda</option><option>Hogar</option>
-                <option>Libros</option><option>Juguetes</option><option>Mascotas</option>
-                <option>Deporte</option><option>Motor</option><option>Bricolaje</option>
-                <option>Arte</option><option>Bebés</option><option>Servicios</option><option>Otros</option>
+                <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
+                <option>Libros</option><option>Juguetes</option><option>Deporte</option>
+                <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
               </select>
             </div>
             <div class="field" style="margin-bottom:0">
@@ -2821,16 +2829,13 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="fd-cat-grid">
         <button class="fd-cat-btn on" data-val="" onclick="fdSelectCat(this)"><span class="fd-cat-ico">✦</span><span class="fd-cat-lbl">Todas</span></button>
         <button class="fd-cat-btn" data-val="Electrónica" onclick="fdSelectCat(this)"><span class="fd-cat-ico">📱</span><span class="fd-cat-lbl">Electrónica</span></button>
-        <button class="fd-cat-btn" data-val="Moda" onclick="fdSelectCat(this)"><span class="fd-cat-ico">👕</span><span class="fd-cat-lbl">Moda</span></button>
+        <button class="fd-cat-btn" data-val="Ropa" onclick="fdSelectCat(this)"><span class="fd-cat-ico">👕</span><span class="fd-cat-lbl">Ropa</span></button>
         <button class="fd-cat-btn" data-val="Hogar" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🏠</span><span class="fd-cat-lbl">Hogar</span></button>
         <button class="fd-cat-btn" data-val="Libros" onclick="fdSelectCat(this)"><span class="fd-cat-ico">📚</span><span class="fd-cat-lbl">Libros</span></button>
         <button class="fd-cat-btn" data-val="Juguetes" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🧸</span><span class="fd-cat-lbl">Juguetes</span></button>
-        <button class="fd-cat-btn" data-val="Mascotas" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🐾</span><span class="fd-cat-lbl">Mascotas</span></button>
         <button class="fd-cat-btn" data-val="Deporte" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🚴</span><span class="fd-cat-lbl">Deporte</span></button>
-        <button class="fd-cat-btn" data-val="Motor" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🚗</span><span class="fd-cat-lbl">Motor</span></button>
-        <button class="fd-cat-btn" data-val="Bricolaje" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🧰</span><span class="fd-cat-lbl">Bricolaje</span></button>
-        <button class="fd-cat-btn" data-val="Arte" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🎨</span><span class="fd-cat-lbl">Arte</span></button>
-        <button class="fd-cat-btn" data-val="Bebés" onclick="fdSelectCat(this)"><span class="fd-cat-ico">👶</span><span class="fd-cat-lbl">Bebés</span></button>
+        <button class="fd-cat-btn" data-val="Cartas" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🃏</span><span class="fd-cat-lbl">Cartas</span></button>
+        <button class="fd-cat-btn" data-val="Juegos de mesa" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🎲</span><span class="fd-cat-lbl">Juegos de mesa</span></button>
         <button class="fd-cat-btn" data-val="Servicios" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🤝</span><span class="fd-cat-lbl">Servicios</span></button>
         <button class="fd-cat-btn" data-val="Otros" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🎁</span><span class="fd-cat-lbl">Otros</span></button>
       </div>
@@ -3323,8 +3328,8 @@ const CONVS_DATA = [];
 
 const REVIEWS_DATA = []; // Se rellena desde Supabase en loadReviews()
 
-const CATS = ['Todos','Electrónica','Moda','Hogar','Libros','Juguetes','Mascotas','Deporte','Motor','Bricolaje','Arte','Bebés','Servicios','Otros'];
-const CAT_ICONS = {Todos:'✦',Electrónica:'📱',Moda:'👕',Hogar:'🏠',Libros:'📚',Juguetes:'🧸',Mascotas:'🐾',Deporte:'🚴',Motor:'🚗',Bricolaje:'🧰',Arte:'🎨',Bebés:'👶',Servicios:'🤝',Otros:'🎁'};
+const CATS = ['Todos','Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'];
+const CAT_ICONS = {Todos:'✦',Electrónica:'📱',Ropa:'👕',Hogar:'🏠',Libros:'📚',Juguetes:'🧸',Deporte:'🚴',Cartas:'🃏',Servicios:'🤝','Juegos de mesa':'🎲',Otros:'🎁'};
 
 const BOOK_SUBCATS = ['Ficción','Ciencia ficción','Fantasía','Thriller y suspense','Romance','Terror','Historia','Biografías','Autoayuda','Ciencia','Filosofía','Infantil y juvenil','Cómics y manga','Poesía','Viajes','Economía','Arte y fotografía','Cocina'];
 const SERVICE_SUBCATS = ['Salud · Dentista','Salud · Médico general','Salud · Fisioterapeuta','Salud · Psicólogo','Salud · Nutricionista','Salud · Óptico','Salud · Veterinario','Construcción · Carpintero','Construcción · Electricista','Construcción · Fontanero','Construcción · Pintor','Construcción · Albañil','Construcción · Cerrajero','Educación · Profesor idiomas','Educación · Clases matemáticas','Educación · Música / instrumento','Educación · Apoyo escolar','Tecnología · Diseño web','Tecnología · Reparación ordenadores','Tecnología · Fotografía','Tecnología · Marketing digital','Belleza · Peluquería','Belleza · Estética / manicura','Belleza · Masajes','Legal · Abogado','Legal · Gestoría / asesoría','Hogar · Limpieza','Hogar · Jardinería','Hogar · Mudanzas','Transporte · Mecánico'];
@@ -7372,16 +7377,13 @@ function updateSubcat() {
 // Subcategorías para formulario publicar
 const PUB_SUBCATS = {
   'Electrónica': ['Móviles','Tablets','Ordenadores y portátiles','Consolas','Videojuegos','Audio (auriculares, altavoces)','Fotografía (cámaras, drones)','Smart home','Accesorios','Otro'],
-  'Moda': ['Ropa hombre','Ropa mujer','Ropa infantil','Zapatos','Bolsos','Joyería','Relojes','Gafas','Accesorios','Otro'],
+  'Ropa': ['Ropa hombre','Ropa mujer','Ropa infantil','Zapatos','Bolsos','Joyería','Relojes','Gafas','Accesorios','Otro'],
   'Hogar': ['Muebles','Decoración','Iluminación','Textil hogar','Cocina','Organización','Electrodomésticos','Jardín','Otro'],
   'Libros': ['Ficción','Ciencia ficción','Fantasía','Thriller y suspense','Romance','Terror','Historia','Biografías','Autoayuda','Ciencia','Filosofía','Infantil y juvenil','Cómics y manga','Poesía','Economía','Cocina','Otro'],
-  'Juguetes': ['Juguetes infantiles','Juegos de mesa','Cartas (Pokémon, Magic...)','Puzzles','Figuras coleccionables','Construcción','Electrónicos','Otro'],
-  'Mascotas': ['Accesorios (correas, camas)','Juguetes','Transporte','Ropa para mascotas','Alimentación','Otro'],
+  'Juguetes': ['Juguetes infantiles','Puzzles','Figuras coleccionables','Construcción','Electrónicos','Otro'],
   'Deporte': ['Bicicletas','Fitness (pesas, máquinas)','Running','Deportes de equipo','Camping','Surf / skate / nieve','Raqueta','Artes marciales','Natación','Otro'],
-  'Motor': ['Accesorios coche','Accesorios moto','Herramientas','Repuestos','Otro'],
-  'Bricolaje': ['Herramientas manuales','Herramientas eléctricas','Materiales','Jardinería','Otro'],
-  'Arte': ['Material artístico','Instrumentos musicales','Equipo DJ','Manualidades','Fotografía','Otro'],
-  'Bebés': ['Carritos','Ropa bebé','Juguetes educativos','Mobiliario infantil','Alimentación','Otro'],
+  'Cartas': ['Magic: The Gathering','Pokémon','One Piece','Yu-Gi-Oh','Coleccionables (cromos, Panini...)','Otro'],
+  'Juegos de mesa': ['Estrategia','Cooperativos','Familiares','Rol (D&D...)','Party games','Abstractos','Wargames','Otro'],
   'Servicios': [
     'Educación · Clases particulares','Educación · Idiomas','Educación · Apoyo escolar','Educación · Música','Educación · Formación profesional','Educación · Coaching',
     'Tecnología · Desarrollo web','Tecnología · Diseño UX/UI','Tecnología · Reparación dispositivos','Tecnología · Soporte técnico','Tecnología · Automatizaciones',
@@ -7404,11 +7406,21 @@ function updatePubSubcat() {
   const cat = document.getElementById('pub-cat').value;
   const subEl = document.getElementById('pub-subcat');
   const subField = document.getElementById('pub-subcat-field');
+  const subLabel = document.getElementById('pub-subcat-label');
+  const langField = document.getElementById('pub-book-lang-field');
   const serviceHint = document.getElementById('pub-service-hint');
   const bookHint = document.getElementById('pub-book-hint');
 
   serviceHint.style.display = cat === 'Servicios' ? 'block' : 'none';
   bookHint.style.display = cat === 'Libros' ? 'block' : 'none';
+
+  // Mostrar campo idioma solo para Libros
+  if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
+
+  // Actualizar label de subcategoría según categoría
+  if (subLabel) {
+    subLabel.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
+  }
 
   const subs = PUB_SUBCATS[cat] || [];
   if (subs.length) {
@@ -7788,7 +7800,12 @@ async function publishItem() {
   // Parse category — ahora son dos campos separados
   const pubCat = document.getElementById('pub-cat').value || 'Otro';
   const pubSubcat = document.getElementById('pub-subcat')?.value || '';
-  const rawCat = pubSubcat ? pubCat + '|' + pubSubcat : pubCat;
+  const pubLang = document.getElementById('pub-book-lang')?.value || '';
+  // Para libros: subcategory = "Género · Idioma", para el resto solo el género
+  const fullSubcat = pubCat === 'Libros' && pubLang
+    ? (pubSubcat ? pubSubcat + ' · ' + pubLang : pubLang)
+    : pubSubcat;
+  const rawCat = fullSubcat ? pubCat + '|' + fullSubcat : pubCat;
   const isService = pubCat === 'Servicios';
   const autoEmoji = getEmojiForCat(rawCat);
 
@@ -7865,7 +7882,7 @@ async function publishItem() {
     emoji: autoEmoji,
     name,
     cat: pubCat,
-    subcat: pubSubcat,
+    subcat: fullSubcat,
     location: city,
     price: row.estimated_value ? String(row.estimated_value) : null,
     desc: row.description,
@@ -7894,6 +7911,8 @@ async function publishItem() {
   document.getElementById('pub-name').value = '';
   document.getElementById('pub-desc').value = '';
   if(document.getElementById('pub-subcat')) document.getElementById('pub-subcat').innerHTML = '<option value="">— Selecciona categoría primero —</option>';
+  if(document.getElementById('pub-book-lang')) document.getElementById('pub-book-lang').value = '';
+  if(document.getElementById('pub-book-lang-field')) document.getElementById('pub-book-lang-field').style.display = 'none';
   document.getElementById('pub-cat').value = '';
   document.getElementById('pub-price').value = '';
   document.getElementById('pub-loc').value = 'Barcelona';
