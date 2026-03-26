@@ -4537,26 +4537,40 @@ window.loadMatches = async function loadMatches() {
         const pairKey = `${myItem.id}-${wish.user_id}`;
         if (seenPairs.has(pairKey)) continue;
 
-        // Objeto de ellos que más se acerque a mis deseos
+        // Encontrar el item de ellos que mejor encaje con mis deseos
         let bestTheirItem = theirItems[0];
-        let bestScore = catMatch ? 70 : 60;
+        let bestScore = 0;
 
         for (const theirItem of theirItems) {
-          const myWantMatch = myWishNames.some(wn =>
+          // ¿Yo quiero ese item? (por nombre o categoría)
+          const myWantByName = myWishNames.some(wn =>
             theirItem.title.toLowerCase().includes(wn.split(' ')[0]) || wn.includes(theirItem.title.toLowerCase().split(' ')[0])
-          ) || myWishCats.some(wc => theirItem.category?.toLowerCase() === wc);
-
-          // También comprueba el campo "wants" del item
-          const wantsMatch = myItem.wants && (
-            myItem.wants.toLowerCase().includes(theirItem.category?.toLowerCase() || '') ||
-            theirItem.title.toLowerCase().split(' ').some(w => myItem.wants.toLowerCase().includes(w))
           );
+          const myWantByCat = myWishCats.some(wc => theirItem.category?.toLowerCase() === wc);
 
-          const score = Math.min(99, (nameMatch ? 40 : 0) + (catMatch ? 15 : 0) + (myWantMatch ? 30 : 0) + (wantsMatch ? 15 : 0));
-          if (score < 25) continue;
+          // ¿Mi item encaja en lo que ellos aceptan?
+          const myItemWants = Array.isArray(myItem.wants)
+            ? myItem.wants.join(' ').toLowerCase()
+            : (myItem.wants || '').toLowerCase();
+          const theyWantMineByName = myItemWants && theirItem.title.toLowerCase().split(' ').some(w => w.length > 3 && myItemWants.includes(w));
+          const theyWantMineByCat  = myItemWants && theirItem.category && myItemWants.includes(theirItem.category.toLowerCase());
+
+          // Score por especificidad
+          let s = 0;
+          if (nameMatch) s += 25;        // mi item coincide con su deseo (nombre)
+          else if (catMatch) s += 10;    // solo coincide la categoría del deseo
+          if (myWantByName) s += 35;     // yo quiero ese item específicamente
+          else if (myWantByCat) s += 15; // yo quiero esa categoría
+          if (theyWantMineByName) s += 25; // ellos quieren mi item específicamente
+          else if (theyWantMineByCat) s += 10; // ellos aceptan mi categoría
+
+          s = Math.min(99, s);
+          if (s > bestScore) { bestScore = s; bestTheirItem = theirItem; }
         }
 
+        if (bestScore < 25) continue;
         seenPairs.add(pairKey);
+
         const reasons = [];
         if (nameMatch) reasons.push(`"${wish.name}" en su lista de deseos`);
         if (catMatch) reasons.push(`Misma categoría: ${myItem.category}`);
@@ -4570,7 +4584,7 @@ window.loadMatches = async function loadMatches() {
           userEmoji: '👤',
           userAvatar: bestTheirItem.user_avatar || null,
           userId: wish.user_id,
-          score: Math.min(99, bestScore),
+          score: bestScore,
           reasons: reasons.length ? reasons : ['Posible coincidencia de categorías'],
           location: bestTheirItem.location || 'España',
         });
