@@ -4025,35 +4025,46 @@ function applyFilter(q, cat) {
   f = f.map(i => {
     let score = 0;
 
-    // 1. MATCH — el objeto encaja con lo que busco (peso 40)
-    const itemName = (i.name || '').toLowerCase();
-    const itemCat  = (i.cat  || '').toLowerCase();
-    const isMatch  = matches.some(m => m.theirItem?.name === i.name);
-    if (isMatch) score += 40;
-    else if (myWants.some(w => itemName.includes(w) || w.includes(itemName.split(' ')[0]))) score += 30;
-    else if (myCats.some(c => c.toLowerCase() === itemCat)) score += 10;
+    // 1. MATCH — usa el score calculado por loadMatches() (peso 60)
+    const matchScore = matchScoreByItemId.get(String(i.id));
+    if (matchScore) {
+      // Escalar el matchScore (0-99) a un peso de hasta 60 pts
+      score += Math.round((matchScore / 99) * 60);
+    } else {
+      // Sin match exacto — comprobar coincidencia suave por categoría (peso 15)
+      const itemCat = (i.cat || '').toLowerCase();
+      if (myCats.some(c => c.toLowerCase() === itemCat)) score += 15;
+      // O si algún want mío menciona el nombre del item (peso 20)
+      const itemName = (i.name || '').toLowerCase();
+      if (myWants.some(w => itemName.includes(w) || w.includes(itemName.split(' ')[0]))) score += 20;
+    }
 
-    // 2. PUNTUACIÓN DEL VENDEDOR (peso 25)
-    const trust = USER_TRUST[i.user] || 0;
-    score += Math.round(trust * 0.25);
-
-    // 3. PROXIMIDAD (peso 20) — inversamente proporcional a distancia
+    // 2. PROXIMIDAD (peso 18) — inversamente proporcional a distancia
     if (userCoords && i._dist != null && i._dist !== Infinity) {
-      const proxScore = Math.max(0, 20 - Math.min(i._dist, 100) * 0.2);
+      const proxScore = Math.max(0, 18 - Math.min(i._dist, 100) * 0.18);
       score += proxScore;
     } else if (!userCoords) {
-      score += 10; // sin coords, neutral
+      score += 9; // sin coords, neutral
     }
 
-    // 4. FRESCURA — últimas 48h (peso 15)
+    // 3. FRESCURA — últimas 7 días (peso 12)
     if (i.created_at || i.createdAt) {
       const created = new Date(i.created_at || i.createdAt).getTime();
-      if (!isNaN(created) && (now - created) < H48) score += 15;
+      const age = now - created;
+      const H7D = 7 * 24 * 60 * 60 * 1000;
+      if (!isNaN(created) && age < H7D) {
+        // Más reciente = más puntos (decae linealmente)
+        score += Math.round(12 * (1 - age / H7D));
+      }
     }
 
-    // 5. TIENE FOTO — siempre por delante de los que no (peso 8)
+    // 4. TIENE FOTO (peso 8)
     const hasPhoto = (i.photos && i.photos.length) || (i.images && i.images.length);
     if (hasPhoto) score += 8;
+
+    // 5. CONFIANZA DEL VENDEDOR (peso 5)
+    const trust = USER_TRUST[i.user] || 0;
+    score += Math.round(trust * 0.05);
 
     return { ...i, _score: score };
   });
