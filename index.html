@@ -270,8 +270,17 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 /* ── EXPLORER GRID — 2 col Wallapop style ── */
 .items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
 .explore-sticky{position:sticky;top:58px;z-index:90;background:var(--white);border-bottom:1px solid var(--border);}
-.filter-row{transition:max-height .25s ease, opacity .25s ease, padding .25s ease; overflow:hidden;}
+.explore-search-row{display:flex;align-items:center;gap:8px;padding:8px 0 6px;}
+.explore-search-input{flex:1;min-width:0;}
+.items-count-desktop{display:block;}
+.filter-row{transition:max-height .25s ease, opacity .25s ease, padding .25s ease;overflow:hidden;padding-bottom:8px;}
 .filter-row.hidden-pills{max-height:0!important;opacity:0;padding:0!important;}
+@media(max-width:640px){
+  .explore-sticky{top:0;}
+  .items-count-desktop{display:none;}
+  .explore-search-row{padding:6px 0 4px;}
+  .filter-toggle-btn{padding:6px 10px;font-size:12px;white-space:nowrap;}
+}
 /* FAB publicar — solo móvil */
 .fab-publish{display:none;}
 @media(max-width:640px){
@@ -2065,23 +2074,20 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <!-- Barra sticky: buscador + filtros + pills -->
   <div class="explore-sticky">
     <div class="wrap">
-      <!-- Header row -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;padding-bottom:10px;flex-wrap:wrap;gap:10px">
-        <div style="font-size:12px;color:var(--muted)" id="items-count">16 objetos disponibles</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="search-bar" style="min-width:160px;max-width:240px">
-            <span style="color:var(--muted);font-size:15px">🔍</span>
-            <input placeholder="Buscar en Truquo..." oninput="searchItems(this.value)" id="search-input">
-          </div>
-          <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
-            ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
-          </button>
+      <div class="explore-search-row">
+        <div class="search-bar explore-search-input">
+          <span style="color:var(--muted);font-size:14px">🔍</span>
+          <input placeholder="Buscar en Truquo..." oninput="searchItems(this.value)" id="search-input">
         </div>
+        <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
+          ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
+        </button>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap" id="items-count" class="items-count-desktop">0 objetos</div>
       </div>
       <!-- Active filter chips -->
       <div class="active-filters" id="active-filters"></div>
       <!-- Sort pills -->
-      <div class="filter-row" id="filter-row" style="padding-bottom:10px"></div>
+      <div class="filter-row" id="filter-row"></div>
     </div>
   </div>
 
@@ -3369,18 +3375,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Scroll: ocultar pills al bajar, mostrar al subir (solo móvil) ──
   let _lastScrollY = 0;
-  window.addEventListener('scroll', () => {
+  const _onScroll = () => {
     if (window.innerWidth > 640) return;
-    const currentY = window.scrollY;
+    const currentY = window.scrollY || document.documentElement.scrollTop;
     const filterRow = document.getElementById('filter-row');
     if (!filterRow) return;
-    if (currentY > _lastScrollY && currentY > 80) {
+    if (currentY > _lastScrollY && currentY > 60) {
       filterRow.classList.add('hidden-pills');
     } else {
       filterRow.classList.remove('hidden-pills');
     }
-    _lastScrollY = currentY;
-  }, { passive: true });
+    _lastScrollY = currentY <= 0 ? 0 : currentY;
+  };
+  window.addEventListener('scroll', _onScroll, { passive: true });
 });
 
 // ═══ NAV ═══
