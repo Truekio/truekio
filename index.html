@@ -4483,19 +4483,19 @@ window.loadMatches = async function loadMatches() {
   const { data: myProposals } = await db.from('proposals')
     .select('item_id, owner_id, status')
     .eq('offerer_id', currentUser.id)
-    .in('status', ['pending', 'accepted', 'rejected']);
+    .in('status', ['pending', 'rejected']);
 
-  // pending/accepted: excluir todo el usuario (propuesta activa)
+  // Solo excluir propuestas pending — accepted y rejected no bloquean nuevos matches
   const alreadyProposedTo = new Set(
-    (myProposals || []).filter(p => p.status !== 'rejected').map(p => p.owner_id).filter(Boolean)
+    (myProposals || []).filter(p => p.status === 'pending').map(p => p.owner_id).filter(Boolean)
   );
-  // rejected: excluir solo ese item concreto (no otros objetos del mismo usuario)
+  // rejected: excluir solo ese item concreto
   const rejectedItems = new Set(
     (myProposals || []).filter(p => p.status === 'rejected').map(p => String(p.item_id)).filter(Boolean)
   );
-  // pending/accepted: excluir también el item específico
+  // pending: excluir el item específico
   const alreadyProposedItems = new Set(
-    (myProposals || []).filter(p => p.status !== 'rejected').map(p => String(p.item_id)).filter(Boolean)
+    (myProposals || []).filter(p => p.status === 'pending').map(p => String(p.item_id)).filter(Boolean)
   );
 
   const foundMatches = [];
