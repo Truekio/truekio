@@ -3537,11 +3537,8 @@ function requireAuth(intendedView) {
 function navTo(v) {
   // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
-  if(v === 'matches' || v === 'wishlist') {
-    const tab = v === 'wishlist' ? 'wishlist-act' : 'proposals';
-    navToActivity(tab);
-    return;
-  }
+  if(v === 'matches') { navToActivity('proposals'); return; }
+  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('view-'+v);
   if(el) el.classList.add('active');
@@ -3572,6 +3569,7 @@ function navTo(v) {
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
 }
 
 function navToActivity(tab) {
@@ -3606,6 +3604,7 @@ function navToActivity(tab) {
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -3785,11 +3784,8 @@ function renderHomeItems() {
 function navTo(v) {
   // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
-  if(v === 'matches' || v === 'wishlist') {
-    const tab = v === 'wishlist' ? 'wishlist-act' : 'proposals';
-    navToActivity(tab);
-    return;
-  }
+  if(v === 'matches') { navToActivity('proposals'); return; }
+  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('view-'+v);
   if(el) el.classList.add('active');
@@ -3820,6 +3816,7 @@ function navTo(v) {
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
 }
 
 function navToActivity(tab) {
@@ -3854,6 +3851,7 @@ function navToActivity(tab) {
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
