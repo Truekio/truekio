@@ -4607,19 +4607,30 @@ window.loadMatches = async function loadMatches() {
           if (seenPairs.has(pairKey)) continue;
           seenPairs.add(pairKey);
 
-          // Buscar mi objeto que más quieran
-          const wantsMatch = myItems.find(mi =>
-            item.wants && (item.wants.toLowerCase().includes(mi.category?.toLowerCase() || '')
-            || mi.title.toLowerCase().split(' ').some(w => item.wants.toLowerCase().includes(w)))
+          // ¿Ellos quieren alguno de mis items? (por nombre o categoría)
+          const wantsMatchByName = myItems.find(mi =>
+            item.wants && mi.title.toLowerCase().split(' ').some(w => w.length > 3 && item.wants.toLowerCase().includes(w))
           );
-          const myBestItem = wantsMatch || myItems[0];
+          const wantsMatchByCat = myItems.find(mi =>
+            item.wants && item.wants.toLowerCase().includes(mi.category?.toLowerCase() || '')
+          );
+          const myBestItem = wantsMatchByName || wantsMatchByCat || myItems[0];
 
-          const score = Math.min(99, (nameMatch ? 45 : 0) + (catMatch ? 15 : 0) + (wantsMatch ? 40 : 0));
-          if (score < 25) continue;
+          // Score por especificidad — nombre exacto vale mucho más que categoría
+          let score = 0;
+          if (nameMatch) score += 40;        // el item coincide exactamente con mi deseo
+          else if (catMatch) score += 12;    // solo coincide la categoría
+          if (wantsMatchByName) score += 45; // ellos quieren mi item por nombre exacto
+          else if (wantsMatchByCat) score += 8; // ellos aceptan mi categoría (muy genérico)
+
+          score = Math.min(99, score);
+          if (score < 30) continue;
+
           const reasons = [];
           if (nameMatch) reasons.push(`"${wish.name}" en tu lista de deseos`);
-          if (catMatch) reasons.push(`${item.category} — coincide con tu deseo`);
-          if (wantsMatch) reasons.push(`Tu ${myBestItem.title} es lo que buscan`);
+          if (catMatch && !nameMatch) reasons.push(`${item.category} — coincide con tu deseo`);
+          if (wantsMatchByName) reasons.push(`Tu ${myBestItem.title} es lo que buscan`);
+          else if (wantsMatchByCat) reasons.push(`Tu ${myBestItem.title} encaja con su categoría`);
 
           foundMatches.push({
             id: `match-wish-${item.id}-${wish.name}`,
