@@ -3278,7 +3278,8 @@ async function loadItemsFromSupabase() {
     lng: row.lng || null,
     shipping: 'persona',
     verified: false,
-    created_at: row.created_at || null,
+    created_at: row.created_at ? new Date(row.created_at).toISOString() : null,
+    user_id: row.user_id || null,
   }));
 
   // Ordenar por cercanía si tenemos coordenadas del usuario
@@ -4067,9 +4068,17 @@ function applyFilter(q, cat) {
     f.sort((a, b) => (a._dist ?? 9999) - (b._dist ?? 9999));
   } else if (sortMode === 'recent') {
     f.sort((a, b) => {
-      const da = new Date(a.created_at || a.createdAt || 0).getTime();
-      const db2 = new Date(b.created_at || b.createdAt || 0).getTime();
-      return db2 - da;
+      // Intentar con created_at primero
+      const rawA = a.created_at || a.createdAt;
+      const rawB = b.created_at || b.createdAt;
+      if (rawA && rawB) {
+        return new Date(rawB).getTime() - new Date(rawA).getTime();
+      }
+      // Fallback: comparar por id (UUIDs v4 de Supabase tienen componente temporal)
+      if (rawB && !rawA) return 1;
+      if (rawA && !rawB) return -1;
+      // Si ninguno tiene fecha, mantener orden original
+      return 0;
     });
   } else if (sortMode === 'trust') {
     f.sort((a, b) => (USER_TRUST[b.user] || 0) - (USER_TRUST[a.user] || 0));
