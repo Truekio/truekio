@@ -269,14 +269,14 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 /* ── ITEM CARDS — redesigned ── */
 /* ── EXPLORER GRID — 2 col Wallapop style ── */
 .items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
-.explore-sticky{position:sticky;top:58px;z-index:90;background:var(--white);border-bottom:1px solid var(--border);}
+.explore-sticky{position:sticky;top:58px;z-index:90;background:rgba(245,248,251,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);box-shadow:0 2px 12px rgba(0,0,0,.04);}
 .explore-search-row{display:flex;align-items:center;gap:8px;padding:8px 0 6px;}
 .explore-search-input{flex:1;min-width:0;}
 .items-count-desktop{display:block;}
-.filter-row{transition:max-height .25s ease, opacity .25s ease, padding .25s ease;overflow:hidden;padding-bottom:8px;}
+.filter-row{transition:max-height .28s cubic-bezier(.4,0,.2,1), opacity .28s ease, padding .28s ease;overflow:hidden;padding-bottom:8px;}
 .filter-row.hidden-pills{max-height:0!important;opacity:0;padding:0!important;}
 @media(max-width:640px){
-  .explore-sticky{top:0;}
+  .explore-sticky{top:0;background:rgba(245,248,251,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
   .items-count-desktop{display:none;}
   .explore-search-row{padding:6px 0 4px;}
   .filter-toggle-btn{padding:6px 10px;font-size:12px;white-space:nowrap;}
@@ -3375,19 +3375,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Scroll: ocultar pills al bajar, mostrar al subir (solo móvil) ──
   let _lastScrollY = 0;
-  const _onScroll = () => {
+  let _ticking = false;
+  const _handleScroll = () => {
     if (window.innerWidth > 640) return;
-    const currentY = window.scrollY || document.documentElement.scrollTop;
+    const currentY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0);
     const filterRow = document.getElementById('filter-row');
     if (!filterRow) return;
-    if (currentY > _lastScrollY && currentY > 60) {
+    if (currentY > _lastScrollY && currentY > 50) {
       filterRow.classList.add('hidden-pills');
-    } else {
+    } else if (currentY < _lastScrollY) {
       filterRow.classList.remove('hidden-pills');
     }
-    _lastScrollY = currentY <= 0 ? 0 : currentY;
+    _lastScrollY = currentY;
+    _ticking = false;
   };
-  window.addEventListener('scroll', _onScroll, { passive: true });
+  window.addEventListener('scroll', () => {
+    if (!_ticking) { requestAnimationFrame(_handleScroll); _ticking = true; }
+  }, { passive: true });
+  // También escuchar en el html/body por si el scroll está ahí
+  document.documentElement.addEventListener('scroll', () => {
+    if (!_ticking) { requestAnimationFrame(_handleScroll); _ticking = true; }
+  }, { passive: true });
 });
 
 // ═══ NAV ═══
