@@ -797,26 +797,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .wish-empty-icon{font-size:3rem;margin-bottom:12px;}
 
 .trust-passport{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:0;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.06);}
-.trust-passport-top{padding:24px 28px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}
+.trust-passport-top{padding:16px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
 .trust-avatar-wrap{position:relative;flex-shrink:0;}
-.trust-avatar{width:80px;height:80px;border-radius:50%;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:2.2rem;border:3px solid var(--accent);overflow:hidden;}
+.trust-avatar{width:60px;height:60px;border-radius:50%;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.6rem;border:2.5px solid var(--accent);overflow:hidden;}
 .trust-level-badge{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;letter-spacing:.04em;}
 .trust-level-nuevo{background:var(--bg2);color:var(--muted);}
 .trust-level-fiable{background:var(--accent-l);color:var(--accent);}
 .trust-level-veterano{background:#ede9fe;color:#7c3aed;}
 .trust-level-elite{background:#fef3c7;color:#b45309;}
 .trust-info{flex:1;min-width:0;}
-.trust-name{font-family:'Playfair Display',serif;font-weight:700;font-size:1.4rem;color:var(--text);margin-bottom:3px;}
+.trust-name{font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:2px;}
 .trust-meta{font-size:12px;color:var(--muted);margin-bottom:12px;}
 .trust-score-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 .trust-score-big{font-family:'Playfair Display',serif;font-weight:800;font-size:2.8rem;color:var(--accent);line-height:1;}
 .trust-score-label{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px;}
 .trust-stars{font-size:1rem;letter-spacing:2px;color:var(--gold);}
 .trust-divider{height:1px;background:var(--border);margin:0 28px;}
-.trust-metrics{display:grid;grid-template-columns:repeat(4,1fr);padding:18px 28px;gap:0;background:var(--bg);}
-.trust-metric{text-align:center;padding:10px 0;border-right:1px solid var(--border);}
+.trust-metrics{display:grid;grid-template-columns:repeat(4,1fr);padding:10px 20px;gap:0;background:var(--bg);border-top:1px solid var(--border);}
+.trust-metric{text-align:center;padding:8px 0;border-right:1px solid var(--border);}
 .trust-metric:last-child{border-right:none;}
-.trust-metric-n{font-family:'Playfair Display',serif;font-weight:700;font-size:1.4rem;color:var(--text);}
+.trust-metric-n{font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;color:var(--text);}
 .trust-metric-l{font-size:10px;color:var(--muted);font-weight:500;margin-top:2px;}
 .trust-verif-row{padding:14px 28px 18px;display:flex;gap:8px;flex-wrap:wrap;}
 .trust-verif-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 11px;border-radius:99px;}
@@ -2431,68 +2431,41 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="view" id="view-profile">
   <div class="wrap page-pad">
 
-    <!-- TRUST PASSPORT -->
+    <!-- TRUST PASSPORT compacto -->
     <div class="trust-passport" id="trust-passport">
       <div class="trust-passport-top">
+        <!-- Avatar -->
         <div class="trust-avatar-wrap">
-          <div class="trust-avatar" id="trust-avatar-emoji" style="overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--accent);background:var(--accent-l)">?</div>
+          <div class="trust-avatar" id="trust-avatar-emoji" style="overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:var(--accent);background:var(--accent-l)">?</div>
           <div class="trust-level-badge trust-level-nuevo" id="trust-level-badge">NUEVO</div>
         </div>
-        <div class="trust-info" style="margin-top:8px">
+        <!-- Info -->
+        <div class="trust-info">
           <div class="trust-name" id="trust-name">—</div>
           <div class="trust-meta" id="trust-meta">📍 España · Miembro desde —</div>
-          <div id="trust-bio" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:5px;line-height:1.5;max-width:340px;display:none"></div>
-          <div class="trust-score-row">
-            <div>
-              <div class="trust-score-big" id="trust-score">0</div>
-              <div class="trust-score-label">Puntuación de confianza</div>
+          <div id="trust-bio" style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;max-width:340px;display:none"></div>
+          <!-- Stats en línea -->
+          <div style="display:flex;align-items:center;gap:16px;margin-top:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:5px">
+              <span class="trust-score-big" id="trust-score" style="font-size:1.4rem">0</span>
+              <span style="font-size:11px;color:var(--muted);font-weight:600">pts confianza</span>
             </div>
-            <div style="border-left:1px solid rgba(255,255,255,.12);padding-left:14px">
-              <div class="trust-stars" id="trust-stars">☆☆☆☆☆</div>
-              <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px"><span id="trust-rating">—</span> · <span id="trust-review-count">0</span> valoraciones</div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <span class="trust-stars" id="trust-stars" style="font-size:.85rem">☆☆☆☆☆</span>
+              <span style="font-size:11px;color:var(--muted)"><span id="trust-rating">—</span> (<span id="trust-review-count">0</span>)</span>
             </div>
           </div>
         </div>
-        <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.06)" onclick="switchPTab('config')">✏️ Editar</button>
+        <!-- Botón editar -->
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0;align-self:flex-start" onclick="switchPTab('config')">✏️ Editar</button>
       </div>
 
-      <div class="trust-divider"></div>
-
+      <!-- Métricas compactas -->
       <div class="trust-metrics">
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-completados">0</div><div class="trust-metric-l">Trueques completados</div></div>
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-publicados">0</div><div class="trust-metric-l">Publicados activos</div></div>
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-ratio">—</div><div class="trust-metric-l">Ratio completado</div></div>
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-tiempo">—</div><div class="trust-metric-l">Tiempo resp. medio</div></div>
-      </div>
-
-      <div class="trust-divider"></div>
-
-      <div class="trust-verif-row">
-        <span class="trust-verif-chip trust-verif-ok">✓ Email verificado</span>
-        <span class="trust-verif-chip trust-verif-ok">✓ Teléfono verificado</span>
-        <span class="trust-verif-chip trust-verif-pending" onclick="verifyDNI()">+ Verificar DNI · +15 pts</span>
-        <span class="trust-verif-chip trust-verif-pending" onclick="linkSocial()">+ Vincular redes · +8 pts</span>
-      </div>
-
-      <div class="trust-progress-row">
-        <div class="trust-progress-label">
-          <span>Progreso hacia nivel Élite</span>
-          <span>87 / 100 pts</span>
-        </div>
-        <div class="trust-progress-bar"><div class="trust-progress-fill" style="width:87%"></div></div>
-        <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:6px">Completa 3 trueques más o verifica tu DNI para alcanzar nivel Élite</div>
-      </div>
-    </div>
-
-    <!-- SAVINGS BANNER -->
-    <div class="savings-banner">
-      <div class="savings-icon">💰</div>
-      <div>
-        <div class="savings-amount" id="savings-amount">1.240 €</div>
-        <div class="savings-label">ahorrados en trueques este año · 12 intercambios completados</div>
-      </div>
-      <div class="savings-share">
-        <button class="btn btn-secondary btn-sm" onclick="shareSavings()">📤 Compartir</button>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-completados">0</div><div class="trust-metric-l">Completados</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-publicados">0</div><div class="trust-metric-l">Publicados</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-ratio">—</div><div class="trust-metric-l">Ratio</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-tiempo">—</div><div class="trust-metric-l">Resp. media</div></div>
       </div>
     </div>
 
