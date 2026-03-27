@@ -662,10 +662,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .mip-info h4{font-weight:700;font-size:.95rem;}
 .mip-info p{font-size:12px;color:var(--muted);margin-top:3px;}
 .offer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.offer-opt{padding:14px;background:var(--bg);border:2px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:center;transition:all .15s;}
+.offer-opt{padding:10px;background:var(--bg);border:2px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:center;transition:all .15s;}
 .offer-opt.selected{border-color:var(--accent);background:var(--accent-l);}
-.offer-opt .oo-e{font-size:1.8rem;margin-bottom:6px;}
-.offer-opt .oo-n{font-weight:700;font-size:12px;}
+.offer-opt .oo-e{font-size:1.8rem;margin-bottom:6px;width:100%;height:80px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;background:var(--bg2);}
+.offer-opt .oo-e img{width:100%;height:100%;object-fit:cover;}
+.offer-opt .oo-n{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .offer-opt .oo-c{font-size:10px;color:var(--muted);margin-top:2px;}
 .swap-arrow{text-align:center;font-size:1.4rem;color:var(--muted2);margin:8px 0;}
 .modal-msg{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;}
@@ -2238,7 +2239,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 
   <!-- Grid scrollable -->
-  <div class="wrap" style="padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)))">
+  <div class="wrap" id="explore-grid-wrap" style="padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)))">
     <div class="items-grid" id="explore-grid"></div>
   </div>
 </div>
@@ -3584,6 +3585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _scrollTicking = false;
     });
   }, { passive: true });
+  window.addEventListener('resize', adjustGridPadding);
 
   // ── Forzar padding inferior en todas las vistas para cubrir la bottom nav ──
   const bnav = document.querySelector('.bottom-nav');
@@ -4062,6 +4064,18 @@ function setSortFilter(btn, sortVal) {
 
 function searchItems(q) { applyFilter(q, currentFilter); }
 
+function adjustGridPadding() {
+  const sticky = document.querySelector('.explore-sticky');
+  const wrap = document.getElementById('explore-grid-wrap');
+  if (!sticky || !wrap) return;
+  // Solo en desktop donde el nav superior existe
+  if (window.innerWidth > 640) {
+    wrap.style.paddingTop = sticky.offsetHeight + 12 + 'px';
+  } else {
+    wrap.style.paddingTop = '';
+  }
+}
+
 function applyFilter(q, cat) {
   const myId = currentUser?.id;
   const myName = currentUser ? (currentUser.user_metadata?.name || currentUser.email?.split('@')[0]) : null;
@@ -4350,6 +4364,7 @@ function renderPremiumSection() {
 }
 
 function renderExplore(list) {
+  adjustGridPadding();
   const g = document.getElementById('explore-grid');
   const isPremium = currentFilter === 'Premium';
   document.getElementById('items-count').textContent = isPremium
@@ -6307,7 +6322,7 @@ async function openModal(itemId) {
 
   let userObjects = [];
   if (currentUser) {
-    const { data } = await db.from('items').select('id,title,category,emoji,photos,photo_urls').eq('user_id', currentUser.id);
+    const { data } = await db.from('items').select('id,title,category,subcategory,location,emoji,photos,photo_urls,wants').eq('user_id', currentUser.id);
     userObjects = data || [];
   }
 
@@ -6324,23 +6339,75 @@ async function openModal(itemId) {
     const scored = userObjects.map(o => {
       const myTitle = (o.title || '').toLowerCase();
       const myCat = (o.category || '').toLowerCase();
+      const mySubcatRaw = o.subcategory || '';
+      const myLocation = (o.location || currentUser?.user_metadata?.city || '').toLowerCase();
+
+      // Para libros: extraer idioma de subcategory "Género · Idioma"
+      let myGenre = '';
+      let myLang = '';
+      if (myCat === 'libros' && mySubcatRaw) {
+        const parts = mySubcatRaw.split(' · ');
+        myGenre = (parts[0] || '').toLowerCase();
+        myLang = (parts[1] || '').toLowerCase();
+      } else {
+        myGenre = mySubcatRaw.toLowerCase();
+      }
+
+      // ── Nombre exacto → 99% ──
+      const theirWantsStr = theirWants.join(' ').toLowerCase();
+      const nameMatch = theirWants.some(w => {
+        const wl = w.toLowerCase();
+        return wl === myTitle || myTitle.includes(stem(wl)) || wl.includes(stem(myTitle.split(' ')[0]));
+      });
+      if (nameMatch) return { ...o, score: 99 };
+
+      // ── Sin nombre exacto: calcular por componentes ──
       let score = 0;
 
-      const wantsByName = theirWants.some(w => {
-        const wl = w.toLowerCase();
-        return myTitle.includes(stem(wl)) || wl.includes(stem(myTitle.split(' ')[0]));
-      });
-      const wantsByCat = theirWants.some(w => w.toLowerCase().includes(myCat));
-      const itemWants = (item.wants || []).join(' ').toLowerCase();
-      const matchByName = myTitle.split(' ').some(w => w.length > 3 && itemWants.includes(w));
-      const matchByCat = itemWants.includes(myCat);
+      // 1. Categoría (base 50%)
+      const catMatch = theirWants.some(w => w.toLowerCase() === myCat || w.toLowerCase().includes(myCat));
+      if (!catMatch) return { ...o, score: 0 }; // sin categoría → 0
+      score += 50;
 
-      if (wantsByName) score += 45;
-      else if (wantsByCat) score += 20;
-      if (matchByName) score += 40;
-      else if (matchByCat) score += 15;
+      // 2. Subcategoría
+      const itemWantsStr = (item.wants || []).join(' ').toLowerCase();
+      const theirSubcatRaw = item.subcat || ''; // subcategoría del item del otro
+      const hasSubcat = theirWants.some(w => w.includes('›') || w.includes('>'));
 
-      return { ...o, score };
+      if (!myGenre) {
+        // Mi objeto no tiene subcategoría → omisión = aceptación → +10
+        score += 10;
+      } else {
+        // Tengo subcategoría — ¿coincide con lo que busca?
+        const subcatMatch = theirWants.some(w => {
+          const wl = w.toLowerCase();
+          return wl.includes(myGenre) || myGenre.includes(wl.split(' ')[0]);
+        }) || itemWantsStr.includes(myGenre);
+        if (subcatMatch) score += 15;
+        // Si no coincide → +0
+      }
+
+      // 3. Idioma (solo libros, obligatorio)
+      if (myCat === 'libros') {
+        if (!myLang) return { ...o, score: 0 }; // sin idioma → 0 (campo obligatorio)
+        const theirLang = theirWants.find(w => ['español','inglés','catalán','francés','alemán','italiano','portugués','otro idioma'].some(l => w.toLowerCase().includes(l)));
+        if (theirLang) {
+          // El otro especificó idioma — debe coincidir
+          if (!theirLang.toLowerCase().includes(myLang)) return { ...o, score: 0 };
+          score += 15;
+        } else {
+          // El otro no especificó idioma → omisión = aceptación → +15
+          score += 15;
+        }
+      }
+
+      // 4. Ciudad misma → +14
+      const theirLocation = (item.location || '').toLowerCase();
+      if (myLocation && theirLocation && myLocation === theirLocation) {
+        score += 14;
+      }
+
+      return { ...o, score: Math.min(99, score) };
     }).sort((a, b) => b.score - a.score);
 
     const goodMatch = scored.filter(o => o.score >= 50);
@@ -6366,8 +6433,8 @@ async function openModal(itemId) {
       const photo = (o.photo_urls && o.photo_urls[0]) || o.photos || '';
       const scoreBadge = `<div style="font-size:9px;font-weight:800;color:var(--accent);margin-top:2px">⚡ ${o.score}% match</div>`;
       return `<div class="offer-opt" onclick="selectOffer(this,${globalIdx})" data-id="${o.id}">
-        <div class="oo-e" style="overflow:hidden;border-radius:8px">
-          ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : (o.emoji || '📦')}
+        <div class="oo-e">
+          ${photo ? `<img src="${photo}" alt="${o.title}">` : `<span style="font-size:1.8rem">${o.emoji || '📦'}</span>`}
         </div>
         <div class="oo-n">${o.title}</div>
         <div class="oo-c">${o.category||''}</div>
