@@ -2280,7 +2280,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
     <div id="matches-proposals" class="match-tab-content active">
-      <div id="proposals-list" style="min-height:60vh"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
+      <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
     </div>
     <div id="matches-chain" class="match-tab-content" style="display:none">
       <div style="background:var(--purple-l);border:1px solid rgba(99,68,168,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
@@ -3640,7 +3640,7 @@ function navTo(v) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 100); }
+  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -3676,7 +3676,7 @@ function navToActivity(tab) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 100); }
+  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -3889,7 +3889,7 @@ function navTo(v) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 100); }
+  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -3925,7 +3925,7 @@ function navToActivity(tab) {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = '';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 100); }
+  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
