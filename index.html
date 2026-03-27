@@ -62,6 +62,10 @@
   --sh-xl:0 20px 48px rgba(0,0,0,.12);
 }
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+@media(max-width:640px){
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  #app-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+}
 input,textarea,select,button{font-family:'Plus Jakarta Sans',sans-serif;}
 input::placeholder,textarea::placeholder{color:var(--muted2);}
 ::-webkit-scrollbar{width:4px;height:4px;}
@@ -116,6 +120,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 
 /* ── BOTTOM NAV ── */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(245,248,251,.99);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom));}
+@media(max-width:640px){
+  .bottom-nav{position:static;display:none;flex-shrink:0;z-index:200;background:rgba(245,248,251,.99);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom));}
+}
 .bottom-nav-inner{display:flex;}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;background:none;border:none;cursor:pointer;}
 .bnav-btn span:first-child{font-size:19px;transition:all .15s;}
@@ -1735,6 +1742,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </nav>
 
+</div><!-- end app-scroll -->
+
 <!-- BOTTOM NAV (mobile) -->
 <!-- Botón subir — aparece al scrollear -->
 <button class="scroll-top-btn" id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'instant'})" aria-label="Subir">
@@ -1756,6 +1765,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
   </div>
 </div>
+
+<div id="app-scroll">
 
 <!-- TOAST -->
 <div id="toast"></div>
