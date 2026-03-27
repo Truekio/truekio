@@ -3342,6 +3342,7 @@ async function loadItemsFromSupabase() {
     verified: false,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : null,
     user_id: row.user_id || null,
+    status: row.status || 'available',
   }));
 
   // Ordenar por cercanía si tenemos coordenadas del usuario
