@@ -1038,9 +1038,23 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .filter-toggle-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:99px;border:1px solid var(--border);background:var(--white);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .14s;white-space:nowrap;font-family:"Plus Jakarta Sans",sans-serif;}
 .filter-toggle-btn:hover{background:var(--bg2);}
 .filter-toggle-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-.active-filters{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.active-filter-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;background:var(--accent-l);color:var(--accent);font-size:11px;font-weight:600;}
-.active-filter-chip button{background:none;border:none;color:inherit;cursor:pointer;font-size:13px;line-height:1;padding:0;margin-left:2px;}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;padding:6px 0 2px;}
+.active-filter-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 10px 6px 12px;border-radius:99px;
+  background:var(--accent);color:#fff;
+  font-size:12px;font-weight:700;
+  box-shadow:0 2px 8px rgba(78,143,186,.3);
+  white-space:nowrap;
+}
+.active-filter-chip button{
+  background:rgba(255,255,255,.25);border:none;color:#fff;
+  cursor:pointer;font-size:14px;line-height:1;padding:0;
+  width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .15s;
+}
+.active-filter-chip button:hover{background:rgba(255,255,255,.4);}
 @media(max-width:560px){
   .sp-grid{grid-template-columns:1fr 1fr;}
   .ob-options{grid-template-columns:1fr;}
@@ -2903,7 +2917,7 @@ function _fdRenderActiveChips() {
   if (fdState.cat) chips.push({ label: fdState.cat, key: 'cat' });
   fdState.conditions.forEach(c => chips.push({ label: c, key: 'condition:' + c }));
   fdState.shipping.forEach(s => chips.push({ label: s, key: 'shipping:' + s }));
-  el.innerHTML = chips.map(c => `<div class="active-filter-chip">${c.label}<button onclick="fdRemoveChip('${c.key}')">×</button></div>`).join('');
+  el.innerHTML = chips.map(c => `<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="fdRemoveChip('${c.key}')">×</button></div>`).join('');
 }
 function fdRemoveChip(key) {
   if (key === 'cat') { fdState.cat = ''; }
@@ -3737,7 +3751,7 @@ function renderActiveFilterChips() {
   if(spFilters.city) chips.push({label:'Ciudad: '+spFilters.city, key:'city'});
   spFilters.conditions.forEach(c=>chips.push({label:c,key:'condition:'+c}));
   spFilters.shipping.forEach(s=>chips.push({label:s,key:'shipping:'+s}));
-  el.innerHTML = chips.map(c=>`<div class="active-filter-chip">${c.label}<button onclick="removeFilterChip('${c.key}')">×</button></div>`).join('');
+  el.innerHTML = chips.map(c=>`<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="removeFilterChip('${c.key}')">×</button></div>`).join('');
 }
 
 function removeFilterChip(key) {
@@ -3985,7 +3999,7 @@ function renderActiveFilterChips() {
   if(spFilters.city) chips.push({label:'Ciudad: '+spFilters.city, key:'city'});
   spFilters.conditions.forEach(c=>chips.push({label:c,key:'condition:'+c}));
   spFilters.shipping.forEach(s=>chips.push({label:s,key:'shipping:'+s}));
-  el.innerHTML = chips.map(c=>`<div class="active-filter-chip">${c.label}<button onclick="removeFilterChip('${c.key}')">×</button></div>`).join('');
+  el.innerHTML = chips.map(c=>`<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="removeFilterChip('${c.key}')">×</button></div>`).join('');
 }
 
 function removeFilterChip(key) {
