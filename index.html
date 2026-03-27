@@ -3049,7 +3049,13 @@ function cityAutocompleteKey(e) {
 
 const SUPABASE_URL = 'https://qljhvzqeijkmaeftaqem.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsamh2enFlaWprbWFlZnRhcWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTg5MzcsImV4cCI6MjA4OTY5NDkzN30.lgLm3O3DxSvp3VkbJ6CqMw8bS3N1472rLO46AeD_L-Y';
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+});
 
 // ── Email notifications via Supabase Edge Function + Resend ──
 const APP_URL = window.location.origin + window.location.pathname;
@@ -3522,6 +3528,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     requestNotifPermission();
     startBgPolling();
   }
+
+  // Escuchar cambios de sesión — refresco automático del token
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'TOKEN_REFRESHED' && session) {
+      currentUser = session.user;
+    }
+    if (event === 'SIGNED_OUT') {
+      currentUser = null;
+    }
+  });
 
   const wi = document.getElementById('wants-input');
   if(wi) wi.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();addWant();} });
