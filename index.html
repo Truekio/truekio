@@ -6319,7 +6319,6 @@ async function openModal(itemId) {
   } else {
     // Calcular match de cada objeto mío con el item del otro usuario
     const theirWants = item.wants || [];
-    const theirCat = (item.cat || '').toLowerCase();
     const stem = w => w.replace(/[eos]$/, '').trim();
 
     const scored = userObjects.map(o => {
@@ -6327,14 +6326,11 @@ async function openModal(itemId) {
       const myCat = (o.category || '').toLowerCase();
       let score = 0;
 
-      // ¿El otro quiere exactamente mi objeto? (por nombre)
       const wantsByName = theirWants.some(w => {
         const wl = w.toLowerCase();
         return myTitle.includes(stem(wl)) || wl.includes(stem(myTitle.split(' ')[0]));
       });
-      // ¿El otro acepta mi categoría?
       const wantsByCat = theirWants.some(w => w.toLowerCase().includes(myCat));
-      // ¿Mi objeto encaja con lo que acepta el otro?
       const itemWants = (item.wants || []).join(' ').toLowerCase();
       const matchByName = myTitle.split(' ').some(w => w.length > 3 && itemWants.includes(w));
       const matchByCat = itemWants.includes(myCat);
@@ -6347,18 +6343,28 @@ async function openModal(itemId) {
       return { ...o, score };
     }).sort((a, b) => b.score - a.score);
 
-    const goodMatch = scored.filter(o => o.score >= 70);
-    const okMatch = scored.filter(o => o.score >= 30 && o.score < 70);
-    const noMatch = scored.filter(o => o.score < 30);
+    const goodMatch = scored.filter(o => o.score >= 50);
 
-    const renderCard = (o, i) => {
+    if (!goodMatch.length) {
+      // Sin match suficiente — bloquear propuesta
+      offerGrid.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;grid-column:1/-1">
+        <div style="font-size:2rem;margin-bottom:8px">🔍</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">Sin match suficiente</div>
+        <div style="font-size:12px;line-height:1.6">Ninguno de tus objetos encaja con lo que busca esta persona.<br>Añade más objetos o cambia lo que aceptas en los existentes.</div>
+      </div>`;
+      // Deshabilitar botón enviar
+      const sendBtn = document.querySelector('[onclick="sendOffer()"]');
+      if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.4'; }
+      window._offerObjects = scored;
+      document.getElementById('modal-msg-txt').value = '';
+      document.getElementById('modal-overlay').style.display = 'flex';
+      return;
+    }
+
+    // Solo mostrar objetos con match >= 50%
+    const renderCard = (o, globalIdx) => {
       const photo = (o.photo_urls && o.photo_urls[0]) || o.photos || '';
-      const globalIdx = scored.indexOf(o);
-      const scoreBadge = o.score >= 70
-        ? `<div style="font-size:9px;font-weight:800;color:var(--accent);margin-top:2px">⚡ ${o.score}% match</div>`
-        : o.score >= 30
-        ? `<div style="font-size:9px;color:var(--muted);margin-top:2px">${o.score}% match</div>`
-        : '';
+      const scoreBadge = `<div style="font-size:9px;font-weight:800;color:var(--accent);margin-top:2px">⚡ ${o.score}% match</div>`;
       return `<div class="offer-opt" onclick="selectOffer(this,${globalIdx})" data-id="${o.id}">
         <div class="oo-e" style="overflow:hidden;border-radius:8px">
           ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : (o.emoji || '📦')}
@@ -6369,38 +6375,12 @@ async function openModal(itemId) {
       </div>`;
     };
 
-    let html = '';
+    offerGrid.innerHTML = goodMatch.map(o => renderCard(o, scored.indexOf(o))).join('');
 
-    if (goodMatch.length) {
-      html += `<div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;grid-column:1/-1">⚡ Mejor match</div>`;
-      html += goodMatch.map(o => renderCard(o, scored.indexOf(o))).join('');
-    }
+    // Asegurar botón activo
+    const sendBtn = document.querySelector('[onclick="sendOffer()"]');
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ''; }
 
-    if (okMatch.length) {
-      html += `<div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px;grid-column:1/-1">${goodMatch.length ? 'También podrían encajar' : 'Posibles matches'}</div>`;
-      html += okMatch.map(o => renderCard(o, scored.indexOf(o))).join('');
-    }
-
-    if (noMatch.length) {
-      const othersId = 'offer-others-' + itemId;
-      html += `<div style="grid-column:1/-1;margin-top:8px">
-        <button onclick="document.getElementById('${othersId}').style.display=document.getElementById('${othersId}').style.display==='none'?'block':'none';this.textContent=this.textContent.includes('Ver')?' Ocultar otros ▴':'Ver otros objetos ▾'" 
-          style="background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;padding:0">
-          Ver otros objetos ▾
-        </button>
-        <div id="${othersId}" style="display:none;grid-column:1/-1">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">${noMatch.map(o => renderCard(o, scored.indexOf(o))).join('')}</div>
-        </div>
-      </div>`;
-    }
-
-    if (!goodMatch.length && !okMatch.length) {
-      html = `<div style="padding:12px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--muted);text-align:center;grid-column:1/-1;margin-bottom:8px">
-        Ninguno de tus objetos encaja directamente con lo que busca esta persona.<br>Puedes proponer igualmente si crees que hay interés.
-      </div>` + noMatch.map(o => renderCard(o, scored.indexOf(o))).join('');
-    }
-
-    offerGrid.innerHTML = html;
     window._offerObjects = scored;
   }
 
