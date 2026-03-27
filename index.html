@@ -2268,21 +2268,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- ACTIVITY HUB -->
 <div class="view" id="view-activity">
-  <!-- Barra de tabs sticky — igual que explore-sticky -->
-  <div class="activity-sticky">
-    <div class="wrap">
-      <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
-        <div style="display:flex;gap:0;min-width:max-content">
-          <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
-          <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
-          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
-          <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
-        </div>
+  <div class="wrap page-pad">
+    <!-- Tabs -->
+    <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px;border-bottom:1px solid var(--border);margin-bottom:24px">
+      <div style="display:flex;gap:0;min-width:max-content">
+        <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
+        <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
+        <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
+        <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
       </div>
     </div>
-  </div>
-  <!-- Contenido -->
-  <div class="wrap page-pad" style="padding-top:16px">
     <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
     <div id="matches-proposals" class="match-tab-content active">
       <div id="proposals-list" style="min-height:60vh"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
