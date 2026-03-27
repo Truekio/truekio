@@ -4511,6 +4511,10 @@ async function respondProposal(proposalId, status) {
     }
     showToast('✅ Trueque aceptado — abriendo chat...');
 
+    // Recargar items para reflejar el status reserved en el explorador
+    await loadItemsFromSupabase();
+    applyFilter('', currentFilter);
+
     // Email al que hizo la propuesta
     if (p) {
       const offererEmail = await getUserEmail(p.offerer_id);
@@ -4529,6 +4533,9 @@ async function respondProposal(proposalId, status) {
     }, 600);
   } else {
     showToast('❌ Propuesta rechazada');
+    // Recargar items para reflejar el status available en el explorador
+    await loadItemsFromSupabase();
+    applyFilter('', currentFilter);
     // Liberar items — vuelven a estar disponibles
     const { data: pRej } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', proposalId).single();
     if (pRej) {
