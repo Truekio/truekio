@@ -5226,14 +5226,23 @@ async function renderConfirmations() {
     .eq('reviewer_id', currentUser.id);
   const reviewedConvIds = new Set((myReviews || []).map(r => r.conversation_id));
 
+  // Cargar estados de propuestas para excluir canceladas
+  const proposalIds = convs.map(c => c.proposal_id).filter(Boolean);
+  let cancelledProposalIds = new Set();
+  if (proposalIds.length) {
+    const { data: props } = await db.from('proposals').select('id, status').in('id', proposalIds);
+    if (props) props.filter(p => p.status === 'cancelled').forEach(p => cancelledProposalIds.add(p.id));
+  }
+
   // Filtrar: mostrar solo las que NO están completadas, O están completadas pero pendientes de valorar
   const visibleConvs = convs.filter(c => {
+    // Excluir trueques cancelados
+    if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
     const confirmed = getConfirmed(c);
     const otherUserId = isUser1(c) ? c.user2_id : c.user1_id;
     const done = confirmed.includes(currentUser.id) && confirmed.includes(otherUserId);
     if (!done) return true; // en curso → mostrar
     return !reviewedConvIds.has(c.id); // completado pero sin valorar → mostrar
-    // completado y ya valorado → ocultar
   });
 
   if (!visibleConvs.length) {
