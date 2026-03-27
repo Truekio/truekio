@@ -5324,6 +5324,13 @@ async function renderConfirmations() {
           ⏳ Esperando que ${otherName} también confirme. Te avisaremos cuando lo haga.
         </div>` : ''}
 
+        ${!done ? `
+        <div style="margin-top:12px;text-align:right">
+          <button onclick="cancelTrade('${c.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;cursor:pointer;font-family:inherit">
+            ✕ Cancelar trueque
+          </button>
+        </div>` : ''}
+
         ${done ? `
         <div style="padding:12px 14px;background:var(--green-l);border:1px solid #86efac;border-radius:var(--r);font-size:13px;color:#166534;font-weight:700;text-align:center;margin-bottom:10px">
           🎉 ¡Trueque completado! Ambas partes confirmaron.
@@ -5790,11 +5797,10 @@ async function cancelTrade(convId) {
   const { data: conv } = await db.from('conversations').select('*').eq('id', convId).single();
   if (!conv) return;
 
-  // Cambiar propuesta a cancelled
+  // Cambiar propuesta a cancelled y liberar items
   if (conv.proposal_id) {
     const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
     if (prop) {
-      // Actualizar status de la propuesta
       await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
 
       // Resolver offered_item_id si es null
@@ -5804,20 +5810,16 @@ async function cancelTrade(convId) {
         offeredId = fi?.id || null;
       }
 
-      // Liberar items
       const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
       if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
       await Promise.all(updates);
     }
   }
 
-  // Recargar items y UI
-  await loadItemsFromSupabase();
-  applyFilter('', currentFilter);
+  // Recargar items y confirmaciones
+  await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
+  renderConfirmations();
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
-
-  // Reabrir el chat sin el botón cancelar
-  openConv(convId);
 }
 
 async function loadMessages(convId) {
