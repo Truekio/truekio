@@ -2917,7 +2917,7 @@ function _fdRenderActiveChips() {
   if (fdState.cat) chips.push({ label: fdState.cat, key: 'cat' });
   fdState.conditions.forEach(c => chips.push({ label: c, key: 'condition:' + c }));
   fdState.shipping.forEach(s => chips.push({ label: s, key: 'shipping:' + s }));
-  el.innerHTML = chips.map(c => `<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="fdRemoveChip('${c.key}')">×</button></div>`).join('');
+  el.innerHTML = chips.map(c => `<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="fdRemoveChip('${c.key}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`).join('');
 }
 function fdRemoveChip(key) {
   if (key === 'cat') { fdState.cat = ''; }
@@ -3751,7 +3751,7 @@ function renderActiveFilterChips() {
   if(spFilters.city) chips.push({label:'Ciudad: '+spFilters.city, key:'city'});
   spFilters.conditions.forEach(c=>chips.push({label:c,key:'condition:'+c}));
   spFilters.shipping.forEach(s=>chips.push({label:s,key:'shipping:'+s}));
-  el.innerHTML = chips.map(c=>`<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="removeFilterChip('${c.key}')">×</button></div>`).join('');
+  el.innerHTML = chips.map(c=>`<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="removeFilterChip('${c.key}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`).join('');
 }
 
 function removeFilterChip(key) {
@@ -3999,7 +3999,7 @@ function renderActiveFilterChips() {
   if(spFilters.city) chips.push({label:'Ciudad: '+spFilters.city, key:'city'});
   spFilters.conditions.forEach(c=>chips.push({label:c,key:'condition:'+c}));
   spFilters.shipping.forEach(s=>chips.push({label:s,key:'shipping:'+s}));
-  el.innerHTML = chips.map(c=>`<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="removeFilterChip('${c.key}')">×</button></div>`).join('');
+  el.innerHTML = chips.map(c=>`<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="removeFilterChip('${c.key}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`).join('');
 }
 
 function removeFilterChip(key) {
