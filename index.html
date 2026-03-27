@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Truquo · Intercambia sin dinero</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -61,7 +61,7 @@
   --sh-lg:0 12px 32px rgba(0,0,0,.1),0 4px 10px rgba(0,0,0,.05);
   --sh-xl:0 20px 48px rgba(0,0,0,.12);
 }
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 input,textarea,select,button{font-family:'Plus Jakarta Sans',sans-serif;}
 input::placeholder,textarea::placeholder{color:var(--muted2);}
 ::-webkit-scrollbar{width:4px;height:4px;}
@@ -116,7 +116,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .notif-txt small{font-size:10px;color:var(--muted2);margin-top:3px;display:block;}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(245,248,251,.97);backdrop-filter:blur(24px);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom));}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(245,248,251,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom));transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;}
 .bottom-nav-inner{display:flex;}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;background:none;border:none;cursor:pointer;}
 .bnav-btn span:first-child{font-size:19px;transition:all .15s;}
@@ -1335,7 +1335,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 /* HERO */
 .lp-hero {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(160deg, #f5f8fb 0%, #eaf0f6 50%, #f5f8fb 100%);
   display: flex;
   align-items: center;
