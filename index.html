@@ -1847,9 +1847,18 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           </select>
         </div>
         <div class="field" style="margin-bottom:0">
-          <label>Subcategoría</label>
+          <label id="edit-subcat-label">Subcategoría</label>
           <select id="edit-item-subcat"><option value="">— Opcional —</option></select>
         </div>
+      </div>
+      <div class="field" id="edit-book-lang-field" style="display:none">
+        <label>Idioma del libro</label>
+        <select id="edit-book-lang">
+          <option value="">— Opcional —</option>
+          <option>Español</option><option>Inglés</option><option>Catalán</option>
+          <option>Francés</option><option>Alemán</option><option>Italiano</option>
+          <option>Portugués</option><option>Otro idioma</option>
+        </select>
       </div>
 
       <!-- Descripción -->
@@ -1878,6 +1887,15 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <select id="edit-wants-subcat"><option value="">— Selecciona categoría —</option></select>
             </div>
           </div>
+          <div class="field" id="edit-wants-lang-field" style="display:none;margin-bottom:8px">
+            <label>Idioma del libro</label>
+            <select id="edit-wants-lang">
+              <option value="">— Cualquier idioma —</option>
+              <option>Español</option><option>Inglés</option><option>Catalán</option>
+              <option>Francés</option><option>Alemán</option><option>Italiano</option>
+              <option>Portugués</option><option>Otro idioma</option>
+            </select>
+          </div>
           <input id="edit-wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D)" style="width:100%;box-sizing:border-box;margin-bottom:8px">
           <div style="display:flex;justify-content:flex-end">
             <button class="btn btn-primary btn-sm" onclick="addEditExchangeOption()">+ Añadir</button>
@@ -1887,12 +1905,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
 
       <!-- Precio eliminado -->
-
-      <!-- Ciudad -->
-      <div class="field" style="margin-bottom:0">
-        <label>Ciudad <span style="font-size:11px;font-weight:500;color:var(--accent)">obligatorio</span></label>
-        <input id="edit-item-city" placeholder="Ej: Barcelona, Madrid...">
-      </div>
+      <!-- Ciudad: se toma del perfil automáticamente -->
+      <input type="hidden" id="edit-item-city">
 
       <div id="edit-item-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r);padding:10px 14px;font-size:13px;color:#991b1b;margin-top:12px"></div>
 
@@ -6496,8 +6510,8 @@ async function openEditItem(itemId) {
   document.getElementById('edit-item-id').value = itemId;
   document.getElementById('edit-item-name').value = data.title || '';
   document.getElementById('edit-item-desc').value = data.description || '';
-  document.getElementById('edit-item-price').value = data.estimated_value || '';
-  document.getElementById('edit-item-city').value = data.location || 'Barcelona';
+  const _editCity = document.getElementById('edit-item-city');
+  if(_editCity) _editCity.value = data.location || currentUser?.user_metadata?.city || '';
   document.getElementById('edit-item-subtitle').textContent = data.title;
   document.getElementById('edit-item-error').style.display = 'none';
   editItemNewPhotos = [];
@@ -6516,9 +6530,16 @@ async function openEditItem(itemId) {
   const catEl = document.getElementById('edit-item-cat');
   catEl.value = data.category || '';
   updateEditSubcat();
-  // Setear subcategoría después de que se rellenen las opciones
+  // Setear subcategoría y idioma después de rellenar opciones
   if (data.subcategory) {
-    document.getElementById('edit-item-subcat').value = data.subcategory;
+    // El subcategory puede ser "Ficción · Inglés" — separar género e idioma
+    const parts = data.subcategory.split(' · ');
+    const genre = parts[0] || '';
+    const lang = parts[1] || '';
+    document.getElementById('edit-item-subcat').value = genre;
+    if (lang && document.getElementById('edit-book-lang')) {
+      document.getElementById('edit-book-lang').value = lang;
+    }
   }
 
   document.getElementById('edit-item-modal').classList.add('open');
@@ -6573,6 +6594,10 @@ let editExchangeOptions = [];
 function updateEditWantsSubcat() {
   const cat = document.getElementById('edit-wants-cat').value;
   const sub = document.getElementById('edit-wants-subcat');
+  const langField = document.getElementById('edit-wants-lang-field');
+
+  if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
+
   const opts = PUB_SUBCATS[cat] || [];
   if (opts.length) {
     sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
@@ -6586,14 +6611,18 @@ function updateEditWantsSubcat() {
 function addEditExchangeOption() {
   const cat = document.getElementById('edit-wants-cat').value;
   const subcat = document.getElementById('edit-wants-subcat').value;
+  const lang = document.getElementById('edit-wants-lang')?.value || '';
   const name = document.getElementById('edit-wants-input').value.trim();
-  const label = name || (subcat ? cat + ' › ' + subcat : cat) || '';
+  let label = name || (subcat ? cat + ' › ' + subcat : cat) || '';
+  if (cat === 'Libros' && lang && !name) label = label + ' · ' + lang;
   if (!label) { showToast('⚠️ Escribe o selecciona qué aceptas'); return; }
   editExchangeOptions.push(label);
   renderEditExchangeList();
   document.getElementById('edit-wants-input').value = '';
   document.getElementById('edit-wants-cat').value = '';
   document.getElementById('edit-wants-subcat').innerHTML = '<option value="">— Selecciona categoría —</option>';
+  if (document.getElementById('edit-wants-lang')) document.getElementById('edit-wants-lang').value = '';
+  if (document.getElementById('edit-wants-lang-field')) document.getElementById('edit-wants-lang-field').style.display = 'none';
 }
 
 function removeEditExchangeOption(idx) {
@@ -6616,6 +6645,12 @@ function renderEditExchangeList() {
 function updateEditSubcat() {
   const cat = document.getElementById('edit-item-cat').value;
   const sub = document.getElementById('edit-item-subcat');
+  const label = document.getElementById('edit-subcat-label');
+  const langField = document.getElementById('edit-book-lang-field');
+
+  if (label) label.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
+  if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
+
   const opts = PUB_SUBCATS[cat] || [];
   if (opts.length) {
     sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
@@ -6643,7 +6678,7 @@ async function saveEditItem() {
   const btn = document.getElementById('edit-item-save-btn');
 
   if (!name) { errEl.textContent = 'El nombre no puede estar vacío.'; errEl.style.display = ''; return; }
-  const city = document.getElementById('edit-item-city').value.trim();
+  const city = document.getElementById('edit-item-city')?.value?.trim() || currentUser?.user_metadata?.city || '';
   if (!city) { errEl.textContent = 'La ciudad es obligatoria.'; errEl.style.display = ''; return; }
 
   btn.textContent = 'Guardando...'; btn.disabled = true; errEl.style.display = 'none';
@@ -6674,10 +6709,15 @@ async function saveEditItem() {
     title: name,
     description: document.getElementById('edit-item-desc').value,
     category: document.getElementById('edit-item-cat').value,
-    subcategory: document.getElementById('edit-item-subcat').value || null,
-    estimated_value: parseInt(document.getElementById('edit-item-price').value) || null,
+    subcategory: (() => {
+      const genre = document.getElementById('edit-item-subcat').value || '';
+      const lang = document.getElementById('edit-book-lang')?.value || '';
+      const cat = document.getElementById('edit-item-cat').value;
+      if (cat === 'Libros' && lang) return genre ? genre + ' · ' + lang : lang;
+      return genre || null;
+    })(),
     wants: document.getElementById('edit-item-wants').value,
-    location: document.getElementById('edit-item-city').value.trim(),
+    location: city,
   };
   if (allPhotos.length) {
     updates.photos = allPhotos[0];
