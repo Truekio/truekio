@@ -2474,8 +2474,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="ptabs" style="border-top:none;padding-top:0;margin-top:0">
         <button class="ptab active" id="ptab-btn-items" onclick="switchPTab('items')">Mis objetos</button>
         <button class="ptab" id="ptab-btn-favs" onclick="switchPTab('favs')">❤️ Favoritos</button>
-        <button class="ptab" id="ptab-btn-done" onclick="switchPTab('done')">Completados</button>
-        <button class="ptab" id="ptab-btn-reviews" onclick="switchPTab('reviews')">Valoraciones <span style="font-size:10px;font-weight:800;background:var(--accent-l);color:var(--accent);padding:2px 6px;border-radius:99px;margin-left:3px" id="reviews-badge">0</span></button>
+        <button class="ptab" id="ptab-btn-done" onclick="switchPTab('done')">🤝 Historial</button>
         <button class="ptab" id="ptab-btn-config" onclick="switchPTab('config')">Configuración</button>
       </div>
     </div>
@@ -2488,9 +2487,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     <div class="ptab-content" id="ptab-done">
       <div id="done-grid"></div>
-    </div>
-    <div class="ptab-content" id="ptab-reviews">
-      <div id="reviews-list"></div>
     </div>
     <div class="ptab-content" id="ptab-config">
       <div class="card" style="padding:28px;margin-bottom:16px">
@@ -6804,19 +6800,110 @@ async function deleteItem(itemId, btnEl) {
 }
 
 function switchPTab(tab) {
-  ['items','favs','done','reviews','config'].forEach(t => {
+  ['items','favs','done','config'].forEach(t => {
     const btn = document.getElementById('ptab-btn-'+t);
     const content = document.getElementById('ptab-'+t);
     if(btn) btn.classList.toggle('active', t===tab);
     if(content) content.classList.toggle('active', t===tab);
   });
   if (tab === 'favs') renderFavorites();
+  if (tab === 'done') renderDoneTrades();
   if (tab === 'config') {
     setTimeout(() => {
       const el = document.getElementById('ptab-config');
       if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
     }, 50);
   }
+}
+
+// Renderiza estrellas — siempre 5, rellenas según nota
+function renderStars(n) {
+  return Array.from({length:5}, (_,i) =>
+    `<span style="color:${i < n ? '#f59e0b' : '#e5e7eb'};font-size:15px">★</span>`
+  ).join('');
+}
+
+async function renderDoneTrades() {
+  const el = document.getElementById('done-grid');
+  if (!el || !currentUser) return;
+
+  el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
+
+  // Cargar trueques y valoraciones en paralelo
+  const [{ data: trades }, { data: reviews }] = await Promise.all([
+    db.from('completed_trades').select('*')
+      .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
+      .order('created_at', { ascending: false }),
+    db.from('reviews').select('*')
+      .or(`reviewer_id.eq.${currentUser.id},reviewed_user_id.eq.${currentUser.id}`)
+  ]);
+
+  if (!trades || !trades.length) {
+    el.innerHTML = `<div style="padding:50px 20px;text-align:center;color:var(--muted)">
+      <div style="font-size:2.5rem;margin-bottom:12px">🤝</div>
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:6px;color:var(--text)">Sin trueques completados</div>
+      <div style="font-size:13px;line-height:1.6">Cuando completes un trueque aparecerá aquí.</div>
+    </div>`;
+    return;
+  }
+
+  // Indexar valoraciones por conversation_id
+  const reviewsByConv = {};
+  (reviews || []).forEach(r => {
+    if (!reviewsByConv[r.conversation_id]) reviewsByConv[r.conversation_id] = [];
+    reviewsByConv[r.conversation_id].push(r);
+  });
+
+  el.innerHTML = trades.map(t => {
+    const isUser1 = t.user1_id === currentUser.id;
+    const myItem = isUser1 ? t.item1_title : t.item2_title;
+    const theirItem = isUser1 ? t.item2_title : t.item1_title;
+    const otherName = isUser1 ? t.user2_name : t.user1_name;
+    const otherId = isUser1 ? t.user2_id : t.user1_id;
+    const date = t.created_at
+      ? new Date(t.created_at).toLocaleDateString('es-ES', {day:'numeric', month:'short', year:'numeric'})
+      : '';
+
+    // Valoraciones de este trueque
+    const convReviews = reviewsByConv[t.conversation_id] || [];
+    const myReview = convReviews.find(r => r.reviewer_id === currentUser.id);
+    const theirReview = convReviews.find(r => r.reviewed_user_id === currentUser.id);
+
+    const myReviewHtml = myReview
+      ? `<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:var(--r);font-size:12px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+            <span style="font-size:11px;color:var(--muted)">Tu valoración:</span>
+            <span>${renderStars(myReview.stars)}</span>
+          </div>
+          ${myReview.comment ? `<div style="color:var(--text2);line-height:1.4">"${myReview.comment}"</div>` : ''}
+        </div>`
+      : `<button onclick="openReviewModal('${t.conversation_id}')" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--accent);font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;font-family:inherit">⭐ Valorar a ${otherName} →</button>`;
+
+    const theirReviewHtml = theirReview
+      ? `<div style="margin-top:6px;padding:8px 10px;background:var(--accent-l);border-radius:var(--r);font-size:12px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+            <span style="font-size:11px;color:var(--muted)">${otherName} te valoró:</span>
+            <span>${renderStars(theirReview.stars)}</span>
+          </div>
+          ${theirReview.comment ? `<div style="color:var(--text2);line-height:1.4">"${theirReview.comment}"</div>` : ''}
+        </div>`
+      : '';
+
+    return `
+    <div style="padding:16px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">✅</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">
+            ${myItem || '—'} ↔ ${theirItem || '—'}
+          </div>
+          <div style="font-size:11px;color:var(--muted)">Con ${otherName || 'Usuario'} · ${date}</div>
+          ${myReviewHtml}
+          ${theirReviewHtml}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function renderFavorites() {
