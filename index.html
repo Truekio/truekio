@@ -2736,6 +2736,25 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <button class="photo-sheet-cancel" onclick="closePhotoSheet()">Cancelar</button>
 </div>
 
+<!-- REVIEWS SHEET -->
+<div class="user-profile-overlay" id="reviews-sheet-overlay" onclick="if(event.target===this)closeReviewsSheet()">
+  <div class="user-profile-sheet">
+    <div class="user-profile-handle"></div>
+    <div class="user-profile-head">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:700;font-size:1rem" id="reviews-sheet-title">Valoraciones</div>
+          <div id="reviews-sheet-avg" style="font-size:13px;color:var(--muted);margin-top:2px"></div>
+        </div>
+        <button onclick="closeReviewsSheet()" style="background:var(--bg2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--muted)">×</button>
+      </div>
+    </div>
+    <div class="user-profile-body">
+      <div id="reviews-sheet-list"></div>
+    </div>
+  </div>
+</div>
+
 <!-- USER PROFILE MODAL -->
 <div class="user-profile-overlay" id="user-profile-overlay" onclick="if(event.target===this)closeUserProfile()">
   <div class="user-profile-sheet">
@@ -2755,13 +2774,17 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div id="up-stats" style="display:flex;gap:16px;margin-top:14px"></div>
     </div>
     <div class="user-profile-body">
-      <!-- Otros objetos primero -->
+      <!-- Objetos disponibles -->
       <div class="user-profile-section">
         <div class="user-profile-section-title">📦 Objetos disponibles</div>
         <div id="up-items"></div>
       </div>
-      <!-- Valoraciones — se abren al pulsar las estrellas -->
+      <!-- Valoraciones colapsadas -->
       <div class="user-profile-section">
+        <button onclick="toggleUpReviews()" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;cursor:pointer;font-family:inherit;padding:0;margin-bottom:12px">
+          <div class="user-profile-section-title" style="margin-bottom:0">⭐ Valoraciones</div>
+          <span id="up-reviews-toggle-icon" style="font-size:12px;color:var(--accent);font-weight:600">Ver 0 ▾</span>
+        </button>
         <div id="up-reviews" style="display:none"></div>
       </div>
     </div>
@@ -5860,7 +5883,7 @@ function openDetail(itemId) {
         <span style="font-size:10px;color:var(--muted)">· 📍 ${item.location||''}</span>
       </div>
     </div>
-    ${!isOwnRow ? `<button onclick="openUserProfile('${item.user_id||''}','${safeUserName}',${JSON.stringify(item.id)})"
+    ${!isOwnRow ? `<button onclick="openUserProfile('${item.user_id||''}','${safeUserName}',${JSON.stringify(item.id)},'${item.userAvatar||''}')"
       style="background:var(--accent-l);color:var(--accent);border:none;padding:6px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">
       Ver perfil →
     </button>` : ''}
@@ -5919,7 +5942,7 @@ function closeUserProfile() {
   document.getElementById('user-profile-overlay').classList.remove('open');
 }
 
-async function openUserProfile(userId, userName, excludeItemId) {
+async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
   const overlay = document.getElementById('user-profile-overlay');
   overlay.classList.add('open');
 
@@ -5931,8 +5954,17 @@ async function openUserProfile(userId, userName, excludeItemId) {
   const trustColors = {nuevo:'var(--muted)',fiable:'#2563eb',veterano:'#7c3aed',elite:'#d97706'};
   const trustIcons = {nuevo:'○',fiable:'◑',veterano:'◕',elite:'✦'};
 
-  document.getElementById('up-avatar').style.background = uBg;
-  document.getElementById('up-avatar').textContent = userName?.charAt(0)?.toUpperCase();
+  const avatarEl = document.getElementById('up-avatar');
+  avatarEl.style.background = uBg;
+  if (avatarUrl) {
+    avatarEl.textContent = '';
+    avatarEl.style.backgroundImage = `url('${avatarUrl}')`;
+    avatarEl.style.backgroundSize = 'cover';
+    avatarEl.style.backgroundPosition = 'center';
+  } else {
+    avatarEl.style.backgroundImage = '';
+    avatarEl.textContent = userName?.charAt(0)?.toUpperCase();
+  }
   document.getElementById('up-name').textContent = userName;
   document.getElementById('up-trust').innerHTML = `<span style="color:${trustColors[uLevel]};font-weight:700">${trustIcons[uLevel]} ${uLevelData.label}</span>${uScore > 0 ? ` · <span style="color:var(--muted)">${uScore} puntos de confianza</span>` : ''}`;
 
@@ -5940,7 +5972,6 @@ async function openUserProfile(userId, userName, excludeItemId) {
   document.getElementById('up-stats').innerHTML = `
     <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted)">Trueques</div></div>
     <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted);font-weight:700">— valoraciones</div></div>`;
-  document.getElementById('up-reviews').innerHTML = `<div style="color:var(--muted);font-size:13px">Cargando...</div>`;
   document.getElementById('up-items').innerHTML = `<div style="color:var(--muted);font-size:13px">Cargando...</div>`;
 
   // Cargar datos en paralelo
@@ -5984,7 +6015,7 @@ async function openUserProfile(userId, userName, excludeItemId) {
       <div style="font-size:10px;color:var(--accent);font-weight:700" id="up-reviews-toggle-icon">${finalReviews.length} valoraciones ▾</div>
     </div>`;
 
-  // Reviews
+  // Reviews en desplegable
   if (finalReviews.length) {
     document.getElementById('up-reviews').innerHTML = finalReviews.map(r => `
       <div style="padding:12px 0;border-bottom:1px solid var(--border)">
@@ -5999,8 +6030,35 @@ async function openUserProfile(userId, userName, excludeItemId) {
     document.getElementById('up-reviews').innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin valoraciones todavía.</div>`;
   }
 
-  // Resetear estado colapsado
+  // Actualizar botón con contador
+  const icon = document.getElementById('up-reviews-toggle-icon');
+  if (icon) icon.textContent = `Ver ${finalReviews.length} ▾`;
   document.getElementById('up-reviews').style.display = 'none';
+
+  // Reviews — en el sheet separado
+  const reviewsTitle = document.getElementById('reviews-sheet-title');
+  const reviewsAvg = document.getElementById('reviews-sheet-avg');
+  const reviewsList = document.getElementById('reviews-sheet-list');
+  if (reviewsTitle) reviewsTitle.textContent = `Valoraciones de ${userName}`;
+  if (reviewsAvg) reviewsAvg.textContent = finalReviews.length
+    ? `⭐ ${avgStars} · ${finalReviews.length} ${finalReviews.length === 1 ? 'valoración' : 'valoraciones'}`
+    : 'Sin valoraciones todavía';
+  if (reviewsList) {
+    reviewsList.innerHTML = finalReviews.length
+      ? finalReviews.map(r => `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <span style="font-weight:700;font-size:13px">${r.reviewer_name || 'Usuario'}</span>
+            <span style="color:#f59e0b;font-size:13px">${'⭐'.repeat(r.stars)}</span>
+          </div>
+          ${r.comment ? `<div style="font-size:13px;color:var(--text2);line-height:1.5">"${r.comment}"</div>` : ''}
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${new Date(r.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>`).join('')
+      : `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Este usuario aún no tiene valoraciones.</div>`;
+  }
+
+  // Resetear estado
+  document.getElementById('reviews-sheet-overlay').classList.remove('open');
 
   // Otros objetos (excluyendo el actual)
   const otherItems = finalItems.filter(i => String(i.id) !== String(excludeItemId));
@@ -6033,8 +6091,13 @@ function toggleUpReviews() {
   el.style.display = open ? 'none' : 'block';
   if (icon) {
     const count = icon.textContent.match(/\d+/)?.[0] || '0';
-    icon.textContent = open ? `${count} valoraciones ▾` : `${count} valoraciones ▴`;
+    icon.textContent = open ? `Ver ${count} ▾` : `Ocultar ▴`;
   }
+}
+
+function closeReviewsSheet() {
+  const el = document.getElementById('reviews-sheet-overlay');
+  if (el) el.classList.remove('open');
 }
 
 function proposeFromDetail() {
