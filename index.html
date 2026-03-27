@@ -4472,11 +4472,22 @@ async function respondProposal(proposalId, status) {
     // Cargar datos de la propuesta para crear la conversación
     const { data: p } = await db.from('proposals').select('*').eq('id', proposalId).single();
     if (p) {
+      // Resolver offered_item_id — puede ser null en propuestas antiguas
+      let offeredItemId = p.offered_item_id;
+      if (!offeredItemId && p.offered_item_title && p.offerer_id) {
+        const { data: foundItem } = await db.from('items')
+          .select('id')
+          .eq('user_id', p.offerer_id)
+          .ilike('title', p.offered_item_title)
+          .limit(1)
+          .single();
+        offeredItemId = foundItem?.id || null;
+      }
+
       // Marcar ambos items como reservados
-      await Promise.all([
-        db.from('items').update({ status: 'reserved' }).eq('id', p.item_id),
-        db.from('items').update({ status: 'reserved' }).eq('id', p.offered_item_id),
-      ]);
+      const updates = [db.from('items').update({ status: 'reserved' }).eq('id', p.item_id)];
+      if (offeredItemId) updates.push(db.from('items').update({ status: 'reserved' }).eq('id', offeredItemId));
+      await Promise.all(updates);
 
       // Crear conversación solo si no existe ya
       const { data: existing } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
@@ -4519,12 +4530,16 @@ async function respondProposal(proposalId, status) {
   } else {
     showToast('❌ Propuesta rechazada');
     // Liberar items — vuelven a estar disponibles
-    const { data: pRej } = await db.from('proposals').select('item_id, offered_item_id').eq('id', proposalId).single();
+    const { data: pRej } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', proposalId).single();
     if (pRej) {
-      await Promise.all([
-        db.from('items').update({ status: 'available' }).eq('id', pRej.item_id),
-        db.from('items').update({ status: 'available' }).eq('id', pRej.offered_item_id),
-      ]);
+      let offeredIdRej = pRej.offered_item_id;
+      if (!offeredIdRej && pRej.offered_item_title && pRej.offerer_id) {
+        const { data: fi } = await db.from('items').select('id').eq('user_id', pRej.offerer_id).ilike('title', pRej.offered_item_title).limit(1).single();
+        offeredIdRej = fi?.id || null;
+      }
+      const updates = [db.from('items').update({ status: 'available' }).eq('id', pRej.item_id)];
+      if (offeredIdRej) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredIdRej));
+      await Promise.all(updates);
     }
   }
 
