@@ -6248,6 +6248,7 @@ async function sendOffer() {
     item_title: activeModalItem.name,
     offerer_id: currentUser.id,
     offerer_name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
+    offered_item_id: offeredObj.id || null,
     offered_item_title: offeredObj.title,
     offered_item_emoji: offeredObj.emoji || '📦',
     owner_id: ownerId,
