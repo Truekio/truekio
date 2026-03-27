@@ -5733,6 +5733,13 @@ async function openConv(convId) {
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
   const subject = `${conv.item1_title} ↔ ${conv.item2_title}`;
 
+  // Comprobar si la propuesta está reservada para mostrar botón cancelar
+  let isReserved = false;
+  if (conv.proposal_id) {
+    const { data: prop } = await db.from('proposals').select('status').eq('id', conv.proposal_id).single();
+    isReserved = prop?.status === 'accepted';
+  }
+
   const main = document.getElementById('chat-main');
 
   // Móvil: mostrar chat, ocultar lista
@@ -5743,14 +5750,19 @@ async function openConv(convId) {
     main.classList.add('mobile-open');
   }
 
+  const cancelBtn = isReserved
+    ? `<button onclick="cancelTrade('${convId}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;font-family:inherit;white-space:nowrap">✕ Cancelar trueque</button>`
+    : '';
+
   main.innerHTML = `
     <div class="chat-head">
       ${isMobile ? `<button class="mobile-back-btn" onclick="closeMobileChat()">Volver</button>` : ''}
       <div class="chat-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
-      <div class="chat-info">
+      <div class="chat-info" style="flex:1;min-width:0">
         <h4>${otherName||'Usuario'}</h4>
         <p>${subject}</p>
       </div>
+      ${cancelBtn}
     </div>
     <div class="chat-messages" id="chat-msgs">
       <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando mensajes...</div>
@@ -5770,6 +5782,42 @@ async function openConv(convId) {
   msgPollingInterval = setInterval(() => {
     if (activeConvId === convId) loadMessages(convId);
   }, 5000);
+}
+
+async function cancelTrade(convId) {
+  if (!confirm('¿Cancelar este trueque? Los objetos volverán a estar disponibles.')) return;
+
+  const { data: conv } = await db.from('conversations').select('*').eq('id', convId).single();
+  if (!conv) return;
+
+  // Cambiar propuesta a cancelled
+  if (conv.proposal_id) {
+    const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
+    if (prop) {
+      // Actualizar status de la propuesta
+      await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
+
+      // Resolver offered_item_id si es null
+      let offeredId = prop.offered_item_id;
+      if (!offeredId && prop.offered_item_title && prop.offerer_id) {
+        const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
+        offeredId = fi?.id || null;
+      }
+
+      // Liberar items
+      const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
+      if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
+      await Promise.all(updates);
+    }
+  }
+
+  // Recargar items y UI
+  await loadItemsFromSupabase();
+  applyFilter('', currentFilter);
+  showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
+
+  // Reabrir el chat sin el botón cancelar
+  openConv(convId);
 }
 
 async function loadMessages(convId) {
