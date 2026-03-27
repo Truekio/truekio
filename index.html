@@ -5362,7 +5362,7 @@ async function confirmReceipt(cfId) {
 
     // Guardar en tabla permanente
     const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
-    db.from('completed_trades').upsert([{
+    const { error: tradeError } = await db.from('completed_trades').upsert([{
       conversation_id: cfId,
       user1_id: conv.user1_id || currentUser.id,
       user1_name: conv.user1_name || myName,
@@ -5370,9 +5370,8 @@ async function confirmReceipt(cfId) {
       user2_name: conv.user2_name || otherName,
       item1_title: conv.item1_title || '',
       item2_title: conv.item2_title || '',
-    }], { onConflict: 'conversation_id', ignoreDuplicates: true })
-      .then(({ error }) => { if (error) console.warn('completed_trades:', error.message); })
-      .catch(e => console.warn('completed_trades error:', e));
+    }], { onConflict: 'conversation_id', ignoreDuplicates: true });
+    if (tradeError) console.warn('completed_trades:', tradeError.message);
 
     // Email de trueque completado a ambos
     const myEmail = currentUser.email;
@@ -5381,6 +5380,8 @@ async function confirmReceipt(cfId) {
     sendEmail('trade_completed', otherEmail, { otherName: myName, item1: conv.item2_title, item2: conv.item1_title });
 
     await loadProfileStats();
+    await loadReviews();
+    renderProfile();
     setTimeout(() => openReviewModal(cfId), 1500);
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
