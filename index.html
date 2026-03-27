@@ -3822,7 +3822,9 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const topBadge = isPremium && !isMatch
+  const topBadge = item.status === 'reserved'
+    ? `<div class="item-match-badge" style="background:rgba(234,88,12,.85)">🔒 Reservado</div>`
+    : isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
     : isMatch ? `<div class="item-match-badge">⚡ ${matchScore}% match</div>` : '';
 
@@ -4078,6 +4080,9 @@ function applyFilter(q, cat) {
     // También excluir por los ids de myItems cargados
     if (myItems.some(m => String(m.id) === String(i.id))) return false;
 
+    // Ocultar items completados
+    if (i.status === 'completed') return false;
+
     const isPremium = i.price && parseInt(i.price) >= 300;
     const bc   = cat==='Todos' || cat==='' || (cat==='Premium' ? isPremium : i.cat===cat);
     const bq   = !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.location||'').toLowerCase().includes(q.toLowerCase()) || (i.wants||[]).some(w=>w.toLowerCase().includes(q.toLowerCase()));
@@ -4223,7 +4228,9 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const topBadge = isPremium && !isMatch
+  const topBadge = item.status === 'reserved'
+    ? `<div class="item-match-badge" style="background:rgba(234,88,12,.85)">🔒 Reservado</div>`
+    : isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
     : isMatch ? `<div class="item-match-badge">⚡ ${matchScore}% match</div>` : '';
 
@@ -4465,15 +4472,20 @@ async function respondProposal(proposalId, status) {
     // Cargar datos de la propuesta para crear la conversación
     const { data: p } = await db.from('proposals').select('*').eq('id', proposalId).single();
     if (p) {
+      // Marcar ambos items como reservados
+      await Promise.all([
+        db.from('items').update({ status: 'reserved' }).eq('id', p.item_id),
+        db.from('items').update({ status: 'reserved' }).eq('id', p.offered_item_id),
+      ]);
+
       // Crear conversación solo si no existe ya
       const { data: existing } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
       if (!existing) {
-      // Nombre del dueño
-      const ownerName = currentUser.id === p.owner_id
-        ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0])
-        : p.offerer_name;
+        const ownerName = currentUser.id === p.owner_id
+          ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0])
+          : p.offerer_name;
 
-      await db.from('conversations').insert([{
+        await db.from('conversations').insert([{
           proposal_id: proposalId,
           user1_id: p.owner_id,
           user1_name: ownerName,
@@ -4506,6 +4518,14 @@ async function respondProposal(proposalId, status) {
     }, 600);
   } else {
     showToast('❌ Propuesta rechazada');
+    // Liberar items — vuelven a estar disponibles
+    const { data: pRej } = await db.from('proposals').select('item_id, offered_item_id').eq('id', proposalId).single();
+    if (pRej) {
+      await Promise.all([
+        db.from('items').update({ status: 'available' }).eq('id', pRej.item_id),
+        db.from('items').update({ status: 'available' }).eq('id', pRej.offered_item_id),
+      ]);
+    }
   }
 
   loadProposals();
@@ -5407,6 +5427,17 @@ async function confirmReceipt(cfId) {
     }], { onConflict: 'conversation_id', ignoreDuplicates: true });
     if (tradeError) console.warn('completed_trades:', tradeError.message);
 
+    // Marcar items como completados — se ocultan del explorador
+    if (conv.proposal_id) {
+      const { data: prop } = await db.from('proposals').select('item_id, offered_item_id').eq('id', conv.proposal_id).single();
+      if (prop) {
+        await Promise.all([
+          db.from('items').update({ status: 'completed' }).eq('id', prop.item_id),
+          db.from('items').update({ status: 'completed' }).eq('id', prop.offered_item_id),
+        ]);
+      }
+    }
+
     // Email de trueque completado a ambos
     const myEmail = currentUser.email;
     const otherEmail = await getUserEmail(otherUserId);
@@ -5937,10 +5968,27 @@ function openDetail(itemId) {
       footerBtn.textContent = '✏️ Editar objeto';
       footerBtn.onclick = () => { closeDetail(); openEditItem(item.id); };
       footerBtn.className = 'btn btn-secondary btn-lg btn-full btn-r';
+    } else if (item.status === 'reserved') {
+      footerBtn.textContent = '🔒 Objeto reservado';
+      footerBtn.onclick = null;
+      footerBtn.disabled = true;
+      footerBtn.className = 'btn btn-secondary btn-lg btn-full btn-r';
+      footerBtn.style.opacity = '0.6';
+      footerBtn.style.cursor = 'not-allowed';
+    } else if (item.status === 'completed') {
+      footerBtn.textContent = '✅ Trueque completado';
+      footerBtn.onclick = null;
+      footerBtn.disabled = true;
+      footerBtn.className = 'btn btn-secondary btn-lg btn-full btn-r';
+      footerBtn.style.opacity = '0.6';
+      footerBtn.style.cursor = 'not-allowed';
     } else {
       footerBtn.textContent = '🤝 Proponer trueque';
       footerBtn.onclick = proposeFromDetail;
       footerBtn.className = 'btn btn-primary btn-lg btn-full btn-r';
+      footerBtn.disabled = false;
+      footerBtn.style.opacity = '';
+      footerBtn.style.cursor = '';
     }
   }
 }
