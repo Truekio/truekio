@@ -6403,8 +6403,7 @@ function renderProfile() {
   if(tmPublicados) tmPublicados.textContent = myItems.length;
   const tmRatio = document.getElementById('tm-ratio');
   if(tmRatio) tmRatio.textContent = '100%';
-  const savingsAmount = document.getElementById('savings-amount');
-  if(savingsAmount) savingsAmount.textContent = mySavings.toLocaleString('es-ES') + ' €';
+  // savings-amount eliminado
   const profStatItems = document.getElementById('prof-stat-items');
   if(profStatItems) profStatItems.textContent = myItems.length;
 
@@ -6459,7 +6458,7 @@ function renderProfile() {
   // Reviews — solo reales
   const allReviews = REVIEWS_DATA.filter(r => r.fromSupabase);
   const avgStars = allReviews.length ? (allReviews.reduce((s,r)=>s+r.stars,0)/allReviews.length).toFixed(1) : null;
-  document.getElementById('reviews-list').innerHTML = allReviews.length === 0
+  if(document.getElementById('reviews-list')) document.getElementById('reviews-list').innerHTML = allReviews.length === 0
     ? `<div style="text-align:center;padding:50px 20px;color:var(--muted)">
         <div style="font-size:2.5rem;margin-bottom:12px">⭐</div>
         <div style="font-weight:700;font-size:.95rem;margin-bottom:6px;color:var(--text)">Aún no tienes valoraciones</div>
@@ -6497,7 +6496,7 @@ function renderProfile() {
       ${r.text ? `<div class="review-text">${r.text}</div>` : ''}
     </div>`).join('')}`;
 
-  document.getElementById('reviews-badge').textContent = allReviews.length;
+  const _rb = document.getElementById('reviews-badge'); if(_rb) _rb.textContent = allReviews.length;
 }
 
 async function loadMyItems() {
@@ -8206,7 +8205,7 @@ async function publishItem() {
   navTo('explore');
   applyFilter('', currentFilter);
   renderProfile();
-  document.getElementById('prof-stat-items').textContent = myItems.length;
+  const _psi = document.getElementById('prof-stat-items'); if(_psi) _psi.textContent = myItems.length;
 
   // Detectar coincidencias con deseos de otros usuarios (fire & forget)
   checkWishMatches(name, pubCat, newItem.id);
