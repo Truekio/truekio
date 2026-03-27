@@ -8022,10 +8022,12 @@ async function publishItem() {
   if(document.getElementById('pub-book-lang')) document.getElementById('pub-book-lang').value = '';
   if(document.getElementById('pub-book-lang-field')) document.getElementById('pub-book-lang-field').style.display = 'none';
   document.getElementById('pub-cat').value = '';
-  // Reset geo
-  document.getElementById('price-hint').style.display = 'none';
-  document.getElementById('pub-service-hint').style.display = 'none';
-  document.getElementById('pub-book-hint').style.display = 'none';
+  const _priceHint = document.getElementById('price-hint');
+  if(_priceHint) _priceHint.style.display = 'none';
+  const _serviceHint = document.getElementById('pub-service-hint');
+  if(_serviceHint) _serviceHint.style.display = 'none';
+  const _bookHint = document.getElementById('pub-book-hint');
+  if(_bookHint) _bookHint.style.display = 'none';
   if(btn) { btn.textContent = originalText; btn.disabled = false; }
 
   showToast('✦ ¡Publicado en Truquo!');
