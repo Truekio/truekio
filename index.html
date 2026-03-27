@@ -1742,30 +1742,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </nav>
 
-</div><!-- end app-scroll -->
-
-<!-- BOTTOM NAV (mobile) -->
-<!-- Botón subir — aparece al scrollear -->
-<button class="scroll-top-btn" id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'instant'})" aria-label="Subir">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-  <span>Subir</span>
-</button>
-
-<div class="bottom-nav">
-  <div class="bottom-nav-inner">
-    <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
-    <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
-    <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
-      <span class="bnav-publish-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </span>
-      <span class="bnav-label" style="color:var(--accent)">Publicar</span>
-    </button>
-    <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
-    <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
-  </div>
-</div>
-
 <div id="app-scroll">
 
 <!-- TOAST -->
@@ -2279,16 +2255,21 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- ACTIVITY HUB -->
 <div class="view" id="view-activity">
-  <div class="wrap page-pad">
-    <!-- Tabs -->
-    <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px;border-bottom:1px solid var(--border);margin-bottom:24px">
-      <div style="display:flex;gap:0;min-width:max-content">
-        <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
-        <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
-        <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
-        <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
+  <!-- Barra de tabs sticky -->
+  <div style="position:sticky;top:0;z-index:90;background:#f5f8fb;border-bottom:1px solid var(--border)">
+    <div class="wrap">
+      <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
+        <div style="display:flex;gap:0;min-width:max-content">
+          <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
+          <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
+          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
+          <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
+        </div>
       </div>
     </div>
+  </div>
+  <!-- Contenido -->
+  <div class="wrap page-pad" style="padding-top:16px">
     <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
     <div id="matches-proposals" class="match-tab-content active">
       <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
@@ -2310,8 +2291,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div id="matches-wishlist-act" class="match-tab-content" style="display:none">
       <div id="activity-wishlist-content"></div>
     </div>
-  </div>
-</div>
+  </div><!-- end contenido -->
+</div><!-- end view-activity -->
 
 <!-- MATCHES (legacy alias) -->
 <div class="view" id="view-matches" style="display:none"></div>
@@ -3634,7 +3615,7 @@ function navTo(v) {
   const bn = document.getElementById('bnav-'+v);
   if(bn) bn.classList.add('active');
   closeNotif();
-  window.scrollTo({top:0,behavior:'instant'});
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
@@ -3649,9 +3630,9 @@ function navTo(v) {
     if (_bn) _bn.style.display = 'none';
   } else {
     const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -3670,7 +3651,7 @@ function navToActivity(tab) {
   switchMatchTab(tab || 'proposals');
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
-  window.scrollTo({top:0,behavior:'instant'});
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
@@ -3685,9 +3666,9 @@ function navToActivity(tab) {
     if (_bn) _bn.style.display = 'none';
   } else {
     const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -3883,7 +3864,7 @@ function navTo(v) {
   const bn = document.getElementById('bnav-'+v);
   if(bn) bn.classList.add('active');
   closeNotif();
-  window.scrollTo({top:0,behavior:'instant'});
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
@@ -3898,9 +3879,9 @@ function navTo(v) {
     if (_bn) _bn.style.display = 'none';
   } else {
     const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -3919,7 +3900,7 @@ function navToActivity(tab) {
   switchMatchTab(tab || 'proposals');
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
-  window.scrollTo({top:0,behavior:'instant'});
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
@@ -3934,9 +3915,9 @@ function navToActivity(tab) {
     if (_bn) _bn.style.display = 'none';
   } else {
     const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = '';
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
-  if(v === 'activity') { window.scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -8515,5 +8496,30 @@ document.addEventListener('mouseup', e => {
 
 
 </script>
+
+<!-- Botón subir -->
+<button class="scroll-top-btn" id="scroll-top-btn" onclick="document.getElementById('app-scroll').scrollTo({top:0,behavior:'instant'})" aria-label="Subir">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+  <span>Subir</span>
+</button>
+
+</div><!-- end app-scroll -->
+
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
+    <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
+    <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
+      <span class="bnav-publish-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </span>
+      <span class="bnav-label" style="color:var(--accent)">Publicar</span>
+    </button>
+    <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
+    <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
+  </div>
+</div>
+
 </body>
 </html>
