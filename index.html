@@ -676,7 +676,8 @@ nav{position:sticky;top:0;z-index:200;background:rgba(245,248,251,.95);backdrop-
 .match-tab{padding:10px 18px;border:none;background:none;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .18s;display:inline-flex;align-items:center;gap:7px;border-radius:6px 6px 0 0;white-space:nowrap;flex-shrink:0;}
 .match-tab:hover{color:var(--text2);}
 .match-tab.active{color:var(--accent);font-weight:700;border-bottom-color:var(--accent);}
-.match-tab-content{animation:fadeUp .28s ease;}
+.match-tab-content{animation:fadeIn .28s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 /* ── CHAIN CARDS ── */
 .chain-card{margin-bottom:14px;overflow:hidden;border:1px solid #d4c8f8;}
 .chain-header{background:linear-gradient(160deg,#f7f5ff,#f0ebfe);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
@@ -2264,39 +2265,43 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- ACTIVITY HUB -->
 <div class="view" id="view-activity">
-  <div class="wrap page-pad">
-    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px">
-      <div class="badge badge-accent" id="match-count-badge">6 elementos activos</div>
-    </div>
-    <!-- Activity tabs -->
-    <div style="overflow-x:auto;margin-bottom:0;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-left:-24px;margin-right:-24px;padding:0 24px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;gap:0;min-width:max-content">
-        <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
-        <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
-        <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
-        <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
+  <div class="wrap">
+    <div style="position:sticky;top:0;z-index:50;background:rgba(245,248,251,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:12px 24px 0;margin:0 -24px">
+      <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px">
+        <div class="badge badge-accent" id="match-count-badge">6 elementos activos</div>
+      </div>
+      <!-- Activity tabs -->
+      <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;gap:0;min-width:max-content">
+          <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
+          <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
+          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
+          <button class="match-tab" id="mtab-wishlist-act" onclick="switchMatchTab('wishlist-act')">✦ Deseos <span class="nav-badge" id="wish-badge-nav" style="background:var(--purple);display:none">0</span></button>
+        </div>
       </div>
     </div>
-    <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
-    <div id="matches-proposals" class="match-tab-content active" style="margin-top:24px">
-      <div id="proposals-list"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
-    </div>
-    <div id="matches-chain" class="match-tab-content" style="display:none">
-      <div style="background:var(--purple-l);border:1px solid rgba(99,68,168,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
-        <div style="font-size:1.6rem;flex-shrink:0">🔗</div>
-        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--purple)">Cadenas de trueque</div><div style="font-size:12px;color:var(--purple);opacity:.8;line-height:1.6">A da a B → B da a C → C da a A. Todos consiguen lo que quieren sin match directo.</div></div>
+    <div style="padding:24px 24px 0;margin:0 -24px;padding-bottom:max(120px,calc(90px + env(safe-area-inset-bottom)))">
+      <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
+      <div id="matches-proposals" class="match-tab-content active" style="margin-top:24px">
+        <div id="proposals-list"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
       </div>
-      <div id="chains-list"></div>
-    </div>
-    <div id="matches-confirm" class="match-tab-content" style="display:none">
-      <div style="background:var(--green-l);border:1px solid rgba(45,158,95,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
-        <div style="font-size:1.6rem;flex-shrink:0">🛡️</div>
-        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--green)">Confirmación de recepción</div><div style="font-size:12px;color:var(--green);opacity:.8;line-height:1.6">El trueque no se cierra hasta que ambas partes confirman la recepción.</div></div>
+      <div id="matches-chain" class="match-tab-content" style="display:none;margin-top:24px">
+        <div style="background:var(--purple-l);border:1px solid rgba(99,68,168,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
+          <div style="font-size:1.6rem;flex-shrink:0">🔗</div>
+          <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--purple)">Cadenas de trueque</div><div style="font-size:12px;color:var(--purple);opacity:.8;line-height:1.6">A da a B → B da a C → C da a A. Todos consiguen lo que quieren sin match directo.</div></div>
+        </div>
+        <div id="chains-list"></div>
       </div>
-      <div id="confirmations-list"></div>
-    </div>
-    <div id="matches-wishlist-act" class="match-tab-content" style="display:none">
-      <div id="activity-wishlist-content"></div>
+      <div id="matches-confirm" class="match-tab-content" style="display:none;margin-top:24px">
+        <div style="background:var(--green-l);border:1px solid rgba(45,158,95,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
+          <div style="font-size:1.6rem;flex-shrink:0">🛡️</div>
+          <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--green)">Confirmación de recepción</div><div style="font-size:12px;color:var(--green);opacity:.8;line-height:1.6">El trueque no se cierra hasta que ambas partes confirman la recepción.</div></div>
+        </div>
+        <div id="confirmations-list"></div>
+      </div>
+      <div id="matches-wishlist-act" class="match-tab-content" style="display:none;margin-top:24px">
+        <div id="activity-wishlist-content"></div>
+      </div>
     </div>
   </div>
 </div>
