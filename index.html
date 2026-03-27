@@ -5567,7 +5567,40 @@ async function startBgPolling() {
     if (!currentUser) return;
     await checkNewMessages();
     await checkNewProposals();
+    await checkCancelledTrades();
   }, 15000);
+}
+
+// Detectar trueques cancelados por la otra parte
+let lastKnownCancelledProposals = new Set();
+async function checkCancelledTrades() {
+  const { data } = await db
+    .from('proposals')
+    .select('id, status, item_id, offered_item_id')
+    .or(`owner_id.eq.${currentUser.id},offerer_id.eq.${currentUser.id}`)
+    .eq('status', 'cancelled');
+
+  if (!data) return;
+
+  // Ver si hay cancelaciones nuevas que no conocíamos
+  const newCancelled = data.filter(p => !lastKnownCancelledProposals.has(p.id));
+  if (newCancelled.length) {
+    // Actualizar items en memoria
+    const cancelledItemIds = new Set(newCancelled.flatMap(p => [p.item_id, p.offered_item_id].filter(Boolean)));
+    items = items.map(i => cancelledItemIds.has(i.id) ? {...i, status:'available'} : i);
+    applyFilter('', currentFilter);
+
+    // Si estamos en confirmaciones, recargar
+    const confirmTab = document.getElementById('matches-confirm');
+    if (confirmTab && confirmTab.style.display !== 'none') {
+      renderConfirmations();
+    }
+
+    // Notificar
+    pushNotif('✕ Trueque cancelado', 'La otra parte ha cancelado el trueque');
+  }
+
+  data.forEach(p => lastKnownCancelledProposals.add(p.id));
 }
 
 async function checkNewMessages() {
