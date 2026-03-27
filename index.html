@@ -2755,15 +2755,14 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div id="up-stats" style="display:flex;gap:16px;margin-top:14px"></div>
     </div>
     <div class="user-profile-body">
-      <!-- Reviews -->
+      <!-- Otros objetos primero -->
       <div class="user-profile-section">
-        <div class="user-profile-section-title">⭐ Valoraciones</div>
-        <div id="up-reviews"></div>
-      </div>
-      <!-- Otros objetos -->
-      <div class="user-profile-section">
-        <div class="user-profile-section-title">📦 Otros objetos disponibles</div>
+        <div class="user-profile-section-title">📦 Objetos disponibles</div>
         <div id="up-items"></div>
+      </div>
+      <!-- Valoraciones — se abren al pulsar las estrellas -->
+      <div class="user-profile-section">
+        <div id="up-reviews" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -5940,8 +5939,7 @@ async function openUserProfile(userId, userName, excludeItemId) {
   // Stats placeholder mientras carga
   document.getElementById('up-stats').innerHTML = `
     <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted)">Trueques</div></div>
-    <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted)">Valoraciones</div></div>
-    <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted)">Media ⭐</div></div>`;
+    <div style="text-align:center"><div style="font-size:1.2rem;font-weight:800;color:var(--text)">—</div><div style="font-size:10px;color:var(--muted);font-weight:700">— valoraciones</div></div>`;
   document.getElementById('up-reviews').innerHTML = `<div style="color:var(--muted);font-size:13px">Cargando...</div>`;
   document.getElementById('up-items').innerHTML = `<div style="color:var(--muted);font-size:13px">Cargando...</div>`;
 
@@ -5981,8 +5979,10 @@ async function openUserProfile(userId, userName, excludeItemId) {
     : '—';
   document.getElementById('up-stats').innerHTML = `
     <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:var(--text)">${tradesCount}</div><div style="font-size:10px;color:var(--muted)">Trueques</div></div>
-    <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:var(--text)">${finalReviews.length}</div><div style="font-size:10px;color:var(--muted)">Valoraciones</div></div>
-    <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:var(--text)">${avgStars !== '—' ? '⭐' + avgStars : '—'}</div><div style="font-size:10px;color:var(--muted)">Media</div></div>`;
+    <div onclick="toggleUpReviews()" style="text-align:center;cursor:pointer;padding:4px 8px;border-radius:var(--r);transition:background .15s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--text)">${avgStars !== '—' ? '⭐' + avgStars : '—'}</div>
+      <div style="font-size:10px;color:var(--accent);font-weight:700" id="up-reviews-toggle-icon">${finalReviews.length} valoraciones ▾</div>
+    </div>`;
 
   // Reviews
   if (finalReviews.length) {
@@ -5998,6 +5998,9 @@ async function openUserProfile(userId, userName, excludeItemId) {
   } else {
     document.getElementById('up-reviews').innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin valoraciones todavía.</div>`;
   }
+
+  // Resetear estado colapsado
+  document.getElementById('up-reviews').style.display = 'none';
 
   // Otros objetos (excluyendo el actual)
   const otherItems = finalItems.filter(i => String(i.id) !== String(excludeItemId));
@@ -6019,6 +6022,18 @@ async function openUserProfile(userId, userName, excludeItemId) {
       }).join('') + `</div>`;
   } else {
     document.getElementById('up-items').innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">No tiene otros objetos publicados.</div>`;
+  }
+}
+
+function toggleUpReviews() {
+  const el = document.getElementById('up-reviews');
+  const icon = document.getElementById('up-reviews-toggle-icon');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (icon) {
+    const count = icon.textContent.match(/\d+/)?.[0] || '0';
+    icon.textContent = open ? `${count} valoraciones ▾` : `${count} valoraciones ▴`;
   }
 }
 
