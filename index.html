@@ -2611,12 +2611,12 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <!-- Pantallas -->
     <div class="pub-flow-body">
 
-      <!-- PANTALLA 1: Foto + título + categoría + estado -->
+      <!-- PANTALLA 1: Fotos + título + categoría + descripción -->
       <div class="pub-screen" id="pub-screen-1">
         <div class="pub-screen-title">¿Qué ofreces?</div>
         <div class="pub-screen-sub">Añade fotos y describe tu objeto.</div>
 
-        <!-- Fotos con botón + y action sheet -->
+        <!-- Fotos con botón + -->
         <div class="pub-photos-row" id="pub-photos-row">
           <button class="pub-photo-add" onclick="openPhotoSheet()" type="button">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -2637,11 +2637,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <!-- Pill de demanda real -->
         <div id="demand-pill" style="display:none;margin-top:-12px;margin-bottom:16px">
           <button onclick="openDemandSheet()" style="display:inline-flex;align-items:center;gap:7px;background:var(--green-l);border:1.5px solid #86efac;color:#166534;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s">
-            <span id="demand-pill-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:pulseRing 2s ease-in-out infinite"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></span>
             <span id="demand-pill-text">2 personas lo están buscando</span>
             <span style="opacity:.6">→</span>
           </button>
-        </div>
         </div>
         <div class="field">
           <label>Categoría <span style="color:#e53e3e">*</span></label>
@@ -2660,14 +2659,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <label>Idioma del libro</label>
           <select id="pub-book-lang">
             <option value="">— Opcional —</option>
-            <option>Español</option>
-            <option>Inglés</option>
-            <option>Catalán</option>
-            <option>Francés</option>
-            <option>Alemán</option>
-            <option>Italiano</option>
-            <option>Portugués</option>
-            <option>Otro idioma</option>
+            <option>Español</option><option>Inglés</option><option>Catalán</option>
+            <option>Francés</option><option>Alemán</option><option>Italiano</option>
+            <option>Portugués</option><option>Otro idioma</option>
           </select>
         </div>
         <div id="pub-service-hint" style="display:none;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;font-weight:600">
@@ -2682,7 +2676,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
       </div>
 
-      <!-- PANTALLA 2: Qué aceptas + precio -->
+      <!-- PANTALLA 2: Qué aceptas -->
       <div class="pub-screen" id="pub-screen-2" style="display:none">
         <div class="pub-screen-title">¿Qué aceptas?</div>
         <div class="pub-screen-sub">El sistema buscará matches automáticamente.</div>
@@ -2722,7 +2716,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
         <div id="btn-add-cat" style="display:none"></div>
         <div id="wants-chips" style="display:none"></div>
-
       </div>
 
     </div>
@@ -7594,39 +7587,35 @@ async function triggerDemandPanel() {
   if (!name && !cat) { pill.style.display = 'none'; return; }
   if (!currentUser) { pill.style.display = 'none'; return; }
 
-  // Buscar en wishes reales de Supabase (excluyendo los propios)
   try {
-    let query = db.from('wishes').select('id, name, cat, user_id, user_name').neq('user_id', currentUser.id);
-    const { data: wishes } = await query;
-    if (!wishes) { pill.style.display = 'none'; return; }
+    const { data: wishes } = await db.from('wishes')
+      .select('id, name, cat, user_id, user_name')
+      .neq('user_id', currentUser.id);
 
-    const keyword = name.toLowerCase();
-    const stem = w => w.replace(/[eos]$/, '').trim();
+    if (!wishes || !wishes.length) { pill.style.display = 'none'; return; }
+
+    const kw = name.toLowerCase();
+    const kwFirst = kw.split(' ')[0]; // primera palabra — más fiable
 
     demandWishMatches = wishes.filter(w => {
       const wn = (w.name || '').toLowerCase();
       const wc = (w.cat || '').toLowerCase();
-      const nameMatch = keyword && (
-        wn.includes(stem(keyword)) ||
-        keyword.includes(stem(wn)) ||
-        wn.includes(keyword.split(' ')[0])
-      );
+      // Coincidencia por nombre: el deseo contiene la primera palabra del objeto o viceversa
+      const nameMatch = kwFirst.length >= 3 && (wn.includes(kwFirst) || kwFirst.includes(wn.split(' ')[0]));
+      // Coincidencia exacta de categoría
       const catMatch = cat && wc === cat.toLowerCase();
       return nameMatch || catMatch;
     }).slice(0, 6);
 
-    if (!demandWishMatches.length) {
-      pill.style.display = 'none';
-      return;
-    }
+    if (!demandWishMatches.length) { pill.style.display = 'none'; return; }
 
-    // Agrupar por usuario único
     const uniqueUsers = [...new Map(demandWishMatches.map(w => [w.user_id, w])).values()];
     const n = uniqueUsers.length;
     document.getElementById('demand-pill-text').textContent =
       `${n} ${n === 1 ? 'persona lo está buscando' : 'personas lo están buscando'}`;
     pill.style.display = '';
   } catch(e) {
+    console.warn('triggerDemandPanel error:', e);
     pill.style.display = 'none';
   }
 }
@@ -7643,7 +7632,12 @@ function openDemandSheet() {
   // Agrupar wishes por usuario
   const byUser = {};
   demandWishMatches.forEach(w => {
-    if (!byUser[w.user_id]) byUser[w.user_id] = { user_id: w.user_id, user_name: w.user_name || 'Usuario', wishes: [] };
+    if (!byUser[w.user_id]) {
+      // Buscar nombre real desde items publicados
+      const theirItem = items.find(i => i.user_id === w.user_id);
+      const userName = theirItem ? theirItem.user : 'Usuario';
+      byUser[w.user_id] = { user_id: w.user_id, user_name: userName, wishes: [] };
+    }
     byUser[w.user_id].wishes.push(w);
   });
 
