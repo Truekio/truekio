@@ -270,15 +270,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 /* ── ITEM CARDS — redesigned ── */
 /* ── EXPLORER GRID — 2 col Wallapop style ── */
 .items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
-.explore-sticky{position:sticky;top:58px;z-index:90;background:rgba(245,248,251,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.06);box-shadow:0 2px 12px rgba(0,0,0,.04);}
-.activity-sticky{position:sticky;top:58px;z-index:90;background:rgba(245,248,251,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.explore-sticky{position:sticky;top:58px;z-index:90;background:#f5f8fb;border-bottom:1px solid rgba(0,0,0,.06);box-shadow:0 2px 12px rgba(0,0,0,.04);}
+.activity-sticky{position:sticky;top:58px;z-index:90;background:#f5f8fb;border-bottom:1px solid var(--border);}
 .explore-search-row{display:flex;align-items:center;gap:8px;padding:8px 0 6px;}
 .explore-search-input{flex:1;min-width:0;}
 .items-count-desktop{display:block;}
 .filter-row{transition:max-height .28s cubic-bezier(.4,0,.2,1), opacity .28s ease, padding .28s ease;overflow:hidden;padding-bottom:8px;}
 .filter-row.hidden-pills{max-height:0!important;opacity:0;padding:0!important;}@media(max-width:640px){
-  .explore-sticky{top:0;background:rgba(245,248,251,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
-  .activity-sticky{top:0;}
+  .explore-sticky{top:0;background:#f5f8fb;}
+  .activity-sticky{top:0;background:#f5f8fb;}
   .items-count-desktop{display:none;}
   .explore-search-row{padding:6px 0 4px;}
   .filter-toggle-btn{padding:6px 10px;font-size:12px;white-space:nowrap;}
