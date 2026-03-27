@@ -1737,7 +1737,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- BOTTOM NAV (mobile) -->
 <!-- Botón subir — aparece al scrollear -->
-<button class="scroll-top-btn" id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Subir">
+<button class="scroll-top-btn" id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'instant'})" aria-label="Subir">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
   <span>Subir</span>
 </button>
@@ -3623,7 +3623,7 @@ function navTo(v) {
   const bn = document.getElementById('bnav-'+v);
   if(bn) bn.classList.add('active');
   closeNotif();
-  window.scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
@@ -3659,7 +3659,7 @@ function navToActivity(tab) {
   switchMatchTab(tab || 'proposals');
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
-  window.scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
@@ -3872,7 +3872,7 @@ function navTo(v) {
   const bn = document.getElementById('bnav-'+v);
   if(bn) bn.classList.add('active');
   closeNotif();
-  window.scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
@@ -3908,7 +3908,7 @@ function navToActivity(tab) {
   switchMatchTab(tab || 'proposals');
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
-  window.scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
   if (authRequired.includes(v) && !currentUser) {
