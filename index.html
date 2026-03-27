@@ -7129,6 +7129,12 @@ function pubNext(skip = false) {
       if (!name) { showToast('⚠️ Escribe el nombre del objeto'); return; }
       const cat = document.getElementById('pub-cat').value;
       if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
+      if (!pubImages.length) { showToast('⚠️ Añade al menos una foto del objeto'); return; }
+      // Para libros: idioma obligatorio
+      if (cat === 'Libros') {
+        const lang = document.getElementById('pub-book-lang')?.value;
+        if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
+      }
     }
     if (pubCurrentScreen === 2) {
       if (!exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
