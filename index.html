@@ -6759,6 +6759,12 @@ function switchPTab(tab) {
     if(content) content.classList.toggle('active', t===tab);
   });
   if (tab === 'favs') renderFavorites();
+  if (tab === 'config') {
+    setTimeout(() => {
+      const el = document.getElementById('ptab-config');
+      if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 50);
+  }
 }
 
 async function renderFavorites() {
