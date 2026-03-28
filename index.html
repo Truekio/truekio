@@ -2682,8 +2682,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <div style="display:flex;flex-direction:column;gap:10px">
             <button id="wants-open-yes" onclick="setWantsOpen(true)"
               style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
-              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🔓 Acepto cualquier cosa de calidad</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.4">Me es igual la categoría, estoy abierto a cualquier propuesta interesante.</div>
+              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🔓 Soy flexible con la categoría</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.4">Acepto varias categorías pero quiero especificar cuáles.</div>
             </button>
             <button id="wants-open-no" onclick="setWantsOpen(false)"
               style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
@@ -2694,6 +2694,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
 
         <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+
+        <!-- Selector de categorías para opción flexible -->
+        <div id="wants-open-cats" style="display:none;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">¿Qué categorías aceptas? <span style="color:#e53e3e">*</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="wants-open-cat-chips">
+            ${['Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'].map(c =>
+              `<button onclick="toggleOpenCat(this,'${c}')" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all .14s">${c}</button>`
+            ).join('')}
+          </div>
+        </div>
         <div id="wants-add-form" style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg);display:none">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">➕ Añadir opción</div>
           <div class="form-row" style="margin-bottom:10px">
@@ -4136,6 +4146,9 @@ function applyFilter(q, cat) {
     // Ocultar items completados
     if (i.status === 'completed') return false;
 
+    // Ocultar items con título demasiado corto (menos de 2 caracteres)
+    if (!i.name || i.name.trim().length < 2) return false;
+
     const isPremium = i.price && parseInt(i.price) >= 300;
     const bc   = cat==='Todos' || cat==='' || (cat==='Premium' ? isPremium : i.cat===cat);
     const bq   = !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.location||'').toLowerCase().includes(q.toLowerCase()) || (i.wants||[]).some(w=>w.toLowerCase().includes(q.toLowerCase()));
@@ -4663,19 +4676,33 @@ function renderActivityWishlist() {
 function calcMatchScore(itemA, itemB) {
   const stem = w => w.replace(/[eos]$/, '').replace(/ción$/, 'cion').trim();
 
-  const fuzzy = (haystack, needle) => {
-    if (!haystack || !needle) return false;
-    if (needle.length < 3) return false; // evitar falsos matches con palabras muy cortas
-    if (haystack.length < 3) return false; // evitar falsos matches con haystack muy corto
-    const h = haystack.toLowerCase();
-    const n = needle.toLowerCase();
-    // Solo buscar needle dentro de haystack (no al revés para evitar falsos positivos)
-    if (h.includes(n)) return true;
-    // Solo si needle es suficientemente largo, buscar haystack dentro de needle
-    if (h.length > 4 && n.includes(h)) return true;
-    const ns = stem(n);
-    if (ns.length > 3 && h.includes(ns)) return true;
-    return n.split(/[\s,›·]+/).filter(t => t.length > 3).some(t => h.includes(stem(t)));
+  // Coincidencia de título — exacta o muy cercana (mismas palabras principales)
+  const STOP_WORDS = new Set(['el','la','los','las','un','una','unos','unas','de','del','y','en','a','por','para','con','que','se','su','al']);
+  const titleTokens = t => t.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !STOP_WORDS.has(w));
+  const matchTitle = (titleA, titleB) => {
+    if (!titleA || !titleB) return false;
+    const a = titleA.toLowerCase().trim();
+    const b = titleB.toLowerCase().trim();
+    // Exacto
+    if (a === b) return true;
+    // Tokens principales de A todos presentes en B o viceversa
+    const tokA = titleTokens(a);
+    const tokB = titleTokens(b);
+    if (tokA.length === 0 || tokB.length === 0) return false;
+    // Al menos el 80% de los tokens del más corto están en el más largo
+    const shorter = tokA.length <= tokB.length ? tokA : tokB;
+    const longer  = tokA.length <= tokB.length ? tokB : tokA;
+    const longerStr = longer.join(' ');
+    const matched = shorter.filter(t => longerStr.includes(t));
+    return matched.length / shorter.length >= 0.8;
+  };
+
+  // Coincidencia de categoría/subcategoría — más permisiva
+  const matchCat = (wantStr, catStr) => {
+    if (!wantStr || !catStr) return false;
+    const w = wantStr.toLowerCase().trim();
+    const c = catStr.toLowerCase().trim();
+    return w === c || w.includes(c) || c.includes(w);
   };
 
   // Normalizar wants siempre a array
@@ -4702,32 +4729,26 @@ function calcMatchScore(itemA, itemB) {
 
   // ── LADO A: ¿A quiere lo que ofrece B? ──
   let scoreA = 0;
-  // ¿A quiere el título exacto de B?
-  const aWantsBTitle = aWants.some(w => fuzzy(w, bTitle) || fuzzy(bTitle, w));
-  // ¿A quiere la categoría de B?
-  const aWantsBCat = aWants.some(w => fuzzy(w, bCat) || w.toLowerCase() === bCat);
-  // ¿A quiere la subcategoría de B?
-  const aWantsBSubcat = bSubcat && aWants.some(w => fuzzy(w, bSubcat));
+  const aWantsBTitle  = aWants.some(w => matchTitle(w, bTitle));
+  const aWantsBCat    = aWants.some(w => matchCat(w, bCat));
+  const aWantsBSubcat = bSubcat && aWants.some(w => matchCat(w, bSubcat));
 
   if (aWantsBTitle)       scoreA = 50;
   else if (aWantsBSubcat) scoreA = 35;
   else if (aWantsBCat)    scoreA = 25;
-  else if (aWantsOpen && bCat) scoreA = 15; // abierto a todo, pero solo si B tiene categoría válida
+  else if (aWantsOpen && bCat) scoreA = 15;
   else                    scoreA = 0;
 
   // ── LADO B: ¿B quiere lo que ofrece A? ──
   let scoreB = 0;
-  // ¿B quiere el título exacto de A?
-  const bWantsATitle = bWants.some(w => fuzzy(w, aTitle) || fuzzy(aTitle, w));
-  // ¿B quiere la categoría de A?
-  const bWantsACat = bWants.some(w => fuzzy(w, aCat) || w.toLowerCase() === aCat);
-  // ¿B quiere la subcategoría de A?
-  const bWantsASubcat = aSubcat && bWants.some(w => fuzzy(w, aSubcat));
+  const bWantsATitle  = bWants.some(w => matchTitle(w, aTitle));
+  const bWantsACat    = bWants.some(w => matchCat(w, aCat));
+  const bWantsASubcat = aSubcat && bWants.some(w => matchCat(w, aSubcat));
 
   if (bWantsATitle)       scoreB = 50;
   else if (bWantsASubcat) scoreB = 35;
   else if (bWantsACat)    scoreB = 25;
-  else if (bWantsOpen && aCat) scoreB = 15; // abierto a todo, pero solo si A tiene categoría válida
+  else if (bWantsOpen && aCat) scoreB = 15;
   else                    scoreB = 0;
 
   // Si ninguno quiere nada del otro → 0
@@ -7612,11 +7633,11 @@ let sortByDistance = !!userCoords; // activo por defecto si ya tenemos coords
 let pubCurrentScreen = 1;
 const PUB_SCREENS = 2;
 const PUB_OPTIONAL = { 1: false, 2: false };
-let pubWantsOpen = null; // null = sin respuesta, true = abierto, false = tiene preferencias
+let pubWantsOpen = null; // null = sin respuesta, true = flexible (con cats), false = preferencias específicas
+let pubOpenCats = []; // categorías seleccionadas cuando wants_open=true
 
 function setWantsOpen(open) {
   pubWantsOpen = open;
-  // Resaltar botón seleccionado
   const yesBtn = document.getElementById('wants-open-yes');
   const noBtn = document.getElementById('wants-open-no');
   if (yesBtn) {
@@ -7627,9 +7648,26 @@ function setWantsOpen(open) {
     noBtn.style.borderColor = !open ? 'var(--accent)' : 'var(--border)';
     noBtn.style.background = !open ? 'var(--accent-l)' : 'var(--bg)';
   }
-  // Mostrar/ocultar formulario de preferencias
+  // Mostrar el selector correcto
+  const openCats = document.getElementById('wants-open-cats');
   const form = document.getElementById('wants-add-form');
+  if (openCats) openCats.style.display = open ? 'block' : 'none';
   if (form) form.style.display = open ? 'none' : 'block';
+}
+
+function toggleOpenCat(btn, cat) {
+  const idx = pubOpenCats.indexOf(cat);
+  if (idx >= 0) {
+    pubOpenCats.splice(idx, 1);
+    btn.style.background = 'var(--bg)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = 'var(--text2)';
+  } else {
+    pubOpenCats.push(cat);
+    btn.style.background = 'var(--text)';
+    btn.style.borderColor = 'var(--text)';
+    btn.style.color = '#fff';
+  }
 }
 
 function pubGoTo(n) {
@@ -7680,6 +7718,7 @@ function pubNext(skip = false) {
     }
     if (pubCurrentScreen === 2) {
       if (pubWantsOpen === null) { showToast('⚠️ Indica tu nivel de flexibilidad'); return; }
+      if (pubWantsOpen === true && pubOpenCats.length === 0) { showToast('⚠️ Selecciona al menos una categoría'); return; }
       if (pubWantsOpen === false && !exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
     }
   }
@@ -7697,6 +7736,7 @@ function pubCancel() {
     if (!confirm('¿Seguro que quieres cancelar? Perderás los datos introducidos.')) return;
   }
   pubWantsOpen = null;
+  pubOpenCats = [];
   navTo('explore');
 }
 
@@ -8511,7 +8551,7 @@ async function publishItem() {
     category: pubCat,
     emoji: autoEmoji,
     condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
-    wants: wantsFlat.join(', '),
+    wants: pubWantsOpen === true ? pubOpenCats.join(', ') : wantsFlat.join(', '),
     wants_open: pubWantsOpen === true,
     photos: photoUrls.length ? photoUrls[0] : '',
     photo_urls: photoUrls.length ? photoUrls : null,
@@ -8560,6 +8600,7 @@ async function publishItem() {
   exchangeOptions = [];
   pubImages = [];
   pubWantsOpen = null;
+  pubOpenCats = [];
   // Reset demand pill
   const dp = document.getElementById('demand-pill');
   if(dp) dp.style.display = 'none';
