@@ -1134,6 +1134,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 /* Footer */
 .fd-foot{padding:14px 20px max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;background:var(--white);}
 
+/* ── ONBOARDING ── */
+#onboarding-overlay{display:none;}
+#onboarding-overlay.open{display:flex;}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:all .2s;}
+.ob-dot.active{background:var(--accent);width:20px;border-radius:99px;}
+.ob-wish-tag{display:inline-flex;align-items:center;gap:5px;background:var(--accent-l);color:var(--accent);font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;}
+.ob-wish-tag button{background:none;border:none;cursor:pointer;color:var(--accent);font-size:14px;line-height:1;padding:0;}
+
 /* ── VISUAL POLISH PASS ── */
 /* Remove excessive box-shadows from cards everywhere */
 .card{box-shadow:none;border:1px solid var(--border);}
@@ -3254,6 +3262,11 @@ window._enterApp = function() {
   }
   // Pre-cargar objetos del usuario para el perfil
   if(currentUser) setTimeout(() => loadMyItems(), 300);
+  // Mostrar onboarding si el usuario no tiene objetos publicados
+  if(currentUser) setTimeout(async () => {
+    const { data } = await db.from('items').select('id').eq('user_id', currentUser.id).limit(1);
+    if (!data || !data.length) showOnboarding();
+  }, 600);
   // Cargar valoraciones reales desde Supabase
   if(currentUser) setTimeout(() => loadReviews(), 400);
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
@@ -4674,7 +4687,66 @@ function renderActivityWishlist() {
 }
 
 // ═══ MATCHES (DIRECT) ═══
-// ═══ FUNCIÓN UNIFICADA DE MATCH ═══
+// ═══ ONBOARDING ═══
+let obWishes = [];
+
+function showOnboarding() {
+  const el = document.getElementById('onboarding-overlay');
+  if (el) el.classList.add('open');
+  obGoTo(1);
+}
+
+function closeOnboarding() {
+  const el = document.getElementById('onboarding-overlay');
+  if (el) el.classList.remove('open');
+  // Guardar deseos si añadió alguno
+  if (obWishes.length && currentUser) {
+    obWishes.forEach(w => {
+      db.from('wishes').insert([{ user_id: currentUser.id, name: w, cat: '' }]).then(() => {});
+    });
+    renderWishlist();
+  }
+  obWishes = [];
+}
+
+function obGoTo(step) {
+  [1,2,3].forEach(i => {
+    const s = document.getElementById('ob-step-' + i);
+    const d = document.getElementById('ob-dot-' + i);
+    if (s) s.style.display = i === step ? '' : 'none';
+    if (d) d.classList.toggle('active', i === step);
+  });
+}
+
+function obPublish() {
+  closeOnboarding();
+  setTimeout(() => navTo('publish'), 200);
+}
+
+function obAddWish() {
+  const inp = document.getElementById('ob-wish-input');
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val || obWishes.includes(val)) { inp.value = ''; return; }
+  obWishes.push(val);
+  inp.value = '';
+  renderObWishes();
+}
+
+function obRemoveWish(w) {
+  obWishes = obWishes.filter(x => x !== w);
+  renderObWishes();
+}
+
+function renderObWishes() {
+  const el = document.getElementById('ob-wish-tags');
+  if (!el) return;
+  el.innerHTML = obWishes.map(w =>
+    `<span class="ob-wish-tag">${w}<button onclick="obRemoveWish('${w.replace(/'/g,"\\'")}')">×</button></span>`
+  ).join('');
+}
+
+// ═══ FIN ONBOARDING ═══
 // Calcula el % de match entre dos items de forma simétrica.
 // itemA = mi item, itemB = su item
 // Devuelve un número entre 0 y 99
@@ -9158,6 +9230,84 @@ document.addEventListener('mouseup', e => {
     </button>
     <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
     <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
+  </div>
+</div>
+
+<!-- ── ONBOARDING OVERLAY ── -->
+<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.18);overflow:hidden">
+
+    <!-- Step 1: Bienvenida -->
+    <div class="ob-step" id="ob-step-1">
+      <div style="background:linear-gradient(135deg,#4a9cc5,#2d7aab);padding:40px 32px 32px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">🔄</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.6rem;color:#fff;margin-bottom:8px">Bienvenido a Truquo</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.85);line-height:1.6">Intercambia objetos sin dinero.<br>El trueque moderno.</div>
+      </div>
+      <div style="padding:28px 32px">
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">📦</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.4"><strong>Publica</strong> lo que ya no necesitas</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">⚡</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.4"><strong>Encuentra matches</strong> automáticos con otros usuarios</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🤝</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.4"><strong>Intercambia</strong> sin gastar un euro</div>
+          </div>
+        </div>
+        <button onclick="obGoTo(2)" class="btn btn-primary btn-lg" style="width:100%">Empezar →</button>
+        <button onclick="closeOnboarding()" style="width:100%;background:none;border:none;color:var(--muted);font-size:12px;margin-top:10px;cursor:pointer;font-family:inherit;padding:4px">Saltar tutorial</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Publica tu primer objeto -->
+    <div class="ob-step" id="ob-step-2" style="display:none">
+      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:40px 32px 32px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">📦</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem;color:#fff;margin-bottom:8px">Publica tu primer objeto</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.85);line-height:1.6">Cuantos más objetos publiques,<br>más matches encontrarás.</div>
+      </div>
+      <div style="padding:28px 32px">
+        <div style="background:var(--bg2);border-radius:var(--r);padding:16px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.6">
+          💡 <strong>Tip:</strong> Los objetos con foto y descripción detallada reciben <strong>3x más propuestas</strong> que los que no tienen.
+        </div>
+        <button onclick="obPublish()" class="btn btn-primary btn-lg" style="width:100%;background:#f59e0b;border-color:#f59e0b">📦 Publicar mi primer objeto</button>
+        <button onclick="obGoTo(3)" style="width:100%;background:none;border:none;color:var(--muted);font-size:12px;margin-top:10px;cursor:pointer;font-family:inherit;padding:4px">Ahora no, continuar →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Qué buscas -->
+    <div class="ob-step" id="ob-step-3" style="display:none">
+      <div style="background:linear-gradient(135deg,#10b981,#059669);padding:40px 32px 32px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">🔍</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem;color:#fff;margin-bottom:8px">¿Qué estás buscando?</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.85);line-height:1.6">Añade tus deseos y el sistema<br>buscará matches automáticamente.</div>
+      </div>
+      <div style="padding:28px 32px">
+        <div style="margin-bottom:16px">
+          <input id="ob-wish-input" placeholder="Ej: iPhone 14, bicicleta, libros..."
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1.5px solid var(--border);color:var(--text);font-size:14px;padding:12px 14px;border-radius:var(--r);outline:none;font-family:inherit"
+            onkeydown="if(event.key==='Enter'){obAddWish()}"
+          >
+          <div id="ob-wish-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
+        </div>
+        <button onclick="obAddWish()" class="btn btn-secondary btn-sm" style="margin-bottom:16px">+ Añadir deseo</button>
+        <button onclick="closeOnboarding()" class="btn btn-primary btn-lg" style="width:100%;background:#10b981;border-color:#10b981">✓ ¡Listo, empezar!</button>
+        <button onclick="closeOnboarding()" style="width:100%;background:none;border:none;color:var(--muted);font-size:12px;margin-top:10px;cursor:pointer;font-family:inherit;padding:4px">Saltar</button>
+      </div>
+    </div>
+
+    <!-- Indicador de pasos -->
+    <div style="display:flex;justify-content:center;gap:6px;padding:16px" id="ob-dots">
+      <div class="ob-dot active" id="ob-dot-1"></div>
+      <div class="ob-dot" id="ob-dot-2"></div>
+      <div class="ob-dot" id="ob-dot-3"></div>
+    </div>
+
   </div>
 </div>
 
