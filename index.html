@@ -3603,6 +3603,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // En móvil la sesión puede expirar cuando la app está en background
+  // Al volver al foco, refrescamos el token automáticamente
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && currentUser) {
+      const { data } = await db.auth.refreshSession();
+      if (data?.session?.user) currentUser = data.session.user;
+    }
+  });
+  window.addEventListener('focus', async () => {
+    if (currentUser) {
+      const { data } = await db.auth.refreshSession();
+      if (data?.session?.user) currentUser = data.session.user;
+    }
+  });
+
   const wi = document.getElementById('wants-input');
   if(wi) wi.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();addWant();} });
   const wni = document.getElementById('wish-name-input');
@@ -4718,7 +4733,7 @@ function closeOnboarding() {
 }
 
 function obGoTo(step) {
-  [1,2,3].forEach(i => {
+  [1,2,3,4].forEach(i => {
     const s = document.getElementById('ob-step-' + i);
     const d = document.getElementById('ob-dot-' + i);
     if (s) s.style.display = i === step ? 'block' : 'none';
@@ -4729,6 +4744,43 @@ function obGoTo(step) {
 function obPublish() {
   closeOnboarding();
   setTimeout(() => navTo('publish'), 200);
+}
+
+async function obSaveCity() {
+  const city = document.getElementById('ob-city-input')?.value.trim();
+  if (!city) { obGoTo(3); return; }
+  if (currentUser) {
+    await db.auth.refreshSession();
+    const { error } = await db.auth.updateUser({
+      data: { ...currentUser.user_metadata, city }
+    });
+    if (!error) {
+      currentUser.user_metadata = { ...currentUser.user_metadata, city };
+    }
+  }
+  obGoTo(3);
+}
+
+async function obDetectCity() {
+  const btn = document.querySelector('#ob-step-2 button:nth-child(3)');
+  if (btn) btn.textContent = '⏳ Detectando...';
+  if (!navigator.geolocation) { obGoTo(3); return; }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    let city = '';
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+      const data = await res.json();
+      city = data.address?.city || data.address?.town || data.address?.village || '';
+    } catch(e) {}
+    if (city) {
+      const inp = document.getElementById('ob-city-input');
+      if (inp) inp.value = city;
+      await obSaveCity();
+    } else {
+      obGoTo(3);
+    }
+  }, () => obGoTo(3));
 }
 
 function obAddWish() {
@@ -7535,6 +7587,9 @@ async function saveProfile() {
   const lat = parseFloat(document.getElementById('edit-lat').value) || currentUser.user_metadata?.lat || null;
   const lng = parseFloat(document.getElementById('edit-lng').value) || currentUser.user_metadata?.lng || null;
 
+  // Refrescar sesión antes de actualizar para evitar "Auth session missing"
+  await db.auth.refreshSession();
+
   const { error } = await db.auth.updateUser({
     data: { ...currentUser.user_metadata, name, city, bio, lat, lng }
   });
@@ -8629,9 +8684,28 @@ async function publishItem() {
   if(pubWantsOpen === true && !pubOpenCats.length){showToast('⚠️ Selecciona al menos una categoría');return;}
   if(pubWantsOpen !== true && !exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
 
+  // Refrescar sesión antes de publicar (crítico en móvil)
+  if (currentUser) {
+    const { data } = await db.auth.refreshSession();
+    if (data?.session?.user) currentUser = data.session.user;
+  }
+
   // Ciudad del perfil del usuario
-  const city = currentUser?.user_metadata?.city || '';
-  if(!city){showToast('⚠️ Añade tu ciudad en tu perfil antes de publicar');navTo('profile');return;}
+  let city = currentUser?.user_metadata?.city || '';
+  if (!city) {
+    // Intentar obtener ciudad de las coordenadas si las tiene
+    const lat = currentUser?.user_metadata?.lat;
+    const lng = currentUser?.user_metadata?.lng;
+    if (lat && lng && getNearestCityName) {
+      city = getNearestCityName(lat, lng) || '';
+    }
+    if (!city) {
+      showToast('⚠️ Añade tu ciudad en tu perfil antes de publicar');
+      navTo('profile');
+      setTimeout(() => switchPTab('config'), 400);
+      return;
+    }
+  }
 
   // Parse category — ahora son dos campos separados
   const pubCat = document.getElementById('pub-cat').value || 'Otro';
@@ -9273,8 +9347,27 @@ document.addEventListener('mouseup', e => {
       </div>
     </div>
 
-    <!-- Step 2: Publica tu primer objeto -->
+    <!-- Step 2: Ciudad -->
     <div class="ob-step" id="ob-step-2" style="display:none">
+      <div style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);padding:40px 32px 28px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">📍</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem;color:#fff;margin-bottom:8px">¿Dónde estás?</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.85);line-height:1.6">Los matches cercanos tienen<br>más probabilidad de trueque.</div>
+      </div>
+      <div style="padding:24px 28px">
+        <div style="margin-bottom:16px">
+          <input id="ob-city-input" placeholder="Escribe tu ciudad..."
+            style="width:100%;box-sizing:border-box;background:#f5f8fb;border:1.5px solid #e2e8f0;color:#1a2a3a;font-size:14px;padding:12px 14px;border-radius:10px;outline:none;font-family:inherit"
+          >
+        </div>
+        <button onclick="obSaveCity()" style="width:100%;background:#8b5cf6;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Guardar ciudad →</button>
+        <button onclick="obDetectCity()" style="width:100%;background:none;border:1.5px solid #e2e8f0;color:#666;font-size:13px;margin-top:8px;cursor:pointer;font-family:inherit;padding:10px;border-radius:10px">📍 Detectar automáticamente</button>
+        <button onclick="obGoTo(3)" style="width:100%;background:none;border:none;color:#999;font-size:12px;margin-top:8px;cursor:pointer;font-family:inherit;padding:4px">Ahora no →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Publica tu primer objeto -->
+    <div class="ob-step" id="ob-step-3" style="display:none">
       <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:40px 32px 28px;text-align:center">
         <div style="font-size:3rem;margin-bottom:12px">📦</div>
         <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem;color:#fff;margin-bottom:8px">Publica tu primer objeto</div>
@@ -9285,12 +9378,12 @@ document.addEventListener('mouseup', e => {
           💡 Los objetos con foto reciben <strong>3x más propuestas</strong>
         </div>
         <button onclick="obPublish()" style="width:100%;background:#f59e0b;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">📦 Publicar mi primer objeto</button>
-        <button onclick="obGoTo(3)" style="width:100%;background:none;border:none;color:#999;font-size:12px;margin-top:10px;cursor:pointer;font-family:inherit;padding:4px">Ahora no →</button>
+        <button onclick="obGoTo(4)" style="width:100%;background:none;border:none;color:#999;font-size:12px;margin-top:10px;cursor:pointer;font-family:inherit;padding:4px">Ahora no →</button>
       </div>
     </div>
 
-    <!-- Step 3: Qué buscas -->
-    <div class="ob-step" id="ob-step-3" style="display:none">
+    <!-- Step 4: Qué buscas -->
+    <div class="ob-step" id="ob-step-4" style="display:none">
       <div style="background:linear-gradient(135deg,#10b981,#059669);padding:40px 32px 28px;text-align:center">
         <div style="font-size:3rem;margin-bottom:12px">🔍</div>
         <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem;color:#fff;margin-bottom:8px">¿Qué estás buscando?</div>
@@ -9317,6 +9410,7 @@ document.addEventListener('mouseup', e => {
       <div class="ob-dot active" id="ob-dot-1"></div>
       <div class="ob-dot" id="ob-dot-2"></div>
       <div class="ob-dot" id="ob-dot-3"></div>
+      <div class="ob-dot" id="ob-dot-4"></div>
     </div>
 
   </div>
