@@ -2712,19 +2712,21 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
                 <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
               </select>
             </div>
-            <div class="field" style="margin-bottom:0">
-              <label>Subcategoría</label>
-              <select id="wants-subcat"><option value="">— Selecciona categoría primero —</option></select>
-            </div>
           </div>
+          <!-- Idioma — solo libros, obligatorio, va primero -->
           <div class="field" id="wants-lang-field" style="display:none;margin-bottom:10px">
-            <label>Idioma del libro</label>
+            <label>Idioma <span style="color:#e53e3e">*</span></label>
             <select id="wants-lang">
-              <option value="">— Cualquier idioma —</option>
+              <option value="">— Selecciona idioma —</option>
               <option>Español</option><option>Inglés</option><option>Catalán</option>
               <option>Francés</option><option>Alemán</option><option>Italiano</option>
               <option>Portugués</option><option>Otro idioma</option>
             </select>
+          </div>
+          <!-- Género — solo libros, opcional -->
+          <div class="field" id="wants-subcat-field" style="display:none;margin-bottom:10px">
+            <label>Género (opcional)</label>
+            <select id="wants-subcat"><option value="">— Cualquier género —</option></select>
           </div>
           <div class="wants-input-row" style="margin-bottom:10px">
             <input id="wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D)">
@@ -3434,7 +3436,7 @@ const REVIEWS_DATA = []; // Se rellena desde Supabase en loadReviews()
 const CATS = ['Todos','Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'];
 const CAT_ICONS = {Todos:'✦',Electrónica:'📱',Ropa:'👕',Hogar:'🏠',Libros:'📚',Juguetes:'🧸',Deporte:'🚴',Cartas:'🃏',Servicios:'🤝','Juegos de mesa':'🎲',Otros:'🎁'};
 
-const BOOK_SUBCATS = ['Ficción','Ciencia ficción','Fantasía','Thriller y suspense','Romance','Terror','Historia','Biografías','Autoayuda','Ciencia','Filosofía','Infantil y juvenil','Cómics y manga','Poesía','Viajes','Economía','Arte y fotografía','Cocina'];
+const BOOK_SUBCATS = ['Ficción','Thriller y suspense','Terror','Romance','Historia y biografía','Desarrollo personal','Infantil y juvenil','Cómics y manga','Otro'];
 const SERVICE_SUBCATS = ['Salud · Dentista','Salud · Médico general','Salud · Fisioterapeuta','Salud · Psicólogo','Salud · Nutricionista','Salud · Óptico','Salud · Veterinario','Construcción · Carpintero','Construcción · Electricista','Construcción · Fontanero','Construcción · Pintor','Construcción · Albañil','Construcción · Cerrajero','Educación · Profesor idiomas','Educación · Clases matemáticas','Educación · Música / instrumento','Educación · Apoyo escolar','Tecnología · Diseño web','Tecnología · Reparación ordenadores','Tecnología · Fotografía','Tecnología · Marketing digital','Belleza · Peluquería','Belleza · Estética / manicura','Belleza · Masajes','Legal · Abogado','Legal · Gestoría / asesoría','Hogar · Limpieza','Hogar · Jardinería','Hogar · Mudanzas','Transporte · Mecánico'];
 
 const EMOJIS = ['🎸','📸','🚲','💻','📱','🎮','🎹','⌚','📺','🎧','🏋️','🧳','🛵','📚','👟','🪴','🎨','🔭','🩺','🔧','⚖️','✂️','🌿','📖','🔬','🍳'];
@@ -8084,28 +8086,29 @@ const SUBCATS = {
 
 function updateSubcat() {
   const cat = document.getElementById('wants-cat').value;
+  const langField = document.getElementById('wants-lang-field');
+  const subcatField = document.getElementById('wants-subcat-field');
   const sub = document.getElementById('wants-subcat');
   const btn = document.getElementById('btn-add-cat');
-  const langField = document.getElementById('wants-lang-field');
+  const isLibros = cat === 'Libros';
 
-  // Mostrar/ocultar campo idioma solo para Libros
-  if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
+  // Para libros: mostrar idioma (obligatorio) y género (opcional)
+  if (langField) langField.style.display = isLibros ? '' : 'none';
+  if (subcatField) subcatField.style.display = isLibros ? '' : 'none';
 
-  if(!cat) {
-    sub.innerHTML = '<option value="">— Selecciona categoría primero —</option>';
-    sub.disabled = true;
-    if(btn) btn.style.display = 'none';
+  if (!cat || !isLibros) {
+    if (sub) { sub.innerHTML = '<option value="">— Selecciona categoría primero —</option>'; sub.disabled = true; }
+    if (btn) btn.style.display = 'none';
     return;
   }
+
+  // Géneros para libros
   const opts = PUB_SUBCATS[cat] || [];
-  if(opts.length) {
-    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o=>`<option>${o}</option>`).join('');
+  if (sub) {
+    sub.innerHTML = '<option value="">— Cualquier género —</option>' + opts.map(o => `<option>${o}</option>`).join('');
     sub.disabled = false;
-  } else {
-    sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
-    sub.disabled = true;
   }
-  if(btn) btn.style.display = 'inline-flex';
+  if (btn) btn.style.display = 'inline-flex';
 }
 
 // Subcategorías para formulario publicar
@@ -8113,7 +8116,7 @@ const PUB_SUBCATS = {
   'Electrónica': ['Móviles','Tablets','Ordenadores y portátiles','Consolas','Videojuegos','Audio (auriculares, altavoces)','Fotografía (cámaras, drones)','Smart home','Accesorios','Otro'],
   'Ropa': ['Ropa hombre','Ropa mujer','Ropa infantil','Zapatos','Bolsos','Joyería','Relojes','Gafas','Accesorios','Otro'],
   'Hogar': ['Muebles','Decoración','Iluminación','Textil hogar','Cocina','Organización','Electrodomésticos','Jardín','Otro'],
-  'Libros': ['Ficción','Ciencia ficción','Fantasía','Thriller y suspense','Romance','Terror','Historia','Biografías','Autoayuda','Ciencia','Filosofía','Infantil y juvenil','Cómics y manga','Poesía','Economía','Cocina','Otro'],
+  'Libros': ['Ficción','Thriller y suspense','Terror','Romance','Historia y biografía','Desarrollo personal','Infantil y juvenil','Cómics y manga','Otro'],
   'Juguetes': ['Juguetes infantiles','Puzzles','Figuras coleccionables','Construcción','Electrónicos','Otro'],
   'Deporte': ['Bicicletas','Fitness (pesas, máquinas)','Running','Deportes de equipo','Camping','Surf / skate / nieve','Raqueta','Artes marciales','Natación','Otro'],
   'Cartas': ['Magic: The Gathering','Pokémon','One Piece','Yu-Gi-Oh','Coleccionables (cromos, Panini...)','Otro'],
@@ -8401,7 +8404,7 @@ function toggleBundle(cb) {
 function addExchangeOption() {
   const inp = document.getElementById('wants-input');
   const rawCat = document.getElementById('wants-cat').value;
-  const subcat = document.getElementById('wants-subcat').value;
+  const subcat = document.getElementById('wants-subcat')?.value || '';
   const lang = document.getElementById('wants-lang')?.value || '';
   const mainName = inp.value.trim();
 
@@ -8411,7 +8414,12 @@ function addExchangeOption() {
     cat = parts[0]; parsedSubcat = parts[1];
   }
 
-  // Para libros: incluir idioma en el label si se seleccionó
+  // Para libros: idioma obligatorio
+  if (cat === 'Libros' && !lang && !mainName) {
+    showToast('⚠️ Selecciona el idioma del libro'); return;
+  }
+
+  // Construir label: idioma va primero si es libro
   let label = mainName || (parsedSubcat ? cat + ' › ' + parsedSubcat : cat) || '';
   if (cat === 'Libros' && lang && !mainName) label = label + ' · ' + lang;
   if(!label) { showToast('⚠️ Escribe o selecciona qué aceptas'); return; }
@@ -8422,9 +8430,12 @@ function addExchangeOption() {
   // Reset
   inp.value = '';
   document.getElementById('wants-cat').value = '';
-  document.getElementById('wants-subcat').innerHTML = '<option value="">— Selecciona categoría primero —</option>';
+  if(document.getElementById('wants-subcat')) {
+    document.getElementById('wants-subcat').innerHTML = '<option value="">— Selecciona categoría primero —</option>';
+  }
   if(document.getElementById('wants-lang')) document.getElementById('wants-lang').value = '';
   if(document.getElementById('wants-lang-field')) document.getElementById('wants-lang-field').style.display = 'none';
+  if(document.getElementById('wants-subcat-field')) document.getElementById('wants-subcat-field').style.display = 'none';
 }
 
 function renderExchangeOptions() {
