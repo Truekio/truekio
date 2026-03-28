@@ -3199,6 +3199,7 @@ window._enterApp = function() {
   }
 
   navTo('explore');
+  loadAllRatings(); // cargar ratings de todos los usuarios para ordenación bayesiana
 
   // ── Geolocalización: usar coords guardadas al instante, actualizar en bg ──
   function applyGeoAndRender(coords) {
@@ -4241,7 +4242,13 @@ function applyFilter(q, cat) {
       return 0;
     });
   } else if (sortMode === 'trust') {
-    f.sort((a, b) => (USER_TRUST[b.user] || 0) - (USER_TRUST[a.user] || 0));
+    f.sort((a, b) => {
+      const rA = USER_RATINGS[a.user_id];
+      const rB = USER_RATINGS[b.user_id];
+      const sA = rA ? rA.bayesian : 0;
+      const sB = rB ? rB.bayesian : 0;
+      return sB - sA;
+    });
   }
 
   const countEl = document.getElementById('sp-results-n');
@@ -6619,6 +6626,41 @@ const TRUST_LEVELS = {
 
 // Trust scores — se calculan dinámicamente desde Supabase
 const USER_TRUST = {};
+
+// Mapa global de ratings por user_id: { avg, count, bayesian }
+const USER_RATINGS = {};
+const BAYESIAN_C = 3; // constante de peso previo
+
+function bayesianScore(avg, count, globalAvg) {
+  return (avg * count + BAYESIAN_C * globalAvg) / (count + BAYESIAN_C);
+}
+
+async function loadAllRatings() {
+  const { data } = await db.from('reviews').select('reviewed_user_id, stars');
+  if (!data || !data.length) return;
+
+  // Agrupar por user_id
+  const map = {};
+  data.forEach(r => {
+    if (!map[r.reviewed_user_id]) map[r.reviewed_user_id] = { sum: 0, count: 0 };
+    map[r.reviewed_user_id].sum += r.stars;
+    map[r.reviewed_user_id].count += 1;
+  });
+
+  // Media global
+  const totalStars = data.reduce((s, r) => s + r.stars, 0);
+  const globalAvg = totalStars / data.length;
+
+  // Calcular score bayesiano para cada usuario
+  Object.entries(map).forEach(([userId, { sum, count }]) => {
+    const avg = sum / count;
+    USER_RATINGS[userId] = {
+      avg: Math.round(avg * 10) / 10,
+      count,
+      bayesian: bayesianScore(avg, count, globalAvg),
+    };
+  });
+}
 
 function getTrustLevel(score) {
   if(score >= 90) return 'elite';
