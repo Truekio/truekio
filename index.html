@@ -3265,6 +3265,7 @@ window._enterApp = function() {
   // Mostrar onboarding si el usuario no tiene objetos publicados
   if(currentUser) setTimeout(async () => {
     if (!currentUser) return;
+    if (myItems && myItems.length > 0) return; // ya tiene items en memoria
     const { data } = await db.from('items').select('id').eq('user_id', currentUser.id).limit(1);
     if (!data || !data.length) showOnboarding();
   }, 1200);
@@ -8764,6 +8765,7 @@ async function publishItem() {
   navTo('explore');
   applyFilter('', currentFilter);
   renderProfile();
+  loadMyItems(); // actualizar lista de mis objetos
   const _psi = document.getElementById('prof-stat-items'); if(_psi) _psi.textContent = myItems.length;
 
   // Detectar coincidencias con deseos de otros usuarios (fire & forget)
