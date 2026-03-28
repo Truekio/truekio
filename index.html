@@ -2698,11 +2698,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <!-- Selector de categorías para opción flexible -->
         <div id="wants-open-cats" style="display:none;margin-bottom:16px">
           <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">¿Qué categorías aceptas? <span style="color:#e53e3e">*</span></div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px" id="wants-open-cat-chips">
-            ${['Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'].map(c =>
-              `<button onclick="toggleOpenCat(this,'${c}')" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all .14s">${c}</button>`
-            ).join('')}
-          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="wants-open-cat-chips"></div>
         </div>
         <div id="wants-add-form" style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg);display:none">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">➕ Añadir opción</div>
@@ -7648,11 +7644,21 @@ function setWantsOpen(open) {
     noBtn.style.borderColor = !open ? 'var(--accent)' : 'var(--border)';
     noBtn.style.background = !open ? 'var(--accent-l)' : 'var(--bg)';
   }
-  // Mostrar el selector correcto
   const openCats = document.getElementById('wants-open-cats');
   const form = document.getElementById('wants-add-form');
   if (openCats) openCats.style.display = open ? 'block' : 'none';
   if (form) form.style.display = open ? 'none' : 'block';
+
+  // Inicializar chips si aún no se han generado
+  if (open) {
+    const chipsEl = document.getElementById('wants-open-cat-chips');
+    if (chipsEl && !chipsEl.children.length) {
+      const cats = ['Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'];
+      chipsEl.innerHTML = cats.map(c =>
+        `<button onclick="toggleOpenCat(this,'${c}')" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all .14s">${c}</button>`
+      ).join('');
+    }
+  }
 }
 
 function toggleOpenCat(btn, cat) {
@@ -8487,7 +8493,8 @@ function selectShip(el, mode) {
 async function publishItem() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
-  if(!exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
+  if(pubWantsOpen === true && !pubOpenCats.length){showToast('⚠️ Selecciona al menos una categoría');return;}
+  if(pubWantsOpen !== true && !exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
 
   // Ciudad del perfil del usuario
   const city = currentUser?.user_metadata?.city || '';
