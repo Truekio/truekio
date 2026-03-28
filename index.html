@@ -4693,13 +4693,19 @@ let obWishes = [];
 
 function showOnboarding() {
   const el = document.getElementById('onboarding-overlay');
-  if (el) el.classList.add('open');
+  if (el) {
+    el.style.display = 'flex';
+    el.classList.add('open');
+  }
   obGoTo(1);
 }
 
 function closeOnboarding() {
   const el = document.getElementById('onboarding-overlay');
-  if (el) el.classList.remove('open');
+  if (el) {
+    el.style.display = 'none';
+    el.classList.remove('open');
+  }
   // Guardar deseos si añadió alguno
   if (obWishes.length && currentUser) {
     obWishes.forEach(w => {
