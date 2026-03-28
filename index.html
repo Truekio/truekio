@@ -3264,9 +3264,10 @@ window._enterApp = function() {
   if(currentUser) setTimeout(() => loadMyItems(), 300);
   // Mostrar onboarding si el usuario no tiene objetos publicados
   if(currentUser) setTimeout(async () => {
+    if (!currentUser) return;
     const { data } = await db.from('items').select('id').eq('user_id', currentUser.id).limit(1);
     if (!data || !data.length) showOnboarding();
-  }, 600);
+  }, 1200);
   // Cargar valoraciones reales desde Supabase
   if(currentUser) setTimeout(() => loadReviews(), 400);
   if(currentUser) setTimeout(() => loadProfileStats(), 500);
