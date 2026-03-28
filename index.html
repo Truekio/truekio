@@ -2675,8 +2675,26 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="pub-screen" id="pub-screen-2" style="display:none">
         <div class="pub-screen-title">¿Qué aceptas?</div>
         <div class="pub-screen-sub">El sistema buscará matches automáticamente.</div>
+
+        <!-- Pregunta explícita de apertura -->
+        <div id="wants-open-question" style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">¿Qué nivel de flexibilidad tienes?</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button id="wants-open-yes" onclick="setWantsOpen(true)"
+              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
+              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🔓 Acepto cualquier cosa de calidad</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.4">Me es igual la categoría, estoy abierto a cualquier propuesta interesante.</div>
+            </button>
+            <button id="wants-open-no" onclick="setWantsOpen(false)"
+              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
+              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🎯 Tengo preferencias concretas</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.4">Quiero especificar qué categorías o artículos me interesan.</div>
+            </button>
+          </div>
+        </div>
+
         <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
-        <div style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg)">
+        <div id="wants-add-form" style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg);display:none">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">➕ Añadir opción</div>
           <div class="form-row" style="margin-bottom:10px">
             <div class="field" style="margin-bottom:0">
@@ -3346,10 +3364,12 @@ async function loadItemsFromSupabase() {
     name: row.title,
     description: row.description,
     cat: row.category,
+    subcat: row.subcategory || '',
     emoji: row.emoji || '📦',
     condition: row.condition,
     price: '',
     wants: row.wants ? row.wants.split(',').map(w => w.trim()) : [],
+    wants_open: row.wants_open || false,
     photos: row.photo_urls && row.photo_urls.length ? row.photo_urls : (row.photos ? [row.photos] : []),
     user: row.user_name || 'Usuario',
     userEmoji: '👤',
@@ -4636,6 +4656,116 @@ function renderActivityWishlist() {
 }
 
 // ═══ MATCHES (DIRECT) ═══
+// ═══ FUNCIÓN UNIFICADA DE MATCH ═══
+// Calcula el % de match entre dos items de forma simétrica.
+// itemA = mi item, itemB = su item
+// Devuelve un número entre 0 y 99
+function calcMatchScore(itemA, itemB) {
+  const stem = w => w.replace(/[eos]$/, '').replace(/ción$/, 'cion').trim();
+
+  const fuzzy = (haystack, needle) => {
+    if (!haystack || !needle) return false;
+    if (needle.length < 3) return false; // evitar falsos matches con palabras muy cortas
+    if (haystack.length < 3) return false; // evitar falsos matches con haystack muy corto
+    const h = haystack.toLowerCase();
+    const n = needle.toLowerCase();
+    // Solo buscar needle dentro de haystack (no al revés para evitar falsos positivos)
+    if (h.includes(n)) return true;
+    // Solo si needle es suficientemente largo, buscar haystack dentro de needle
+    if (h.length > 4 && n.includes(h)) return true;
+    const ns = stem(n);
+    if (ns.length > 3 && h.includes(ns)) return true;
+    return n.split(/[\s,›·]+/).filter(t => t.length > 3).some(t => h.includes(stem(t)));
+  };
+
+  // Normalizar wants siempre a array
+  const toArr = w => Array.isArray(w) ? w : (w || '').split(',').map(x => x.trim()).filter(Boolean);
+
+  // Datos de A (mi item)
+  const aTitle = (itemA.name || itemA.title || '').toLowerCase();
+  const aCat   = (itemA.cat || itemA.category || '').toLowerCase();
+  const aSubcat= (itemA.subcat || itemA.subcategory || '').toLowerCase();
+  const aWants = toArr(itemA.wants);
+  const aWantsOpen = itemA.wants_open || false;
+  const aLocation = (itemA.location || '').toLowerCase();
+
+  // Datos de B (su item)
+  const bTitle = (itemB.name || itemB.title || '').toLowerCase();
+  const bCat   = (itemB.cat || itemB.category || '').toLowerCase();
+  const bSubcat= (itemB.subcat || itemB.subcategory || '').toLowerCase();
+  const bWants = toArr(itemB.wants);
+  const bWantsOpen = itemB.wants_open || false;
+  const bLocation = (itemB.location || '').toLowerCase();
+
+  const aWantsStr = aWants.join(' ').toLowerCase();
+  const bWantsStr = bWants.join(' ').toLowerCase();
+
+  // ── LADO A: ¿A quiere lo que ofrece B? ──
+  let scoreA = 0;
+  // ¿A quiere el título exacto de B?
+  const aWantsBTitle = aWants.some(w => fuzzy(w, bTitle) || fuzzy(bTitle, w));
+  // ¿A quiere la categoría de B?
+  const aWantsBCat = aWants.some(w => fuzzy(w, bCat) || w.toLowerCase() === bCat);
+  // ¿A quiere la subcategoría de B?
+  const aWantsBSubcat = bSubcat && aWants.some(w => fuzzy(w, bSubcat));
+
+  if (aWantsBTitle)       scoreA = 50;
+  else if (aWantsBSubcat) scoreA = 35;
+  else if (aWantsBCat)    scoreA = 25;
+  else if (aWantsOpen && bCat) scoreA = 15; // abierto a todo, pero solo si B tiene categoría válida
+  else                    scoreA = 0;
+
+  // ── LADO B: ¿B quiere lo que ofrece A? ──
+  let scoreB = 0;
+  // ¿B quiere el título exacto de A?
+  const bWantsATitle = bWants.some(w => fuzzy(w, aTitle) || fuzzy(aTitle, w));
+  // ¿B quiere la categoría de A?
+  const bWantsACat = bWants.some(w => fuzzy(w, aCat) || w.toLowerCase() === aCat);
+  // ¿B quiere la subcategoría de A?
+  const bWantsASubcat = aSubcat && bWants.some(w => fuzzy(w, aSubcat));
+
+  if (bWantsATitle)       scoreB = 50;
+  else if (bWantsASubcat) scoreB = 35;
+  else if (bWantsACat)    scoreB = 25;
+  else if (bWantsOpen && aCat) scoreB = 15; // abierto a todo, pero solo si A tiene categoría válida
+  else                    scoreB = 0;
+
+  // Si ninguno quiere nada del otro → 0
+  if (scoreA === 0 && scoreB === 0) return 0;
+
+  // Necesitamos que AMBOS lados tengan algo de interés para un match real
+  // Si solo un lado tiene interés → score reducido
+  let total;
+  if (scoreA > 0 && scoreB > 0) {
+    // Match bilateral — sumar ambos lados (máx 99 sin bonus)
+    total = scoreA + scoreB;
+  } else {
+    // Match unilateral — solo la mitad del score
+    total = Math.round((scoreA + scoreB) / 2);
+  }
+
+  // ── BONUS: misma ciudad +14 ──
+  if (aLocation && bLocation && aLocation === bLocation) {
+    total += 14;
+  }
+
+  // ── FILTRO IDIOMA para libros (eliminatorio) ──
+  if (aCat === 'libros' || bCat === 'libros') {
+    // Extraer idioma de subcategory "Género · Idioma"
+    const getLang = subcat => {
+      if (!subcat) return null;
+      const parts = subcat.split('·').map(p => p.trim().toLowerCase());
+      return parts.length > 1 ? parts[1] : null;
+    };
+    const langA = getLang(aSubcat);
+    const langB = getLang(bSubcat);
+    // Si ambos tienen idioma especificado y no coinciden → 0
+    if (langA && langB && langA !== langB) return 0;
+  }
+
+  return Math.min(99, total);
+}
+
 window.loadMatches = async function loadMatches() {
   if (!currentUser) { console.log('loadMatches: no currentUser'); return; }
 
@@ -4846,18 +4976,15 @@ window.loadMatches = async function loadMatches() {
         const theyWantMineByCat   = fuzzyMatch(theirWants, myCat);
         const theyWantMine = theyWantMineByTitle || theyWantMineByCat;
 
-        if (!iWantTheirs && !theyWantMine) continue;
+        if (!iWantTheirs && !theyWantMine && !myItem.wants_open && !theirItem.wants_open) continue;
         seenPairs.add(pairKey);
 
-        // Score: título específico vale más que categoría genérica
-        let score = 0;
-        if (iWantTheirsByTitle) score += 45;       // quiero exactamente ese objeto
-        else if (iWantTheirsByCat) score += 20;    // acepto esa categoría (genérico)
-        if (theyWantMineByTitle) score += 45;      // quieren exactamente mi objeto
-        else if (theyWantMineByCat) score += 20;   // aceptan mi categoría (genérico)
-        score = Math.min(99, score);
+        // Usar función unificada de match
+        const score = calcMatchScore(
+          { ...myItem,  name: myItem.title,  cat: myItem.category,  subcat: myItem.subcategory, wants: myItem.wants, wants_open: myItem.wants_open, location: myItem.location },
+          { ...theirItem, name: theirItem.title, cat: theirItem.category, subcat: theirItem.subcategory, wants: theirItem.wants, wants_open: theirItem.wants_open, location: theirItem.location }
+        );
 
-        // Filtrar matches muy débiles (solo coincidencia de categoría por un lado)
         if (score < 25) continue;
 
         const reasons = [];
@@ -6340,7 +6467,7 @@ async function openModal(itemId) {
 
   let userObjects = [];
   if (currentUser) {
-    const { data } = await db.from('items').select('id,title,category,subcategory,location,emoji,photos,photo_urls,wants').eq('user_id', currentUser.id);
+    const { data } = await db.from('items').select('id,title,category,subcategory,location,emoji,photos,photo_urls,wants,wants_open').eq('user_id', currentUser.id);
     userObjects = data || [];
   }
 
@@ -6350,96 +6477,23 @@ async function openModal(itemId) {
       <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeModal();navTo('publish')">Publicar un objeto →</button>
     </div>`;
   } else {
-    // Calcular match de cada objeto mío con el item del otro usuario
-    const theirWants = item.wants || [];
-    const stem = w => w.replace(/[eos]$/, '').trim();
-
+    // Usar función unificada — mismo algoritmo que el explorador
     const scored = userObjects.map(o => {
-      const myTitle = (o.title || '').toLowerCase();
-      const myCat = (o.category || '').toLowerCase();
-      const mySubcatRaw = o.subcategory || '';
-      const myLocation = (o.location || currentUser?.user_metadata?.city || '').toLowerCase();
-
-      // Para libros: extraer idioma de subcategory "Género · Idioma"
-      let myGenre = '';
-      let myLang = '';
-      if (myCat === 'libros' && mySubcatRaw) {
-        const parts = mySubcatRaw.split(' · ');
-        myGenre = (parts[0] || '').toLowerCase();
-        myLang = (parts[1] || '').toLowerCase();
-      } else {
-        myGenre = mySubcatRaw.toLowerCase();
-      }
-
-      // ── Nombre exacto → 99% ──
-      const theirWantsStr = theirWants.join(' ').toLowerCase();
-      const nameMatch = theirWants.some(w => {
-        const wl = w.toLowerCase();
-        return wl === myTitle || myTitle.includes(stem(wl)) || wl.includes(stem(myTitle.split(' ')[0]));
-      });
-      if (nameMatch) return { ...o, score: 99 };
-
-      // ── Sin nombre exacto: calcular por componentes ──
-      let score = 0;
-
-      // 1. Categoría (base 50%)
-      const catMatch = theirWants.some(w => w.toLowerCase() === myCat || w.toLowerCase().includes(myCat));
-      if (!catMatch) return { ...o, score: 0 }; // sin categoría → 0
-      score += 50;
-
-      // 2. Subcategoría
-      const itemWantsStr = (item.wants || []).join(' ').toLowerCase();
-      const theirSubcatRaw = item.subcat || ''; // subcategoría del item del otro
-      const hasSubcat = theirWants.some(w => w.includes('›') || w.includes('>'));
-
-      if (!myGenre) {
-        // Mi objeto no tiene subcategoría → omisión = aceptación → +10
-        score += 10;
-      } else {
-        // Tengo subcategoría — ¿coincide con lo que busca?
-        const subcatMatch = theirWants.some(w => {
-          const wl = w.toLowerCase();
-          return wl.includes(myGenre) || myGenre.includes(wl.split(' ')[0]);
-        }) || itemWantsStr.includes(myGenre);
-        if (subcatMatch) score += 15;
-        // Si no coincide → +0
-      }
-
-      // 3. Idioma (solo libros, obligatorio)
-      if (myCat === 'libros') {
-        if (!myLang) return { ...o, score: 0 }; // sin idioma → 0 (campo obligatorio)
-        const theirLang = theirWants.find(w => ['español','inglés','catalán','francés','alemán','italiano','portugués','otro idioma'].some(l => w.toLowerCase().includes(l)));
-        if (theirLang) {
-          // El otro especificó idioma — debe coincidir
-          if (!theirLang.toLowerCase().includes(myLang)) return { ...o, score: 0 };
-          score += 15;
-        } else {
-          // El otro no especificó idioma → omisión = aceptación → +15
-          score += 15;
-        }
-      }
-
-      // 4. Ciudad misma → +14
-      const theirLocation = (item.location || '').toLowerCase();
-      if (myLocation && theirLocation && myLocation === theirLocation) {
-        score += 14;
-      }
-
-      return { ...o, score: Math.min(99, score) };
+      const score = calcMatchScore(
+        { name: o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? o.wants.split(',').map(w=>w.trim()) : [], wants_open: o.wants_open || false, location: o.location },
+        { name: item.name, cat: item.cat, subcat: item.subcat, wants: item.wants, wants_open: item.wants_open || false, location: item.location }
+      );
+      return { ...o, score };
     }).sort((a, b) => b.score - a.score);
-
-    const goodMatch = scored.filter(o => o.score >= 50);
+    const goodMatch = scored.filter(o => o.score >= 30);
 
     if (!goodMatch.length) {
-      // Sin match suficiente — bloquear propuesta
-      offerGrid.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;grid-column:1/-1">
-        <div style="font-size:2rem;margin-bottom:8px">🔍</div>
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">Sin match suficiente</div>
-        <div style="font-size:12px;line-height:1.6">Ninguno de tus objetos encaja con lo que busca esta persona.<br>Añade más objetos o cambia lo que aceptas en los existentes.</div>
-      </div>`;
-      // Deshabilitar botón enviar
+      // Sin match suficiente — mostrar todos con aviso
+      offerGrid.innerHTML = `<div style="padding:12px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--muted);text-align:center;grid-column:1/-1;margin-bottom:8px">
+        Ninguno de tus objetos encaja directamente. Puedes proponer igualmente si crees que hay interés.
+      </div>` + scored.map(o => renderCard(o, scored.indexOf(o))).join('');
       const sendBtn = document.querySelector('[onclick="sendOffer()"]');
-      if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.4'; }
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ''; }
       window._offerObjects = scored;
       document.getElementById('modal-msg-txt').value = '';
       document.getElementById('modal-overlay').style.display = 'flex';
@@ -7558,6 +7612,25 @@ let sortByDistance = !!userCoords; // activo por defecto si ya tenemos coords
 let pubCurrentScreen = 1;
 const PUB_SCREENS = 2;
 const PUB_OPTIONAL = { 1: false, 2: false };
+let pubWantsOpen = null; // null = sin respuesta, true = abierto, false = tiene preferencias
+
+function setWantsOpen(open) {
+  pubWantsOpen = open;
+  // Resaltar botón seleccionado
+  const yesBtn = document.getElementById('wants-open-yes');
+  const noBtn = document.getElementById('wants-open-no');
+  if (yesBtn) {
+    yesBtn.style.borderColor = open ? 'var(--accent)' : 'var(--border)';
+    yesBtn.style.background = open ? 'var(--accent-l)' : 'var(--bg)';
+  }
+  if (noBtn) {
+    noBtn.style.borderColor = !open ? 'var(--accent)' : 'var(--border)';
+    noBtn.style.background = !open ? 'var(--accent-l)' : 'var(--bg)';
+  }
+  // Mostrar/ocultar formulario de preferencias
+  const form = document.getElementById('wants-add-form');
+  if (form) form.style.display = open ? 'none' : 'block';
+}
 
 function pubGoTo(n) {
   for (let i = 1; i <= PUB_SCREENS; i++) {
@@ -7606,7 +7679,8 @@ function pubNext(skip = false) {
       }
     }
     if (pubCurrentScreen === 2) {
-      if (!exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
+      if (pubWantsOpen === null) { showToast('⚠️ Indica tu nivel de flexibilidad'); return; }
+      if (pubWantsOpen === false && !exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
     }
   }
   if (pubCurrentScreen < PUB_SCREENS) pubGoTo(pubCurrentScreen + 1);
@@ -7622,6 +7696,7 @@ function pubCancel() {
   if (name) {
     if (!confirm('¿Seguro que quieres cancelar? Perderás los datos introducidos.')) return;
   }
+  pubWantsOpen = null;
   navTo('explore');
 }
 
@@ -8437,6 +8512,7 @@ async function publishItem() {
     emoji: autoEmoji,
     condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
     wants: wantsFlat.join(', '),
+    wants_open: pubWantsOpen === true,
     photos: photoUrls.length ? photoUrls[0] : '',
     photo_urls: photoUrls.length ? photoUrls : null,
     user_name: userName,
@@ -8483,6 +8559,7 @@ async function publishItem() {
   // Reset formulario
   exchangeOptions = [];
   pubImages = [];
+  pubWantsOpen = null;
   // Reset demand pill
   const dp = document.getElementById('demand-pill');
   if(dp) dp.style.display = 'none';
