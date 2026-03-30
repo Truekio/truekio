@@ -1885,9 +1885,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
       </div>
       <div class="field" id="edit-book-lang-field" style="display:none">
-        <label>Idioma del libro</label>
+        <label>Idioma del libro <span style="color:#e53e3e">*</span></label>
         <select id="edit-book-lang">
-          <option value="">— Opcional —</option>
+          <option value="">— Selecciona idioma —</option>
           <option>Español</option><option>Inglés</option><option>Catalán</option>
           <option>Francés</option><option>Alemán</option><option>Italiano</option>
           <option>Portugués</option><option>Otro idioma</option>
@@ -8760,6 +8760,14 @@ function selectShip(el, mode) {
 async function publishItem() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
+
+  // Validar idioma obligatorio para libros
+  const pubCatCheck = document.getElementById('pub-cat').value;
+  if (pubCatCheck === 'Libros') {
+    const lang = document.getElementById('pub-book-lang')?.value;
+    if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
+  }
+
   if(pubWantsOpen === true && !pubOpenCats.length){showToast('⚠️ Selecciona al menos una categoría');return;}
   if(pubWantsOpen !== true && !exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
 
