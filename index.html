@@ -7971,6 +7971,7 @@ function pubNext(skip = false) {
     if (pubCurrentScreen === 1) {
       const name = document.getElementById('pub-name').value.trim();
       if (!name) { showToast('⚠️ Escribe el nombre del objeto'); return; }
+      if (name.length < 2) { showToast('⚠️ El nombre debe tener al menos 2 caracteres'); return; }
       const cat = document.getElementById('pub-cat').value;
       if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
       if (!pubImages.length) { showToast('⚠️ Añade al menos una foto del objeto'); return; }
@@ -8850,6 +8851,7 @@ async function publishItem() {
     title: name,
     description: document.getElementById('pub-desc').value || '',
     category: pubCat,
+    subcategory: fullSubcat || null,
     emoji: autoEmoji,
     condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
     wants: pubWantsOpen === true ? pubOpenCats.join(', ') : wantsFlat.join(', '),
