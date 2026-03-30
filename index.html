@@ -7342,12 +7342,13 @@ function updateEditSubcat() {
   const label = document.getElementById('edit-subcat-label');
   const langField = document.getElementById('edit-book-lang-field');
 
-  if (label) label.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
+  if (label) label.innerHTML = cat === 'Libros' ? 'Género <span style="color:#e53e3e">*</span>' : 'Subcategoría';
   if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
 
   const opts = PUB_SUBCATS[cat] || [];
   if (opts.length) {
-    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
+    const placeholder = cat === 'Libros' ? '— Selecciona género —' : '— Opcional —';
+    sub.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o => `<option>${o}</option>`).join('');
     sub.disabled = false;
   } else {
     sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
@@ -7372,8 +7373,18 @@ async function saveEditItem() {
   const btn = document.getElementById('edit-item-save-btn');
 
   if (!name) { errEl.textContent = 'El nombre no puede estar vacío.'; errEl.style.display = ''; return; }
+  if (name.length < 2) { errEl.textContent = 'El nombre debe tener al menos 2 caracteres.'; errEl.style.display = ''; return; }
   const city = document.getElementById('edit-item-city')?.value?.trim() || currentUser?.user_metadata?.city || '';
   if (!city) { errEl.textContent = 'La ciudad es obligatoria.'; errEl.style.display = ''; return; }
+
+  // Para libros: idioma y género obligatorios
+  const editCat = document.getElementById('edit-item-cat')?.value || '';
+  if (editCat === 'Libros') {
+    const editLang = document.getElementById('edit-book-lang')?.value;
+    if (!editLang) { errEl.textContent = 'El idioma es obligatorio para libros.'; errEl.style.display = ''; return; }
+    const editGenre = document.getElementById('edit-item-subcat')?.value;
+    if (!editGenre) { errEl.textContent = 'El género es obligatorio para libros.'; errEl.style.display = ''; return; }
+  }
 
   btn.textContent = 'Guardando...'; btn.disabled = true; errEl.style.display = 'none';
 
@@ -7975,10 +7986,12 @@ function pubNext(skip = false) {
       const cat = document.getElementById('pub-cat').value;
       if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
       if (!pubImages.length) { showToast('⚠️ Añade al menos una foto del objeto'); return; }
-      // Para libros: idioma obligatorio
+      // Para libros: idioma y género obligatorios
       if (cat === 'Libros') {
         const lang = document.getElementById('pub-book-lang')?.value;
         if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
+        const genre = document.getElementById('pub-subcat')?.value;
+        if (!genre) { showToast('⚠️ Selecciona el género del libro'); return; }
       }
     }
     if (pubCurrentScreen === 2) {
@@ -8413,12 +8426,15 @@ function updatePubSubcat() {
 
   // Actualizar label de subcategoría según categoría
   if (subLabel) {
-    subLabel.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
+    subLabel.innerHTML = cat === 'Libros'
+      ? 'Género <span style="color:#e53e3e">*</span>'
+      : 'Subcategoría';
   }
 
   const subs = PUB_SUBCATS[cat] || [];
   if (subs.length) {
-    subEl.innerHTML = '<option value="">— Opcional —</option>' +
+    const placeholder = cat === 'Libros' ? '— Selecciona género —' : '— Opcional —';
+    subEl.innerHTML = `<option value="">${placeholder}</option>` +
       subs.map(s => `<option>${s}</option>`).join('');
     subEl.disabled = false;
     if (subField) subField.style.display = '';
@@ -8762,11 +8778,13 @@ async function publishItem() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
 
-  // Validar idioma obligatorio para libros
+  // Validar idioma y género obligatorios para libros
   const pubCatCheck = document.getElementById('pub-cat').value;
   if (pubCatCheck === 'Libros') {
     const lang = document.getElementById('pub-book-lang')?.value;
     if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
+    const genre = document.getElementById('pub-subcat')?.value;
+    if (!genre) { showToast('⚠️ Selecciona el género del libro'); return; }
   }
 
   if(pubWantsOpen === true && !pubOpenCats.length){showToast('⚠️ Selecciona al menos una categoría');return;}
