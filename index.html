@@ -4246,7 +4246,16 @@ function applyFilter(q, cat) {
     const bShip = !spFilters.shipping.length || spFilters.shipping.includes(i.shipping);
     // Filtros de libros — idioma y género se guardan en subcat "Género · Idioma"
     const bLang = !spFilters.lang || (i.subcat || '').toLowerCase().includes(spFilters.lang.toLowerCase());
-    const bGenre = !spFilters.genre || (i.subcat || '').toLowerCase().includes(spFilters.genre.toLowerCase());
+    // Para género: si el libro no tiene subcat, lo mostramos igualmente (omisión ≠ género diferente)
+    // Solo excluir si tiene subcat con un género diferente al filtrado
+    const bGenre = !spFilters.genre || (() => {
+      const subcat = (i.subcat || '').toLowerCase();
+      if (!subcat) return true; // sin género especificado → mostrar
+      const GENEROS = ['ficción','thriller y suspense','terror','romance','historia y biografía','desarrollo personal','infantil y juvenil','cómics y manga'];
+      const hasGenre = GENEROS.some(g => subcat.includes(g));
+      if (!hasGenre) return true; // subcat solo tiene idioma → mostrar
+      return subcat.includes(spFilters.genre.toLowerCase());
+    })();
     return bc && bq && bCat && bCity && bCond && bShip && bLang && bGenre;
   });
 
