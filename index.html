@@ -2866,7 +2866,38 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <button class="fd-cat-btn" data-val="Otros" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🎁</span><span class="fd-cat-lbl">Otros</span></button>
       </div>
     </div>
+
+    <!-- Filtros específicos de Libros — aparecen dinámicamente -->
+    <div id="fd-books-filters" style="display:none">
+      <div class="fd-section">
+        <div class="fd-label">Idioma</div>
+        <div class="fd-chips" id="fd-lang-chips">
+          <button class="fd-chip" data-val="Español" onclick="fdToggleLang(this)">Español</button>
+          <button class="fd-chip" data-val="Inglés" onclick="fdToggleLang(this)">Inglés</button>
+          <button class="fd-chip" data-val="Catalán" onclick="fdToggleLang(this)">Catalán</button>
+          <button class="fd-chip" data-val="Francés" onclick="fdToggleLang(this)">Francés</button>
+          <button class="fd-chip" data-val="Alemán" onclick="fdToggleLang(this)">Alemán</button>
+          <button class="fd-chip" data-val="Italiano" onclick="fdToggleLang(this)">Italiano</button>
+          <button class="fd-chip" data-val="Portugués" onclick="fdToggleLang(this)">Portugués</button>
+          <button class="fd-chip" data-val="Otro idioma" onclick="fdToggleLang(this)">Otro</button>
+        </div>
+      </div>
+      <div class="fd-section">
+        <div class="fd-label">Género</div>
+        <div class="fd-chips" id="fd-genre-chips">
+          <button class="fd-chip" data-val="Ficción" onclick="fdToggleGenre(this)">Ficción</button>
+          <button class="fd-chip" data-val="Thriller y suspense" onclick="fdToggleGenre(this)">Thriller y suspense</button>
+          <button class="fd-chip" data-val="Terror" onclick="fdToggleGenre(this)">Terror</button>
+          <button class="fd-chip" data-val="Romance" onclick="fdToggleGenre(this)">Romance</button>
+          <button class="fd-chip" data-val="Historia y biografía" onclick="fdToggleGenre(this)">Historia y biografía</button>
+          <button class="fd-chip" data-val="Desarrollo personal" onclick="fdToggleGenre(this)">Desarrollo personal</button>
+          <button class="fd-chip" data-val="Infantil y juvenil" onclick="fdToggleGenre(this)">Infantil y juvenil</button>
+          <button class="fd-chip" data-val="Cómics y manga" onclick="fdToggleGenre(this)">Cómics y manga</button>
+          <button class="fd-chip" data-val="Otro" onclick="fdToggleGenre(this)">Otro</button>
+        </div>
+      </div>
     </div>
+  </div>
   <div class="fd-foot">
     <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar filtros</button>
     <button class="btn btn-ghost btn-md" style="flex:1" onclick="closeFilterDrawer()">Cerrar</button>
@@ -2875,7 +2906,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <script>
 // ── FILTER DRAWER LOGIC ──
-let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance' };
+let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '' };
 
 function openFilterDrawer() {
   document.getElementById('filter-drawer').classList.add('open');
@@ -2894,7 +2925,25 @@ function closeFilterDrawer() {
 }
 function fdSelectCat(btn) {
   fdState.cat = btn.dataset.val;
-  document.querySelectorAll('#filter-drawer .fd-cat-grid:first-of-type .fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
+  // Resetear filtros de libro al cambiar categoría
+  fdState.lang = '';
+  fdState.genre = '';
+  document.querySelectorAll('#filter-drawer .fd-cat-grid .fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
+  // Mostrar/ocultar filtros de libros
+  const booksFilters = document.getElementById('fd-books-filters');
+  if (booksFilters) booksFilters.style.display = fdState.cat === 'Libros' ? 'block' : 'none';
+  // Resetear chips de libro
+  document.querySelectorAll('#fd-lang-chips .fd-chip, #fd-genre-chips .fd-chip').forEach(c => c.classList.remove('on'));
+  fdApply();
+}
+function fdToggleLang(btn) {
+  fdState.lang = fdState.lang === btn.dataset.val ? '' : btn.dataset.val;
+  document.querySelectorAll('#fd-lang-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.lang));
+  fdApply();
+}
+function fdToggleGenre(btn) {
+  fdState.genre = fdState.genre === btn.dataset.val ? '' : btn.dataset.val;
+  document.querySelectorAll('#fd-genre-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.genre));
   fdApply();
 }
 function fdSelectSort(btn) {
@@ -2909,18 +2958,24 @@ function fdToggleChip(btn, type, val) {
   fdApply();
 }
 function fdClearAll() {
-  fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance' };
+  fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '' };
+  const booksFilters = document.getElementById('fd-books-filters');
+  if (booksFilters) booksFilters.style.display = 'none';
   _fdSyncUI();
   fdApply();
 }
 function _fdSyncUI() {
   // Categoría
-  document.querySelectorAll('#filter-drawer .fd-cat-grid:first-of-type .fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === fdState.cat));
-  // Sort
-  // Chips
+  document.querySelectorAll('#filter-drawer .fd-cat-grid .fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === fdState.cat));
+  // Chips condición/envío
   document.querySelectorAll('.fd-chip').forEach(b => {
-    b.classList.toggle('on', fdState.conditions.includes(b.textContent.trim()) || fdState.shipping.includes(b.textContent.trim()));
+    b.classList.toggle('on', fdState.conditions.includes(b.dataset.val) || fdState.shipping.includes(b.dataset.val));
   });
+  // Filtros libros
+  const booksFilters = document.getElementById('fd-books-filters');
+  if (booksFilters) booksFilters.style.display = fdState.cat === 'Libros' ? 'block' : 'none';
+  document.querySelectorAll('#fd-lang-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.lang));
+  document.querySelectorAll('#fd-genre-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.genre));
 }
 function fdApply() {
 
@@ -2929,9 +2984,11 @@ function fdApply() {
   spFilters.conditions = [...fdState.conditions];
   spFilters.shipping = [...fdState.shipping];
   spFilters.sort = fdState.sort || 'relevance';
+  spFilters.lang = fdState.lang || '';
+  spFilters.genre = fdState.genre || '';
 
   // Actualizar botón de filtros
-  const activeCount = (fdState.cat ? 1 : 0) + fdState.conditions.length + fdState.shipping.length;
+  const activeCount = (fdState.cat ? 1 : 0) + fdState.conditions.length + fdState.shipping.length + (fdState.lang ? 1 : 0) + (fdState.genre ? 1 : 0);
   const btn = document.getElementById('filter-toggle');
   const badge = document.getElementById('filter-count-badge');
   if (btn) btn.classList.toggle('active', activeCount > 0);
@@ -3533,7 +3590,7 @@ let exchangeOptions = [];
 let pubImages = [];
 
 // ═══ SEARCH FILTER STATE ═══
-let spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance' };
+let spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance', lang:'', genre:'' };
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', async () => {
@@ -4186,7 +4243,10 @@ function applyFilter(q, cat) {
     const bCity = !spFilters.city || i.location===spFilters.city;
     const bCond = !spFilters.conditions.length || spFilters.conditions.includes(i.condition);
     const bShip = !spFilters.shipping.length || spFilters.shipping.includes(i.shipping);
-    return bc && bq && bCat && bCity && bCond && bShip;
+    // Filtros de libros — idioma y género se guardan en subcat "Género · Idioma"
+    const bLang = !spFilters.lang || (i.subcat || '').toLowerCase().includes(spFilters.lang.toLowerCase());
+    const bGenre = !spFilters.genre || (i.subcat || '').toLowerCase().includes(spFilters.genre.toLowerCase());
+    return bc && bq && bCat && bCity && bCond && bShip && bLang && bGenre;
   });
 
   // ── Algoritmo de relevancia ──
