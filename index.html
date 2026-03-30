@@ -2900,7 +2900,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
   <div class="fd-foot">
     <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar filtros</button>
-    <button class="btn btn-ghost btn-md" style="flex:1" onclick="closeFilterDrawer()">Cerrar</button>
+    <button class="btn btn-primary btn-md" style="flex:1" onclick="fdApply(true)">Aplicar</button>
   </div>
 </div>
 
@@ -2977,7 +2977,7 @@ function _fdSyncUI() {
   document.querySelectorAll('#fd-lang-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.lang));
   document.querySelectorAll('#fd-genre-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.genre));
 }
-function fdApply() {
+function fdApply(closeDrawer = false) {
 
   // Sincronizar con spFilters para compatibilidad con applyFilter
   spFilters.cat = fdState.cat;
@@ -3002,7 +3002,8 @@ function fdApply() {
   // Renderizar chips activos
   _fdRenderActiveChips();
 
-  closeFilterDrawer();
+  // Solo cerrar si se pide explícitamente
+  if (closeDrawer) closeFilterDrawer();
   applyFilter(document.getElementById('search-input')?.value || '', fdState.cat);
 }
 function _fdRenderActiveChips() {
