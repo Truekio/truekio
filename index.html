@@ -4204,15 +4204,13 @@ function applyFilter(q, cat) {
     // 1. MATCH — usa el score calculado por loadMatches() (peso 60)
     const matchScore = matchScoreByItemId.get(String(i.id));
     if (matchScore) {
-      // Escalar el matchScore (0-99) a un peso de hasta 60 pts
       score += Math.round((matchScore / 99) * 60);
     } else {
-      // Sin match exacto — comprobar coincidencia suave por categoría (peso 15)
-      const itemCat = (i.cat || '').toLowerCase();
-      if (myCats.some(c => c.toLowerCase() === itemCat)) score += 15;
-      // O si algún want mío menciona el nombre del item (peso 20)
-      const itemName = (i.name || '').toLowerCase();
-      if (myWants.some(w => itemName.includes(w) || w.includes(itemName.split(' ')[0]))) score += 20;
+      // Sin match exacto — calcular coincidencia suave con mis items
+      const softScore = myItems.length
+        ? Math.max(...myItems.map(mi => calcMatchScore(mi, i)))
+        : 0;
+      if (softScore > 0) score += Math.round((softScore / 99) * 20);
     }
 
     // 2. PROXIMIDAD (peso 18) — inversamente proporcional a distancia
@@ -4229,18 +4227,13 @@ function applyFilter(q, cat) {
       const age = now - created;
       const H7D = 7 * 24 * 60 * 60 * 1000;
       if (!isNaN(created) && age < H7D) {
-        // Más reciente = más puntos (decae linealmente)
         score += Math.round(12 * (1 - age / H7D));
       }
     }
 
-    // 4. TIENE FOTO (peso 8)
-    const hasPhoto = (i.photos && i.photos.length) || (i.images && i.images.length);
-    if (hasPhoto) score += 8;
-
-    // 5. CONFIANZA DEL VENDEDOR (peso 5)
-    const trust = USER_TRUST[i.user] || 0;
-    score += Math.round(trust * 0.05);
+    // 4. VALORACIÓN BAYESIANA DEL VENDEDOR (peso 10)
+    const rating = USER_RATINGS[i.user_id];
+    if (rating) score += Math.round(rating.bayesian * 2); // max ~10pts (5 estrellas × 2)
 
     return { ...i, _score: score };
   });
