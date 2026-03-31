@@ -5634,15 +5634,18 @@ async function renderConfirmations() {
     if (props) props.filter(p => p.status === 'cancelled').forEach(p => cancelledProposalIds.add(p.id));
   }
 
-  // Filtrar: mostrar solo las que NO están completadas, O están completadas pero pendientes de valorar
+  // Filtrar: mostrar solo las pendientes de confirmar O de valorar
   const visibleConvs = convs.filter(c => {
     // Excluir trueques cancelados
     if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
     const confirmed = getConfirmed(c);
-    const otherUserId = isUser1(c) ? c.user2_id : c.user1_id;
-    const done = confirmed.includes(currentUser.id) && confirmed.includes(otherUserId);
-    if (!done) return true; // en curso → mostrar
-    return !reviewedConvIds.has(c.id); // completado pero sin valorar → mostrar
+    const myConfirmed = confirmed.includes(currentUser.id);
+    // Si el usuario no ha confirmado aún → mostrar
+    if (!myConfirmed) return true;
+    // Si confirmó pero no ha valorado → mostrar
+    if (!reviewedConvIds.has(c.id)) return true;
+    // Confirmó y valoró → ocultar
+    return false;
   });
 
   if (!visibleConvs.length) {
@@ -5745,10 +5748,7 @@ async function renderConfirmations() {
           🎉 ¡Trueque completado! Ambas partes confirmaron.
         </div>
         <div style="text-align:center">
-          ${reviewedConvIds.has(c.id)
-            ? `<button class="btn btn-ghost btn-md" onclick="this.closest('.card').remove()">✓ Cerrar</button>`
-            : `<button class="btn btn-secondary btn-md" onclick="openReviewModal('${c.id}')">⭐ Valorar a ${otherName}</button>`
-          }
+          <button class="btn btn-ghost btn-md" onclick="this.closest('.card').remove()">✓ Cerrar</button>
         </div>` : ''}
       </div>
     </div>`;
