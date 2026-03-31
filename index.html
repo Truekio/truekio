@@ -3979,7 +3979,7 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const isCafe = item.wants && item.wants.length === 1 && item.wants[0] === '☕ Un café';
+  const isCafe = item.wants && item.wants.some(w => w === '☕ ¡Te lo doy por un café!' || w === '☕ Un café');
   const topBadge = item.status === 'reserved'
     ? `<div class="item-match-badge" style="background:rgba(234,88,12,.85)">🔒 Reservado</div>`
     : isCafe
@@ -4200,7 +4200,7 @@ function buildFilters() {
     { val: 'match',     icon: '⚡', label: '% Match' },
     { val: 'distance',  icon: '📍', label: 'Distancia' },
     { val: 'recent',    icon: '🕒', label: 'Reciente' },
-    { val: 'trust',     icon: '⭐', label: 'Valorado' },
+    { val: 'cafe',      icon: '☕', label: 'Café' },
   ];
   row.innerHTML = sorts.map(s => `
     <button class="filter-btn${s.val==='relevance'?' active':''}" data-sort="${s.val}" onclick="setSortFilter(this,'${s.val}')">
@@ -4356,14 +4356,9 @@ function applyFilter(q, cat) {
       // Si ninguno tiene fecha, mantener orden original
       return 0;
     });
-  } else if (sortMode === 'trust') {
-    f.sort((a, b) => {
-      const rA = USER_RATINGS[a.user_id];
-      const rB = USER_RATINGS[b.user_id];
-      const sA = rA ? rA.bayesian : 0;
-      const sB = rB ? rB.bayesian : 0;
-      return sB - sA;
-    });
+  } else if (sortMode === 'cafe') {
+    // Filtrar solo objetos de café
+    f = f.filter(i => i.wants && i.wants.some(w => w === '☕ Un café' || w === '☕ ¡Te lo doy por un café!'));
   }
 
   const countEl = document.getElementById('sp-results-n');
@@ -4414,7 +4409,7 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
-  const isCafe = item.wants && item.wants.length === 1 && item.wants[0] === '☕ Un café';
+  const isCafe = item.wants && item.wants.some(w => w === '☕ ¡Te lo doy por un café!' || w === '☕ Un café');
   const topBadge = item.status === 'reserved'
     ? `<div class="item-match-badge" style="background:rgba(234,88,12,.85)">🔒 Reservado</div>`
     : isCafe
@@ -9017,7 +9012,7 @@ async function publishItem() {
     subcategory: fullSubcat || null,
     emoji: autoEmoji,
     condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
-    wants: pubWantsOpen === true ? pubOpenCats.join(', ') : pubWantsOpen === 'cafe' ? '☕ Un café' : wantsFlat.join(', '),
+    wants: pubWantsOpen === true ? pubOpenCats.join(', ') : pubWantsOpen === 'cafe' ? '☕ ¡Te lo doy por un café!' : wantsFlat.join(', '),
     wants_open: pubWantsOpen === true,
     photos: photoUrls.length ? photoUrls[0] : '',
     photo_urls: photoUrls.length ? photoUrls : null,
