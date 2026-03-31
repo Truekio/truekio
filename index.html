@@ -5823,8 +5823,11 @@ function selectIssue(el) {
   el.style.borderColor = '#ef4444';
 }
 
+let _confirmingInProgress = false;
 async function confirmReceipt(cfId) {
-  if (!currentUser) return;
+  if (_confirmingInProgress) return;
+  _confirmingInProgress = true;
+  if (!currentUser) { _confirmingInProgress = false; return; }
   const btn = event?.target;
   if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
 
@@ -5918,9 +5921,13 @@ async function confirmReceipt(cfId) {
     // Solo abrir modal de valoración si no ha valorado ya
     const { data: existingReview } = await db.from('reviews')
       .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
-    if (!existingReview || !existingReview.length) {
+    // Solo abrir modal de valoración si no ha valorado ya (bothConfirmed)
+    const { data: existingReviewA } = await db.from('reviews')
+      .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
+    if (!existingReviewA || !existingReviewA.length) {
       setTimeout(() => openReviewModal(cfId), 500);
     }
+    _confirmingInProgress = false;
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
     await loadMyItems();
@@ -5928,10 +5935,9 @@ async function confirmReceipt(cfId) {
     await renderConfirmations();
 
     // Abrir modal de valorar aunque B no haya confirmado aún
-    // Así A valora inmediatamente y cuando B confirme no hay doble valoración
-    const { data: existingReview } = await db.from('reviews')
+    const { data: existingReviewB } = await db.from('reviews')
       .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
-    if (!existingReview || !existingReview.length) {
+    if (!existingReviewB || !existingReviewB.length) {
       setTimeout(() => openReviewModal(cfId), 500);
     }
 
@@ -5943,6 +5949,7 @@ async function confirmReceipt(cfId) {
       item1: conv.item1_title,
       item2: conv.item2_title,
     });
+    _confirmingInProgress = false;
   }
 }
 
@@ -7814,20 +7821,22 @@ async function openReviewModal(cfId) {
     return;
   }
 
-  const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===cfId) : null;
+  // Cargar datos de la conversación directamente de Supabase
+  const { data: conv } = await db.from('conversations').select('*').eq('id', cfId).single();
   activeReviewCfId = cfId;
   reviewAnswers = {};
 
-  const otherName = cf?.user || 'el otro usuario';
-  const theirEmoji = cf?.theirItem?.emoji || '📦';
-  const theirName = cf?.theirItem?.name || 'Su objeto';
+  const isUser1 = conv?.user1_id === currentUser.id;
+  const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'el otro usuario';
+  const myItemTitle = conv ? (isUser1 ? conv.item1_title : conv.item2_title) : 'Tu objeto';
+  const theirItemTitle = conv ? (isUser1 ? conv.item2_title : conv.item1_title) : 'Su objeto';
 
   document.getElementById('review-modal-body').innerHTML = `
     <div class="review-modal-header">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:2rem">${theirEmoji}</div>
+        <div style="font-size:2rem">🔄</div>
         <div>
-          <div style="font-weight:700;font-size:.9rem">${theirName}</div>
+          <div style="font-weight:700;font-size:.9rem">${myItemTitle} ↔ ${theirItemTitle}</div>
           <div style="font-size:12px;color:#166534">Trueque con ${otherName}</div>
         </div>
       </div>
