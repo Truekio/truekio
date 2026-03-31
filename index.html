@@ -5744,7 +5744,12 @@ async function renderConfirmations() {
         <div style="padding:12px 14px;background:var(--green-l);border:1px solid #86efac;border-radius:var(--r);font-size:13px;color:#166534;font-weight:700;text-align:center;margin-bottom:10px">
           🎉 ¡Trueque completado! Ambas partes confirmaron.
         </div>
-        <div style="text-align:center"><button class="btn btn-secondary btn-md" onclick="openReviewModal('${c.id}')">⭐ Valorar a ${otherName}</button></div>` : ''}
+        <div style="text-align:center">
+          ${reviewedConvIds.has(c.id)
+            ? `<button class="btn btn-ghost btn-md" onclick="this.closest('.card').remove()">✓ Cerrar</button>`
+            : `<button class="btn btn-secondary btn-md" onclick="openReviewModal('${c.id}')">⭐ Valorar a ${otherName}</button>`
+          }
+        </div>` : ''}
       </div>
     </div>`;
   }).join('');
