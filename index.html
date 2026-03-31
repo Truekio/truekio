@@ -9316,13 +9316,15 @@ function renderWishlist() {
 function updateWishBadges() {
   const unread = wishAlerts.filter(a=>a.unread).length;
   const wishBadgeNav = document.getElementById('wish-badge-nav');
-  wishBadgeNav.textContent = unread;
-  wishBadgeNav.style.display = unread > 0 ? 'inline' : 'none';
+  if (wishBadgeNav) { wishBadgeNav.textContent = unread; wishBadgeNav.style.display = unread > 0 ? 'inline' : 'none'; }
   const alertBadge = document.getElementById('wtab-alert-badge');
   if (alertBadge) { alertBadge.textContent = unread; alertBadge.style.display = unread > 0 ? '' : 'none'; }
-  document.getElementById('wish-count').textContent = wishlist.length;
-  document.getElementById('wish-alert-count').textContent = unread;
-  document.getElementById('wish-match-count').textContent = wishlist.filter(w=>w.hasMatch).length;
+  const wishCount = document.getElementById('wish-count');
+  if (wishCount) wishCount.textContent = wishlist.length;
+  const wishAlertCount = document.getElementById('wish-alert-count');
+  if (wishAlertCount) wishAlertCount.textContent = unread;
+  const wishMatchCount = document.getElementById('wish-match-count');
+  if (wishMatchCount) wishMatchCount.textContent = wishlist.filter(w=>w.hasMatch).length;
 }
 
 function renderWishItems() {
