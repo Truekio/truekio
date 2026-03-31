@@ -450,6 +450,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .conv-item{padding:13px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s;border-right:3px solid transparent;}
 .conv-item:hover{background:var(--bg2);}
 .conv-item.active{background:var(--accent-l);border-right-color:var(--accent);}
+.conv-item-unread{background:var(--bg2);border-left:3px solid var(--accent)!important;}
 .conv-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
 .conv-info{flex:1;min-width:0;}
 .conv-name{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
@@ -6085,14 +6086,13 @@ function renderConvList(data) {
   const list = document.getElementById('conv-list-items');
   if (!list) return;
 
-  // Badge en nav
-  const mb = document.getElementById('msg-badge-nav');
-  if (mb) { mb.style.display = 'none'; }
-
   if (!data || !data.length) {
     list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando se acepte un trueque.</span></div>';
     return;
   }
+
+  // Calcular total de no leídos para el badge del nav
+  let totalUnread = 0;
 
   list.innerHTML = data.map(c => {
     const isUser1 = c.user1_id === currentUser.id;
@@ -6100,18 +6100,32 @@ function renderConvList(data) {
     const subject = `${c.item1_title} ↔ ${c.item2_title}`;
     const time = new Date(c.last_message_at).toLocaleDateString('es-ES', { day:'numeric', month:'short' });
     const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
+    const unread = isUser1 ? (c.unread_user1 || 0) : (c.unread_user2 || 0);
+    totalUnread += unread;
+    const isUnread = unread > 0;
+
     return `
-    <div class="conv-item${activeConvId===c.id?' active':''}" id="conv-item-${c.id}" style="display:flex;align-items:center;gap:0">
+    <div class="conv-item${activeConvId===c.id?' active':''}${isUnread?' conv-item-unread':''}" id="conv-item-${c.id}" style="display:flex;align-items:center;gap:0">
       <div onclick="openConv('${c.id}')" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;padding:0">
-        <div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
-        <div class="conv-info">
-          <div class="conv-name"><span>${otherName||'Usuario'}</span><span class="conv-time">${time}</span></div>
-          <div class="conv-preview">${c.last_message || subject}</div>
+        <div style="position:relative;flex-shrink:0">
+          <div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
+          ${isUnread ? `<div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:#e53e3e;border-radius:50%;border:2px solid var(--white)"></div>` : ''}
         </div>
+        <div class="conv-info" style="min-width:0">
+          <div class="conv-name">
+            <span style="${isUnread ? 'font-weight:800;color:var(--text)' : ''}">${otherName||'Usuario'}</span>
+            <span class="conv-time">${time}</span>
+          </div>
+          <div class="conv-preview" style="${isUnread ? 'font-weight:600;color:var(--text2)' : ''}">${c.last_message || subject}</div>
+        </div>
+        ${isUnread ? `<div class="conv-unread">${unread}</div>` : ''}
       </div>
       <button onclick="deleteConversation('${c.id}')" style="flex-shrink:0;background:none;border:none;color:#ccc;font-size:15px;cursor:pointer;padding:6px 8px;border-radius:6px" onmouseover="this.style.color='#ef4444';this.style.background='#fef2f2'" onmouseout="this.style.color='#ccc';this.style.background='none'" title="Eliminar conversación">🗑</button>
     </div>`;
   }).join('');
+
+  // Actualizar badge del nav
+  updateMsgBadge(totalUnread);
 }
 
 async function deleteConversation(convId) {
@@ -6174,7 +6188,12 @@ async function openConv(convId) {
   if (!conv) return;
   activeConvData = conv;
 
+  // Resetear unread del usuario actual
   const isUser1 = conv.user1_id === currentUser.id;
+  const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
+  if (conv[unreadField] > 0) {
+    await db.from('conversations').update({ [unreadField]: 0 }).eq('id', convId);
+  }
   const otherName = isUser1 ? conv.user2_name : conv.user1_name;
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
   const subject = `${conv.item1_title} ↔ ${conv.item2_title}`;
@@ -6358,11 +6377,18 @@ async function sendMessage() {
 
   if (error) { showToast('⚠️ Error al enviar'); return; }
 
-  // Actualizar last_message
-  await db.from('conversations').update({
-    last_message: text,
-    last_message_at: new Date().toISOString(),
-  }).eq('id', activeConvId);
+  // Actualizar last_message e incrementar unread del otro usuario
+  const conv = await db.from('conversations').select('*').eq('id', activeConvId).single();
+  if (conv.data) {
+    const isUser1 = conv.data.user1_id === currentUser.id;
+    const unreadField = isUser1 ? 'unread_user2' : 'unread_user1';
+    const currentUnread = conv.data[unreadField] || 0;
+    await db.from('conversations').update({
+      last_message: text,
+      last_message_at: new Date().toISOString(),
+      [unreadField]: currentUnread + 1,
+    }).eq('id', activeConvId);
+  }
 
   loadMessages(activeConvId);
   loadConversations();
@@ -7342,13 +7368,12 @@ function updateEditSubcat() {
   const label = document.getElementById('edit-subcat-label');
   const langField = document.getElementById('edit-book-lang-field');
 
-  if (label) label.innerHTML = cat === 'Libros' ? 'Género <span style="color:#e53e3e">*</span>' : 'Subcategoría';
+  if (label) label.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
   if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
 
   const opts = PUB_SUBCATS[cat] || [];
   if (opts.length) {
-    const placeholder = cat === 'Libros' ? '— Selecciona género —' : '— Opcional —';
-    sub.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o => `<option>${o}</option>`).join('');
+    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
     sub.disabled = false;
   } else {
     sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
@@ -7373,18 +7398,8 @@ async function saveEditItem() {
   const btn = document.getElementById('edit-item-save-btn');
 
   if (!name) { errEl.textContent = 'El nombre no puede estar vacío.'; errEl.style.display = ''; return; }
-  if (name.length < 2) { errEl.textContent = 'El nombre debe tener al menos 2 caracteres.'; errEl.style.display = ''; return; }
   const city = document.getElementById('edit-item-city')?.value?.trim() || currentUser?.user_metadata?.city || '';
   if (!city) { errEl.textContent = 'La ciudad es obligatoria.'; errEl.style.display = ''; return; }
-
-  // Para libros: idioma y género obligatorios
-  const editCat = document.getElementById('edit-item-cat')?.value || '';
-  if (editCat === 'Libros') {
-    const editLang = document.getElementById('edit-book-lang')?.value;
-    if (!editLang) { errEl.textContent = 'El idioma es obligatorio para libros.'; errEl.style.display = ''; return; }
-    const editGenre = document.getElementById('edit-item-subcat')?.value;
-    if (!editGenre) { errEl.textContent = 'El género es obligatorio para libros.'; errEl.style.display = ''; return; }
-  }
 
   btn.textContent = 'Guardando...'; btn.disabled = true; errEl.style.display = 'none';
 
@@ -7986,12 +8001,10 @@ function pubNext(skip = false) {
       const cat = document.getElementById('pub-cat').value;
       if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
       if (!pubImages.length) { showToast('⚠️ Añade al menos una foto del objeto'); return; }
-      // Para libros: idioma y género obligatorios
+      // Para libros: idioma obligatorio
       if (cat === 'Libros') {
         const lang = document.getElementById('pub-book-lang')?.value;
         if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
-        const genre = document.getElementById('pub-subcat')?.value;
-        if (!genre) { showToast('⚠️ Selecciona el género del libro'); return; }
       }
     }
     if (pubCurrentScreen === 2) {
@@ -8426,15 +8439,12 @@ function updatePubSubcat() {
 
   // Actualizar label de subcategoría según categoría
   if (subLabel) {
-    subLabel.innerHTML = cat === 'Libros'
-      ? 'Género <span style="color:#e53e3e">*</span>'
-      : 'Subcategoría';
+    subLabel.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
   }
 
   const subs = PUB_SUBCATS[cat] || [];
   if (subs.length) {
-    const placeholder = cat === 'Libros' ? '— Selecciona género —' : '— Opcional —';
-    subEl.innerHTML = `<option value="">${placeholder}</option>` +
+    subEl.innerHTML = '<option value="">— Opcional —</option>' +
       subs.map(s => `<option>${s}</option>`).join('');
     subEl.disabled = false;
     if (subField) subField.style.display = '';
@@ -8778,13 +8788,11 @@ async function publishItem() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
 
-  // Validar idioma y género obligatorios para libros
+  // Validar idioma obligatorio para libros
   const pubCatCheck = document.getElementById('pub-cat').value;
   if (pubCatCheck === 'Libros') {
     const lang = document.getElementById('pub-book-lang')?.value;
     if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
-    const genre = document.getElementById('pub-subcat')?.value;
-    if (!genre) { showToast('⚠️ Selecciona el género del libro'); return; }
   }
 
   if(pubWantsOpen === true && !pubOpenCats.length){showToast('⚠️ Selecciona al menos una categoría');return;}
