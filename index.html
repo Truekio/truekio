@@ -6497,7 +6497,7 @@ function openDetail(itemId) {
   // Datos
   document.getElementById('detail-title').textContent = item.name;
   if(document.getElementById('detail-price')) document.getElementById('detail-price').textContent = '';
-  document.getElementById('detail-meta').textContent = [item.cat, item.condition, item.location].filter(Boolean).join(' · ');
+  document.getElementById('detail-meta').textContent = [item.cat, item.location].filter(Boolean).join(' · ');
 
   // Usuario — con puntuación de confianza y botón ver perfil
   const uBg = `hsl(${strHash(item.user)%360},55%,70%)`;
@@ -6544,10 +6544,7 @@ function openDetail(itemId) {
     : '<span style="font-size:12px;color:var(--muted)">No especificado</span>';
 
   // Badges
-  document.getElementById('detail-badges').innerHTML = [
-    item.condition ? `<span style="background:var(--bg2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px">📦 ${item.condition}</span>` : '',
-
-  ].join('');
+  document.getElementById('detail-badges').innerHTML = '';
 
   // Mostrar con display:flex en vez de clase open
   const overlay = document.getElementById('detail-overlay');
