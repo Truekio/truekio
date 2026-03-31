@@ -3354,6 +3354,8 @@ function scrollToHow() {
 }
 
 window._handleLogout = async function() {
+  stopConvPolling();
+  if (msgPollingInterval) { clearInterval(msgPollingInterval); msgPollingInterval = null; }
   await db.auth.signOut();
   currentUser = null;
   document.getElementById('main-nav').style.display = 'none';
@@ -3780,7 +3782,7 @@ function navTo(v) {
     if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
   if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
   if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
@@ -3816,7 +3818,7 @@ function navToActivity(tab) {
     if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
   if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
   if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
@@ -4031,7 +4033,7 @@ function navTo(v) {
     if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
   if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
   if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
@@ -4067,7 +4069,7 @@ function navToActivity(tab) {
     if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
   if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300);
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
   if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
@@ -6069,6 +6071,7 @@ async function checkNewProposals() {
 let activeConvId = null;
 let activeConvData = null;
 let msgPollingInterval = null;
+let convPollingInterval = null;
 
 async function loadConversations() {
   if (!currentUser) return;
@@ -6080,6 +6083,17 @@ async function loadConversations() {
 
   if (error || !data) return;
   renderConvList(data);
+}
+
+function startConvPolling() {
+  if (convPollingInterval) clearInterval(convPollingInterval);
+  convPollingInterval = setInterval(() => {
+    if (currentUser) loadConversations();
+  }, 8000); // cada 8 segundos
+}
+
+function stopConvPolling() {
+  if (convPollingInterval) { clearInterval(convPollingInterval); convPollingInterval = null; }
 }
 
 function renderConvList(data) {
