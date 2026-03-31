@@ -7813,6 +7813,9 @@ let reviewAnswers = {};
 let activeReviewCfId = null;
 
 async function openReviewModal(cfId) {
+  console.log('openReviewModal called with cfId:', cfId, '| stack:', new Error().stack.split('\n')[2]);
+  if (!cfId) { console.warn('openReviewModal: cfId is null/undefined, abortando'); return; }
+
   // Comprobar si ya valoró esta conversación
   const { data: existing } = await db.from('reviews')
     .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
@@ -7868,6 +7871,7 @@ function setReviewStars(n) {
 
 async function submitReview() {
   if (!currentUser) { showToast('⚠️ Debes iniciar sesión'); return; }
+  if (!activeReviewCfId) { showToast('⚠️ Error: no hay trueque activo'); closeReviewModal(); return; }
 
   const stars = reviewAnswers.stars || 0;
   if (!stars) { showToast('⭐ Selecciona una puntuación'); return; }
