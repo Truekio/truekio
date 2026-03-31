@@ -3423,7 +3423,9 @@ function distanceKm(lat1, lng1, lat2, lng2) {
 }
 
 async function loadItemsFromSupabase() {
-  let query = db.from('items').select('*').order('created_at', { ascending: false });
+  let query = db.from('items').select('*')
+    .neq('status', 'completed')
+    .order('created_at', { ascending: false });
   if (currentUser) query = query.neq('user_id', currentUser.id);
   const { data, error } = await query;
   if (error) {
@@ -5115,7 +5117,7 @@ window.loadMatches = async function loadMatches() {
 
   // ── Tipo B: mis deseos coinciden con objetos de otros ──
   if (wishlist.length) {
-    const { data: allItems } = await db.from('items').select('*').neq('user_id', currentUser.id);
+    const { data: allItems } = await db.from('items').select('*').neq('user_id', currentUser.id).neq('status', 'completed');
     if (allItems) {
       for (const wish of wishlist) {
         for (const item of allItems) {
@@ -5171,7 +5173,7 @@ window.loadMatches = async function loadMatches() {
   }
 
   // ── Tipo C: cruzar campo "wants" de mis items con items de otros ──
-  const { data: allOthersItems } = await db.from('items').select('*').neq('user_id', currentUser.id);
+  const { data: allOthersItems } = await db.from('items').select('*').neq('user_id', currentUser.id).neq('status', 'completed');
   if (allOthersItems && myItems.length) {
     for (const myItem of myItems) {
       // wants puede ser string (Supabase) o array (local) — normalizar a string lowercase
