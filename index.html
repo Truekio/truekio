@@ -7895,7 +7895,8 @@ async function submitReview() {
 
   await loadReviews();
   await loadProfileStats();
-  await renderConfirmations(); // await para que cargue reviewedConvIds antes de renderizar
+  await renderConfirmations();
+  await renderDoneTrades(); // recargar historial para que desaparezca el botón valorar
   switchPTab('reviews');
   navTo('profile');
 }
