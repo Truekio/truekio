@@ -5774,17 +5774,7 @@ function openConfirmModal(cfId, type, otherName, myItemTitle, theirItemTitle) {
       </div>
     </div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:18px">
-      Al confirmar, el trueque quedará <strong>oficialmente cerrado</strong>. Cuando ${otherName} también confirme, aparecerá en tu historial de completados.
-    </div>
-    <div class="field" style="margin-bottom:18px">
-      <label>Valoración del intercambio (1–5 ⭐)</label>
-      <div id="star-rating" style="display:flex;gap:6px;margin-top:4px">
-        ${[1,2,3,4,5].map(n=>`<button onclick="setStars(${n},this)" style="font-size:1.6rem;background:none;border:none;cursor:pointer;filter:grayscale(1);transition:filter .15s">⭐</button>`).join('')}
-      </div>
-    </div>
-    <div class="field">
-      <label>Comentario (opcional)</label>
-      <textarea id="confirm-comment" placeholder="¿Todo perfecto? ¿Algún detalle que destacar?" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;resize:vertical;min-height:80px"></textarea>
+      Al confirmar, el trueque quedará <strong>oficialmente cerrado</strong>. A continuación podrás valorar a ${otherName}.
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-secondary btn-md" style="flex:1" onclick="closeConfirmModal()">Cancelar</button>
@@ -7813,8 +7803,7 @@ let reviewAnswers = {};
 let activeReviewCfId = null;
 
 async function openReviewModal(cfId) {
-  console.log('openReviewModal called with cfId:', cfId, '| stack:', new Error().stack.split('\n')[2]);
-  if (!cfId) { console.warn('openReviewModal: cfId is null/undefined, abortando'); return; }
+  if (!cfId) { console.warn('openReviewModal: cfId is null, abortando'); return; }
 
   // Comprobar si ya valoró esta conversación
   const { data: existing } = await db.from('reviews')
