@@ -7430,13 +7430,17 @@ function updateEditSubcat() {
   const sub = document.getElementById('edit-item-subcat');
   const label = document.getElementById('edit-subcat-label');
   const langField = document.getElementById('edit-book-lang-field');
+  const REQUIRED_SUBCAT_CATS = ['Electrónica','Ropa','Hogar','Libros','Deporte','Cartas','Juegos de mesa'];
+  const isRequired = REQUIRED_SUBCAT_CATS.includes(cat);
 
-  if (label) label.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
+  const labelText = cat === 'Libros' ? 'Género' : 'Subcategoría';
+  if (label) label.innerHTML = isRequired ? labelText + ' <span style="color:#e53e3e">*</span>' : labelText;
   if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
 
   const opts = PUB_SUBCATS[cat] || [];
   if (opts.length) {
-    sub.innerHTML = '<option value="">— Opcional —</option>' + opts.map(o => `<option>${o}</option>`).join('');
+    const placeholder = isRequired ? '— Selecciona subcategoría —' : '— Opcional —';
+    sub.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o => `<option>${o}</option>`).join('');
     sub.disabled = false;
   } else {
     sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
@@ -7463,6 +7467,18 @@ async function saveEditItem() {
   if (!name) { errEl.textContent = 'El nombre no puede estar vacío.'; errEl.style.display = ''; return; }
   const city = document.getElementById('edit-item-city')?.value?.trim() || currentUser?.user_metadata?.city || '';
   if (!city) { errEl.textContent = 'La ciudad es obligatoria.'; errEl.style.display = ''; return; }
+
+  // Subcategoría obligatoria para estas categorías
+  const editCat = document.getElementById('edit-item-cat')?.value || '';
+  const REQUIRED_SUBCAT_CATS = ['Electrónica','Ropa','Hogar','Libros','Deporte','Cartas','Juegos de mesa'];
+  if (REQUIRED_SUBCAT_CATS.includes(editCat)) {
+    const editSubcat = document.getElementById('edit-item-subcat')?.value;
+    if (!editSubcat) { errEl.textContent = 'La subcategoría es obligatoria para ' + editCat + '.'; errEl.style.display = ''; return; }
+  }
+  if (editCat === 'Libros') {
+    const editLang = document.getElementById('edit-book-lang')?.value;
+    if (!editLang) { errEl.textContent = 'El idioma es obligatorio para libros.'; errEl.style.display = ''; return; }
+  }
 
   btn.textContent = 'Guardando...'; btn.disabled = true; errEl.style.display = 'none';
 
@@ -8078,7 +8094,13 @@ function pubNext(skip = false) {
       const cat = document.getElementById('pub-cat').value;
       if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
       if (!pubImages.length) { showToast('⚠️ Añade al menos una foto del objeto'); return; }
-      // Para libros: idioma obligatorio
+      // Subcategoría obligatoria para estas categorías
+      const REQUIRED_SUBCAT_CATS = ['Electrónica','Ropa','Hogar','Libros','Deporte','Cartas','Juegos de mesa'];
+      if (REQUIRED_SUBCAT_CATS.includes(cat)) {
+        const subcat = document.getElementById('pub-subcat')?.value;
+        if (!subcat) { showToast('⚠️ Selecciona una subcategoría para ' + cat); return; }
+      }
+      // Para libros: idioma también obligatorio
       if (cat === 'Libros') {
         const lang = document.getElementById('pub-book-lang')?.value;
         if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
@@ -8514,14 +8536,17 @@ function updatePubSubcat() {
   // Mostrar campo idioma solo para Libros
   if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
 
-  // Actualizar label de subcategoría según categoría
+  // Actualizar label y obligatoriedad según categoría
+  const isRequired = ['Electrónica','Ropa','Hogar','Libros','Deporte','Cartas','Juegos de mesa'].includes(cat);
   if (subLabel) {
-    subLabel.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
+    const labelText = cat === 'Libros' ? 'Género' : 'Subcategoría';
+    subLabel.innerHTML = isRequired ? labelText + ' <span style="color:#e53e3e">*</span>' : labelText;
   }
 
   const subs = PUB_SUBCATS[cat] || [];
   if (subs.length) {
-    subEl.innerHTML = '<option value="">— Opcional —</option>' +
+    const placeholder = isRequired ? '— Selecciona subcategoría —' : '— Opcional —';
+    subEl.innerHTML = `<option value="">${placeholder}</option>` +
       subs.map(s => `<option>${s}</option>`).join('');
     subEl.disabled = false;
     if (subField) subField.style.display = '';
@@ -8865,8 +8890,14 @@ async function publishItem() {
   const name = document.getElementById('pub-name').value.trim();
   if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
 
-  // Validar idioma obligatorio para libros
+  // Validar subcategoría obligatoria
   const pubCatCheck = document.getElementById('pub-cat').value;
+  const REQUIRED_SUBCAT_CATS = ['Electrónica','Ropa','Hogar','Libros','Deporte','Cartas','Juegos de mesa'];
+  if (REQUIRED_SUBCAT_CATS.includes(pubCatCheck)) {
+    const subcat = document.getElementById('pub-subcat')?.value;
+    if (!subcat) { showToast('⚠️ Selecciona una subcategoría para ' + pubCatCheck); return; }
+  }
+  // Para libros: idioma también obligatorio
   if (pubCatCheck === 'Libros') {
     const lang = document.getElementById('pub-book-lang')?.value;
     if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
