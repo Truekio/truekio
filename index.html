@@ -2868,33 +2868,26 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
 
-    <!-- Filtros específicos de Libros — aparecen dinámicamente -->
-    <div id="fd-books-filters" style="display:none">
+    <!-- Filtros de subcategoría — aparecen dinámicamente según categoría -->
+    <div id="fd-subcat-filters" style="display:none">
       <div class="fd-section">
-        <div class="fd-label">Idioma</div>
-        <div class="fd-chips" id="fd-lang-chips">
-          <button class="fd-chip" data-val="Español" onclick="fdToggleLang(this)">Español</button>
-          <button class="fd-chip" data-val="Inglés" onclick="fdToggleLang(this)">Inglés</button>
-          <button class="fd-chip" data-val="Catalán" onclick="fdToggleLang(this)">Catalán</button>
-          <button class="fd-chip" data-val="Francés" onclick="fdToggleLang(this)">Francés</button>
-          <button class="fd-chip" data-val="Alemán" onclick="fdToggleLang(this)">Alemán</button>
-          <button class="fd-chip" data-val="Italiano" onclick="fdToggleLang(this)">Italiano</button>
-          <button class="fd-chip" data-val="Portugués" onclick="fdToggleLang(this)">Portugués</button>
-          <button class="fd-chip" data-val="Otro idioma" onclick="fdToggleLang(this)">Otro</button>
-        </div>
+        <div class="fd-label" id="fd-subcat-label">Subcategoría</div>
+        <div class="fd-chips" id="fd-subcat-chips"></div>
       </div>
-      <div class="fd-section">
-        <div class="fd-label">Género</div>
-        <div class="fd-chips" id="fd-genre-chips">
-          <button class="fd-chip" data-val="Ficción" onclick="fdToggleGenre(this)">Ficción</button>
-          <button class="fd-chip" data-val="Thriller y suspense" onclick="fdToggleGenre(this)">Thriller y suspense</button>
-          <button class="fd-chip" data-val="Terror" onclick="fdToggleGenre(this)">Terror</button>
-          <button class="fd-chip" data-val="Romance" onclick="fdToggleGenre(this)">Romance</button>
-          <button class="fd-chip" data-val="Historia y biografía" onclick="fdToggleGenre(this)">Historia y biografía</button>
-          <button class="fd-chip" data-val="Desarrollo personal" onclick="fdToggleGenre(this)">Desarrollo personal</button>
-          <button class="fd-chip" data-val="Infantil y juvenil" onclick="fdToggleGenre(this)">Infantil y juvenil</button>
-          <button class="fd-chip" data-val="Cómics y manga" onclick="fdToggleGenre(this)">Cómics y manga</button>
-          <button class="fd-chip" data-val="Otro" onclick="fdToggleGenre(this)">Otro</button>
+      <!-- Extra: idioma para libros -->
+      <div id="fd-lang-section" style="display:none">
+        <div class="fd-section">
+          <div class="fd-label">Idioma</div>
+          <div class="fd-chips" id="fd-lang-chips">
+            <button class="fd-chip" data-val="Español" onclick="fdToggleLang(this)">Español</button>
+            <button class="fd-chip" data-val="Inglés" onclick="fdToggleLang(this)">Inglés</button>
+            <button class="fd-chip" data-val="Catalán" onclick="fdToggleLang(this)">Catalán</button>
+            <button class="fd-chip" data-val="Francés" onclick="fdToggleLang(this)">Francés</button>
+            <button class="fd-chip" data-val="Alemán" onclick="fdToggleLang(this)">Alemán</button>
+            <button class="fd-chip" data-val="Italiano" onclick="fdToggleLang(this)">Italiano</button>
+            <button class="fd-chip" data-val="Portugués" onclick="fdToggleLang(this)">Portugués</button>
+            <button class="fd-chip" data-val="Otro idioma" onclick="fdToggleLang(this)">Otro</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2907,7 +2900,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <script>
 // ── FILTER DRAWER LOGIC ──
-let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '' };
+let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '', subcat: '' };
 
 function openFilterDrawer() {
   document.getElementById('filter-drawer').classList.add('open');
@@ -2926,15 +2919,31 @@ function closeFilterDrawer() {
 }
 function fdSelectCat(btn) {
   fdState.cat = btn.dataset.val;
-  // Resetear filtros de libro al cambiar categoría
   fdState.lang = '';
   fdState.genre = '';
+  fdState.subcat = '';
   document.querySelectorAll('#filter-drawer .fd-cat-grid .fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
-  // Mostrar/ocultar filtros de libros
-  const booksFilters = document.getElementById('fd-books-filters');
-  if (booksFilters) booksFilters.style.display = fdState.cat === 'Libros' ? 'block' : 'none';
-  // Resetear chips de libro
-  document.querySelectorAll('#fd-lang-chips .fd-chip, #fd-genre-chips .fd-chip').forEach(c => c.classList.remove('on'));
+  _fdRenderSubcatFilters(fdState.cat);
+  fdApply();
+}
+function _fdRenderSubcatFilters(cat) {
+  const container = document.getElementById('fd-subcat-filters');
+  const chipsEl = document.getElementById('fd-subcat-chips');
+  const labelEl = document.getElementById('fd-subcat-label');
+  const langSection = document.getElementById('fd-lang-section');
+  if (!container || !chipsEl) return;
+  const subs = (typeof PUB_SUBCATS !== 'undefined' ? PUB_SUBCATS[cat] : null) || [];
+  if (!subs.length) { container.style.display = 'none'; return; }
+  if (labelEl) labelEl.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
+  if (langSection) langSection.style.display = cat === 'Libros' ? 'block' : 'none';
+  chipsEl.innerHTML = subs.map(s =>
+    `<button class="fd-chip${fdState.subcat === s ? ' on' : ''}" data-val="${s}" onclick="fdToggleSubcat(this)">${s}</button>`
+  ).join('');
+  container.style.display = 'block';
+}
+function fdToggleSubcat(btn) {
+  fdState.subcat = fdState.subcat === btn.dataset.val ? '' : btn.dataset.val;
+  document.querySelectorAll('#fd-subcat-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.subcat));
   fdApply();
 }
 function fdToggleLang(btn) {
@@ -2944,7 +2953,6 @@ function fdToggleLang(btn) {
 }
 function fdToggleGenre(btn) {
   fdState.genre = fdState.genre === btn.dataset.val ? '' : btn.dataset.val;
-  document.querySelectorAll('#fd-genre-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.genre));
   fdApply();
 }
 function fdSelectSort(btn) {
@@ -2959,9 +2967,9 @@ function fdToggleChip(btn, type, val) {
   fdApply();
 }
 function fdClearAll() {
-  fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '' };
-  const booksFilters = document.getElementById('fd-books-filters');
-  if (booksFilters) booksFilters.style.display = 'none';
+  fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '', subcat: '' };
+  const subcatFilters = document.getElementById('fd-subcat-filters');
+  if (subcatFilters) subcatFilters.style.display = 'none';
   _fdSyncUI();
   fdApply();
 }
@@ -2972,11 +2980,10 @@ function _fdSyncUI() {
   document.querySelectorAll('.fd-chip').forEach(b => {
     b.classList.toggle('on', fdState.conditions.includes(b.dataset.val) || fdState.shipping.includes(b.dataset.val));
   });
-  // Filtros libros
-  const booksFilters = document.getElementById('fd-books-filters');
-  if (booksFilters) booksFilters.style.display = fdState.cat === 'Libros' ? 'block' : 'none';
+  // Filtros de subcategoría
+  _fdRenderSubcatFilters(fdState.cat);
+  document.querySelectorAll('#fd-subcat-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.subcat));
   document.querySelectorAll('#fd-lang-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.lang));
-  document.querySelectorAll('#fd-genre-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.genre));
 }
 function fdApply(closeDrawer = false) {
 
@@ -2987,9 +2994,10 @@ function fdApply(closeDrawer = false) {
   spFilters.sort = fdState.sort || 'relevance';
   spFilters.lang = fdState.lang || '';
   spFilters.genre = fdState.genre || '';
+  spFilters.subcat = fdState.subcat || '';
 
   // Actualizar botón de filtros
-  const activeCount = (fdState.cat ? 1 : 0) + fdState.conditions.length + fdState.shipping.length + (fdState.lang ? 1 : 0) + (fdState.genre ? 1 : 0);
+  const activeCount = (fdState.cat ? 1 : 0) + fdState.conditions.length + fdState.shipping.length + (fdState.lang ? 1 : 0) + (fdState.genre ? 1 : 0) + (fdState.subcat ? 1 : 0);
   const btn = document.getElementById('filter-toggle');
   const badge = document.getElementById('filter-count-badge');
   if (btn) btn.classList.toggle('active', activeCount > 0);
@@ -3596,7 +3604,7 @@ let exchangeOptions = [];
 let pubImages = [];
 
 // ═══ SEARCH FILTER STATE ═══
-let spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance', lang:'', genre:'' };
+let spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance', lang:'', genre:'', subcat:'' };
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', async () => {
@@ -4249,19 +4257,19 @@ function applyFilter(q, cat) {
     const bCity = !spFilters.city || i.location===spFilters.city;
     const bCond = !spFilters.conditions.length || spFilters.conditions.includes(i.condition);
     const bShip = !spFilters.shipping.length || spFilters.shipping.includes(i.shipping);
-    // Filtros de libros — idioma y género se guardan en subcat "Género · Idioma"
+    // Filtro de subcategoría genérico — para todas las categorías
+    const bSubcat = !spFilters.subcat || (i.subcat || '').toLowerCase().includes(spFilters.subcat.toLowerCase());
+    // Filtros específicos de libros — idioma y género en subcat "Género · Idioma"
     const bLang = !spFilters.lang || (i.subcat || '').toLowerCase().includes(spFilters.lang.toLowerCase());
-    // Para género: si el libro no tiene subcat, lo mostramos igualmente (omisión ≠ género diferente)
-    // Solo excluir si tiene subcat con un género diferente al filtrado
     const bGenre = !spFilters.genre || (() => {
       const subcat = (i.subcat || '').toLowerCase();
-      if (!subcat) return true; // sin género especificado → mostrar
+      if (!subcat) return true;
       const GENEROS = ['ficción','thriller y suspense','terror','romance','historia y biografía','desarrollo personal','infantil y juvenil','cómics y manga'];
       const hasGenre = GENEROS.some(g => subcat.includes(g));
-      if (!hasGenre) return true; // subcat solo tiene idioma → mostrar
+      if (!hasGenre) return true;
       return subcat.includes(spFilters.genre.toLowerCase());
     })();
-    return bc && bq && bCat && bCity && bCond && bShip && bLang && bGenre;
+    return bc && bq && bCat && bCity && bCond && bShip && bSubcat && bLang && bGenre;
   });
 
   // ── Algoritmo de relevancia ──
