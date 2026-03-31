@@ -5873,6 +5873,14 @@ async function confirmReceipt(cfId) {
           db.from('items').update({ status: 'completed' }).eq('id', prop.item_id),
           db.from('items').update({ status: 'completed' }).eq('id', prop.offered_item_id),
         ]);
+
+        // Actualizar arrays locales para reflejar el cambio inmediatamente
+        const completedIds = [String(prop.item_id), String(prop.offered_item_id)].filter(Boolean);
+        items = items.map(i => completedIds.includes(String(i.id)) ? { ...i, status: 'completed' } : i);
+        myItems = myItems.filter(i => !completedIds.includes(String(i.id)));
+
+        // Recargar el explorador con los datos actualizados
+        applyFilter(document.getElementById('search-input')?.value || '', currentFilter);
       }
     }
 
@@ -5884,6 +5892,7 @@ async function confirmReceipt(cfId) {
 
     await loadProfileStats();
     await loadReviews();
+    await loadMyItems();
     renderProfile();
     await renderConfirmations(); // después de todo para tener datos actualizados
 
