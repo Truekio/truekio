@@ -5848,7 +5848,6 @@ async function confirmReceipt(cfId) {
   const bothConfirmed = confirmed.includes(otherUserId);
 
   closeConfirmModal();
-  renderConfirmations();
 
   if (bothConfirmed) {
     showToast('🎉 ¡Trueque completado con éxito!');
@@ -5886,14 +5885,17 @@ async function confirmReceipt(cfId) {
     await loadProfileStats();
     await loadReviews();
     renderProfile();
+    await renderConfirmations(); // después de todo para tener datos actualizados
+
     // Solo abrir modal de valoración si no ha valorado ya esta conversación
     const { data: existingReview } = await db.from('reviews')
       .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
     if (!existingReview || !existingReview.length) {
-      setTimeout(() => openReviewModal(cfId), 1500);
+      setTimeout(() => openReviewModal(cfId), 500);
     }
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
+    await renderConfirmations();
 
     // Email al otro usuario avisando que falta su confirmación
     const otherEmail = await getUserEmail(otherUserId);
