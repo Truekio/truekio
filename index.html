@@ -5824,7 +5824,7 @@ async function confirmReceipt(cfId) {
   if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
 
   // Leer confirmed_by actual
-  const { data: conv } = await db.from('conversations').select('confirmed_by,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title').eq('id', cfId).single();
+  const { data: conv } = await db.from('conversations').select('*').eq('id', cfId).single();
   if (!conv) { showToast('⚠️ Error al confirmar'); return; }
 
   let confirmed = conv.confirmed_by;
@@ -5849,8 +5849,41 @@ async function confirmReceipt(cfId) {
 
   closeConfirmModal();
 
+  // Obtener la propuesta para saber qué item es de quién
+  let myItemId = null;
+  let otherItemId = null;
+  if (conv.proposal_id) {
+    const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, owner_id, offerer_id').eq('id', conv.proposal_id).single();
+    if (prop) {
+      // item_id pertenece al owner, offered_item_id al offerer
+      if (prop.owner_id === currentUser.id) {
+        myItemId = prop.item_id;
+        otherItemId = prop.offered_item_id;
+      } else {
+        myItemId = prop.offered_item_id;
+        otherItemId = prop.item_id;
+      }
+    }
+  }
+
+  // Marcar MI item como completed inmediatamente al confirmar
+  if (myItemId) {
+    await db.from('items').update({ status: 'completed' }).eq('id', myItemId);
+    // Actualizar arrays locales
+    items = items.map(i => String(i.id) === String(myItemId) ? { ...i, status: 'completed' } : i);
+    myItems = myItems.filter(i => String(i.id) !== String(myItemId));
+    applyFilter(document.getElementById('search-input')?.value || '', currentFilter);
+  }
+
   if (bothConfirmed) {
     showToast('🎉 ¡Trueque completado con éxito!');
+
+    // Marcar el item del otro como completed también
+    if (otherItemId) {
+      await db.from('items').update({ status: 'completed' }).eq('id', otherItemId);
+      items = items.map(i => String(i.id) === String(otherItemId) ? { ...i, status: 'completed' } : i);
+      myItems = myItems.filter(i => String(i.id) !== String(otherItemId));
+    }
 
     // Guardar en tabla permanente
     const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
@@ -5865,25 +5898,6 @@ async function confirmReceipt(cfId) {
     }], { onConflict: 'conversation_id', ignoreDuplicates: true });
     if (tradeError) console.warn('completed_trades:', tradeError.message);
 
-    // Marcar items como completados — se ocultan del explorador
-    if (conv.proposal_id) {
-      const { data: prop } = await db.from('proposals').select('item_id, offered_item_id').eq('id', conv.proposal_id).single();
-      if (prop) {
-        await Promise.all([
-          db.from('items').update({ status: 'completed' }).eq('id', prop.item_id),
-          db.from('items').update({ status: 'completed' }).eq('id', prop.offered_item_id),
-        ]);
-
-        // Actualizar arrays locales para reflejar el cambio inmediatamente
-        const completedIds = [String(prop.item_id), String(prop.offered_item_id)].filter(Boolean);
-        items = items.map(i => completedIds.includes(String(i.id)) ? { ...i, status: 'completed' } : i);
-        myItems = myItems.filter(i => !completedIds.includes(String(i.id)));
-
-        // Recargar el explorador con los datos actualizados
-        applyFilter(document.getElementById('search-input')?.value || '', currentFilter);
-      }
-    }
-
     // Email de trueque completado a ambos
     const myEmail = currentUser.email;
     const otherEmail = await getUserEmail(otherUserId);
@@ -5894,9 +5908,9 @@ async function confirmReceipt(cfId) {
     await loadReviews();
     await loadMyItems();
     renderProfile();
-    await renderConfirmations(); // después de todo para tener datos actualizados
+    await renderConfirmations();
 
-    // Solo abrir modal de valoración si no ha valorado ya esta conversación
+    // Solo abrir modal de valoración si no ha valorado ya
     const { data: existingReview } = await db.from('reviews')
       .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
     if (!existingReview || !existingReview.length) {
@@ -5904,6 +5918,8 @@ async function confirmReceipt(cfId) {
     }
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
+    await loadMyItems();
+    renderProfile();
     await renderConfirmations();
 
     // Email al otro usuario avisando que falta su confirmación
