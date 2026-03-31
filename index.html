@@ -2700,6 +2700,11 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🎯 Tengo preferencias concretas</div>
               <div style="font-size:12px;color:var(--muted);line-height:1.4">Quiero especificar qué categorías o artículos me interesan.</div>
             </button>
+            <button id="wants-open-cafe" onclick="setWantsOpen('cafe')"
+              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
+              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">☕ Solo un café</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.4">Quiero regalar este objeto a cambio de un café simbólico.</div>
+            </button>
           </div>
         </div>
 
@@ -3974,8 +3979,11 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
+  const isCafe = item.wants && item.wants.length === 1 && item.wants[0] === '☕ Un café';
   const topBadge = item.status === 'reserved'
     ? `<div class="item-match-badge" style="background:rgba(234,88,12,.85)">🔒 Reservado</div>`
+    : isCafe
+    ? `<div class="item-match-badge" style="background:rgba(146,64,14,.85)">☕ Un café</div>`
     : isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
     : isMatch ? `<div class="item-match-badge">⚡ ${matchScore}% match</div>` : '';
@@ -4406,8 +4414,11 @@ function itemCardHTML(item, isPremiumView=false) {
        <div class="item-img-emoji">${item.emoji}</div>
      </div>`;
 
+  const isCafe = item.wants && item.wants.length === 1 && item.wants[0] === '☕ Un café';
   const topBadge = item.status === 'reserved'
     ? `<div class="item-match-badge" style="background:rgba(234,88,12,.85)">🔒 Reservado</div>`
+    : isCafe
+    ? `<div class="item-match-badge" style="background:rgba(146,64,14,.85)">☕ Un café</div>`
     : isPremium && !isMatch
     ? `<div class="item-premium-badge">✦ Premium</div>`
     : isMatch ? `<div class="item-match-badge">⚡ ${matchScore}% match</div>` : '';
@@ -8011,28 +8022,39 @@ let sortByDistance = !!userCoords; // activo por defecto si ya tenemos coords
 let pubCurrentScreen = 1;
 const PUB_SCREENS = 2;
 const PUB_OPTIONAL = { 1: false, 2: false };
-let pubWantsOpen = null; // null = sin respuesta, true = flexible (con cats), false = preferencias específicas
+let pubWantsOpen = null; // null = sin respuesta, true = flexible, false = concreto, 'cafe' = café simbólico
 let pubOpenCats = []; // categorías seleccionadas cuando wants_open=true
 
 function setWantsOpen(open) {
   pubWantsOpen = open;
   const yesBtn = document.getElementById('wants-open-yes');
   const noBtn = document.getElementById('wants-open-no');
-  if (yesBtn) {
-    yesBtn.style.borderColor = open ? 'var(--accent)' : 'var(--border)';
-    yesBtn.style.background = open ? 'var(--accent-l)' : 'var(--bg)';
-  }
-  if (noBtn) {
-    noBtn.style.borderColor = !open ? 'var(--accent)' : 'var(--border)';
-    noBtn.style.background = !open ? 'var(--accent-l)' : 'var(--bg)';
-  }
+  const cafeBtn = document.getElementById('wants-open-cafe');
+
+  // Reset estilos
+  [yesBtn, noBtn, cafeBtn].forEach(b => {
+    if (b) { b.style.borderColor = 'var(--border)'; b.style.background = 'var(--bg)'; }
+  });
+
+  // Activar el seleccionado
+  if (open === true && yesBtn) { yesBtn.style.borderColor = 'var(--accent)'; yesBtn.style.background = 'var(--accent-l)'; }
+  if (open === false && noBtn) { noBtn.style.borderColor = 'var(--accent)'; noBtn.style.background = 'var(--accent-l)'; }
+  if (open === 'cafe' && cafeBtn) { cafeBtn.style.borderColor = '#92400e'; cafeBtn.style.background = '#fef3c7'; }
+
   const openCats = document.getElementById('wants-open-cats');
   const form = document.getElementById('wants-add-form');
-  if (openCats) openCats.style.display = open ? 'block' : 'none';
-  if (form) form.style.display = open ? 'none' : 'block';
+  if (openCats) openCats.style.display = open === true ? 'block' : 'none';
+  if (form) form.style.display = open === false ? 'block' : 'none';
+
+  // Café: limpiar opciones y no mostrar nada más
+  if (open === 'cafe') {
+    exchangeOptions = [];
+    pubOpenCats = [];
+    renderExchangeOptions();
+  }
 
   // Inicializar chips si aún no se han generado
-  if (open) {
+  if (open === true) {
     const chipsEl = document.getElementById('wants-open-cat-chips');
     if (chipsEl && !chipsEl.children.length) {
       const cats = ['Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'];
@@ -8115,6 +8137,7 @@ function pubNext(skip = false) {
       if (pubWantsOpen === null) { showToast('⚠️ Indica tu nivel de flexibilidad'); return; }
       if (pubWantsOpen === true && pubOpenCats.length === 0) { showToast('⚠️ Selecciona al menos una categoría'); return; }
       if (pubWantsOpen === false && !exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
+      // 'cafe' no necesita validación extra
     }
   }
   if (pubCurrentScreen < PUB_SCREENS) pubGoTo(pubCurrentScreen + 1);
@@ -8909,7 +8932,8 @@ async function publishItem() {
   }
 
   if(pubWantsOpen === true && !pubOpenCats.length){showToast('⚠️ Selecciona al menos una categoría');return;}
-  if(pubWantsOpen !== true && !exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
+  if(pubWantsOpen === false && !exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
+  // pubWantsOpen === 'cafe' no necesita validación extra
 
   // Refrescar sesión antes de publicar (crítico en móvil)
   if (currentUser) {
@@ -8993,7 +9017,7 @@ async function publishItem() {
     subcategory: fullSubcat || null,
     emoji: autoEmoji,
     condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
-    wants: pubWantsOpen === true ? pubOpenCats.join(', ') : wantsFlat.join(', '),
+    wants: pubWantsOpen === true ? pubOpenCats.join(', ') : pubWantsOpen === 'cafe' ? '☕ Un café' : wantsFlat.join(', '),
     wants_open: pubWantsOpen === true,
     photos: photoUrls.length ? photoUrls[0] : '',
     photo_urls: photoUrls.length ? photoUrls : null,
