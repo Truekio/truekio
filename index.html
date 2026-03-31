@@ -5886,7 +5886,12 @@ async function confirmReceipt(cfId) {
     await loadProfileStats();
     await loadReviews();
     renderProfile();
-    setTimeout(() => openReviewModal(cfId), 1500);
+    // Solo abrir modal de valoración si no ha valorado ya esta conversación
+    const { data: existingReview } = await db.from('reviews')
+      .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
+    if (!existingReview || !existingReview.length) {
+      setTimeout(() => openReviewModal(cfId), 1500);
+    }
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
 
@@ -7755,7 +7760,15 @@ let reviewStep = 0;
 let reviewAnswers = {};
 let activeReviewCfId = null;
 
-function openReviewModal(cfId) {
+async function openReviewModal(cfId) {
+  // Comprobar si ya valoró esta conversación
+  const { data: existing } = await db.from('reviews')
+    .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
+  if (existing && existing.length) {
+    showToast('✅ Ya has valorado este trueque');
+    return;
+  }
+
   const cf = (typeof confirmations !== 'undefined' && confirmations.find) ? confirmations.find(c=>c.id===cfId) : null;
   activeReviewCfId = cfId;
   reviewAnswers = {};
@@ -7835,7 +7848,7 @@ async function submitReview() {
 
   await loadReviews();
   await loadProfileStats();
-  renderConfirmations();
+  await renderConfirmations(); // await para que cargue reviewedConvIds antes de renderizar
   switchPTab('reviews');
   navTo('profile');
 }
