@@ -4644,6 +4644,18 @@ async function loadProposals() {
 
   if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
 
+  // Cargar fotos de todos los items involucrados
+  const allItemIds = [...new Set(data.flatMap(p => [p.item_id, p.offered_item_id]).filter(Boolean))];
+  let itemPhotos = {}; // id → first photo url
+  if (allItemIds.length) {
+    const { data: itemData } = await db.from('items')
+      .select('id, photos, photo_urls')
+      .in('id', allItemIds);
+    if (itemData) itemData.forEach(i => {
+      itemPhotos[i.id] = (i.photo_urls && i.photo_urls[0]) || i.photos || '';
+    });
+  }
+
   // Badge con pendientes recibidas
   const pending = data.filter(p => p.owner_id === currentUser.id && p.status === 'pending');
   const badge = document.getElementById('mtab-proposals-count');
@@ -4697,15 +4709,27 @@ async function loadProposals() {
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:120px">
-          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${isOwner ? 'Te ofrecen' : 'Ofreces'}</div>
-          <div style="font-weight:700;font-size:13px">${p.offered_item_emoji} ${p.offered_item_title}</div>
-          <div style="font-size:11px;color:var(--muted)">de ${isOwner ? p.offerer_name : 'ti'}</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${isOwner ? 'Te ofrecen' : 'Ofreces'}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${itemPhotos[p.offered_item_id] ? `<img src="${itemPhotos[p.offered_item_id]}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer" onclick="openDetail(${p.offered_item_id})">` : `<div style="width:52px;height:52px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${p.offered_item_emoji}</div>`}
+            <div>
+              <div style="font-weight:700;font-size:13px">${p.offered_item_title}</div>
+              <div style="font-size:11px;color:var(--muted)">de ${isOwner ? p.offerer_name : 'ti'}</div>
+              ${p.offered_item_id ? `<button onclick="openDetail(${p.offered_item_id})" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;margin-top:2px">Ver detalle →</button>` : ''}
+            </div>
+          </div>
         </div>
         <div style="font-size:1.2rem;color:var(--muted)">↔</div>
         <div style="flex:1;min-width:120px">
-          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${isOwner ? 'Por tu' : 'Por'}</div>
-          <div style="font-weight:700;font-size:13px">${p.item_title}</div>
-          <div style="font-size:11px;color:var(--muted)">${isOwner ? '' : 'de ' + (p.offerer_name || '—')}</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${isOwner ? 'Por tu' : 'Por'}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${itemPhotos[p.item_id] ? `<img src="${itemPhotos[p.item_id]}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer" onclick="openDetail(${p.item_id})">` : `<div style="width:52px;height:52px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📦</div>`}
+            <div>
+              <div style="font-weight:700;font-size:13px">${p.item_title}</div>
+              <div style="font-size:11px;color:var(--muted)">${isOwner ? '' : 'de ' + (p.offerer_name || '—')}</div>
+              ${p.item_id ? `<button onclick="openDetail(${p.item_id})" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;margin-top:2px">Ver detalle →</button>` : ''}
+            </div>
+          </div>
         </div>
       </div>
       ${counterItemsHtml}
@@ -5019,14 +5043,16 @@ async function openCounterModal(proposalId, otherUserId, otherUserName) {
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
       ${theirItms.map(i => {
         const photo = (i.photo_urls && i.photo_urls[0]) || i.photos || '';
-        return `<div id="counter-item-${i.id}" onclick="counterToggleItem(${i.id},'${(i.title||'').replace(/'/g,"\\'")}','${i.emoji||'📦'}')"
-          style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .12s">
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .12s">
+          <div id="counter-item-${i.id}" onclick="counterToggleItem(${i.id},'${(i.title||'').replace(/'/g,"\\'")}','${i.emoji||'📦'}')" style="display:flex;align-items:center;gap:10px;flex:1">
           ${photo
             ? `<img src="${photo}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0">`
             : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">${i.emoji||'📦'}</div>`
           }
           <span style="font-weight:600;font-size:13px">${i.title}</span>
           <span id="counter-check-${i.id}" style="margin-left:auto;display:none;color:var(--accent);font-size:18px">✓</span>
+          </div>
+          <button onclick="openDetail(${i.id})" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:4px 6px;font-family:inherit;flex-shrink:0">Ver →</button>
         </div>`;
       }).join('')}
     </div>`;
