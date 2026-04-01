@@ -6356,6 +6356,7 @@ async function startBgPolling() {
 
 // Detectar trueques cancelados por la otra parte
 let lastKnownCancelledProposals = new Set();
+let _cancelledTradesInitialized = false;
 async function checkCancelledTrades() {
   const { data } = await db
     .from('proposals')
@@ -6364,6 +6365,13 @@ async function checkCancelledTrades() {
     .eq('status', 'cancelled');
 
   if (!data) return;
+
+  // Primera ejecución: solo poblar el Set sin notificar
+  if (!_cancelledTradesInitialized) {
+    data.forEach(p => lastKnownCancelledProposals.add(p.id));
+    _cancelledTradesInitialized = true;
+    return;
+  }
 
   // Ver si hay cancelaciones nuevas que no conocíamos
   const newCancelled = data.filter(p => !lastKnownCancelledProposals.has(p.id));
