@@ -6850,8 +6850,12 @@ function openDetail(itemId) {
   );
 
   const safeUserName = (item.user || '').replace(/['"\\]/g, '');
+  const avatarHtml = item.userAvatar
+    ? `<img src="${item.userAvatar}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border)">`
+    : `<div style="width:42px;height:42px;border-radius:50%;background:${uBg};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;font-weight:700">${item.userEmoji || item.user?.charAt(0)?.toUpperCase()}</div>`;
+
   document.getElementById('detail-user-row').innerHTML = `
-    <div style="width:42px;height:42px;border-radius:50%;background:${uBg};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;font-weight:700">${item.userEmoji || item.user?.charAt(0)?.toUpperCase()}</div>
+    ${avatarHtml}
     <div style="flex:1;min-width:0">
       <div style="font-weight:700;font-size:13px">${item.user}</div>
       <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
