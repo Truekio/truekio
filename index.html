@@ -4962,10 +4962,15 @@ async function loadProposals() {
     });
   }
 
-  // Badge con pendientes recibidas
+  // Badge con pendientes recibidas (pending + countered donde me toca responder)
   const pending = data.filter(p => p.owner_id === currentUser.id && p.status === 'pending');
+  const myTurnCountered = data.filter(p => p.status === 'countered' && p.counter_by !== currentUser.id);
+  const totalPending = pending.length + myTurnCountered.length;
   const badge = document.getElementById('mtab-proposals-count');
-  if (badge) { badge.textContent = pending.length; badge.style.display = pending.length ? '' : 'none'; }
+  if (badge) { badge.textContent = totalPending; badge.style.display = totalPending ? '' : 'none'; }
+  // Guardar para el badge global de actividad
+  window._pendingProposalCount = totalPending;
+  if (typeof updateActivityBadge === 'function') updateActivityBadge();
 
   if (!data.length) {
     el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes propuestas.<br><span style="font-size:12px">Cuando alguien proponga un trueque contigo aparecerá aquí.</span></div>';
@@ -5957,9 +5962,8 @@ function renderMatches() {
   const total = matches.length + chains.length;
   const badge = document.getElementById('match-count-badge');
   if(badge) badge.textContent = total + (total===1?' elemento activo':' elementos activos');
-  // Update activity hub badge
-  const actBadge = document.getElementById('activity-badge-nav');
-  if(actBadge) actBadge.textContent = total + confirmations.filter(c=>c.status!=='done').length;
+  // Actualizar badge de actividad con el total real
+  updateActivityBadge();
   const directCount = document.getElementById('mtab-direct-count');
   if(directCount) directCount.textContent = matches.length;
   const chainCount = document.getElementById('mtab-chain-count');
@@ -5968,6 +5972,24 @@ function renderMatches() {
   if(confCount) confCount.textContent = confirmations.filter(c=>c.status!=='done').length;
   const wishBadge = document.getElementById('wish-badge-nav');
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
+
+function updateActivityBadge() {
+  const actBadge = document.getElementById('activity-badge-nav');
+  const actDot = document.getElementById('activity-dot');
+  if (!actBadge) return;
+  // Calcular total pendiente: propuestas recibidas pending + countered + confirmaciones pendientes
+  const pendingProposals = (window._pendingProposalCount || 0);
+  const pendingConf = confirmations.filter(c => c.status !== 'done').length;
+  const total = pendingProposals + pendingConf;
+  if (total > 0) {
+    actBadge.textContent = total > 9 ? '9+' : total;
+    actBadge.style.display = 'inline-flex';
+    if (actDot) actDot.classList.add('visible');
+  } else {
+    actBadge.style.display = 'none';
+    if (actDot) actDot.classList.remove('visible');
+  }
+}
 
   if(!matches.length) {
     list.innerHTML = emptyState({
@@ -6779,18 +6801,19 @@ async function checkNewMessages() {
 async function checkNewProposals() {
   const { data } = await db
     .from('proposals')
-    .select('id')
+    .select('id, status, counter_by')
     .eq('owner_id', currentUser.id)
-    .eq('status', 'pending');
-  const n = data ? data.length : 0;
+    .in('status', ['pending', 'countered']);
+  const pending = data ? data.filter(p => p.status === 'pending').length : 0;
+  const myTurnCountered = data ? data.filter(p => p.status === 'countered' && p.counter_by !== currentUser.id).length : 0;
+  const n = pending + myTurnCountered;
   if (n > lastProposalCount) {
     pushNotif('🤝 Nueva propuesta de trueque', 'Alguien quiere intercambiar contigo');
     if (document.visibilityState === 'visible') playNotifSound();
-    // Actualizar badge de actividad
-    const ab = document.getElementById('activity-badge-nav');
-    if (ab) { ab.style.display = 'inline-flex'; ab.textContent = n > 9 ? '9+' : n; }
   }
   lastProposalCount = n;
+  window._pendingProposalCount = n;
+  if (typeof updateActivityBadge === 'function') updateActivityBadge();
 }
 
 // ═══ CONVERSATIONS ═══
