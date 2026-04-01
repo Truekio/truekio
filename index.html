@@ -2304,7 +2304,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <h4>Empresa</h4>
           <a onclick="openLegalModal('about')">Quiénes somos</a>
           <a onclick="openLegalModal('how')">Cómo funciona</a>
-          <a href="mailto:hola@truquo.app">Contacto</a>
+          <a href="/cdn-cgi/l/email-protection#a3cbcccfc2e3d7d1d6d2d6cc8dc2d3d3">Contacto</a>
         </div>
         <div class="lp-footer-col">
           <h4>Soporte</h4>
@@ -2361,7 +2361,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <h2>Política de privacidad</h2>
     <p>Última actualización: enero 2025</p>
     <h3>Responsable del tratamiento</h3>
-    <p>Truquo es el responsable del tratamiento de los datos personales que nos facilites. Puedes contactarnos en privacidad@truquo.app.</p>
+    <p>Truquo es el responsable del tratamiento de los datos personales que nos facilites. Puedes contactarnos en <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f686849f8097959f929792b6828483878399d8978686">[email&#160;protected]</a>.</p>
     <h3>Datos que recopilamos</h3>
     <ul>
       <li>Datos de registro: nombre, email y contraseña cifrada.</li>
@@ -2374,7 +2374,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <h3>Base legal</h3>
     <p>El tratamiento se basa en la ejecución del contrato de servicio y, en su caso, en tu consentimiento explícito.</p>
     <h3>Tus derechos</h3>
-    <p>Tienes derecho a acceder, rectificar, suprimir, limitar el tratamiento y portabilidad de tus datos. Escríbenos a privacidad@truquo.app.</p>
+    <p>Tienes derecho a acceder, rectificar, suprimir, limitar el tratamiento y portabilidad de tus datos. Escríbenos a <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bcccced5cadddfd5d8ddd8fcc8cec9cdc9d392ddcccc">[email&#160;protected]</a>.</p>
     <h3>Conservación de datos</h3>
     <p>Conservamos tus datos mientras tu cuenta esté activa. Al eliminar la cuenta, borraremos tus datos en un plazo de 30 días salvo obligación legal.</p>
   </div>
@@ -2403,7 +2403,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <button class="lp-modal-close" onclick="closeLegalModal('legal')">×</button>
     <h2>Aviso legal</h2>
     <h3>Identificación del titular</h3>
-    <p>Truquo es un proyecto en fase beta desarrollado como plataforma de trueque entre particulares. Para cualquier consulta legal escríbenos a legal@truquo.app.</p>
+    <p>Truquo es un proyecto en fase beta desarrollado como plataforma de trueque entre particulares. Para cualquier consulta legal escríbenos a <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="264a4341474a6652545357534908475656">[email&#160;protected]</a>.</p>
     <h3>Propiedad intelectual</h3>
     <p>Todos los contenidos de Truquo (diseño, código, textos, logotipos) son propiedad de sus creadores. Queda prohibida su reproducción sin autorización expresa.</p>
     <h3>Contenido de usuarios</h3>
@@ -2422,7 +2422,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <h3>Nuestra misión</h3>
     <p>Reducir el desperdicio de objetos facilitando intercambios entre personas. Cada trueque es un paso hacia un consumo más consciente y sostenible.</p>
     <h3>Contacto</h3>
-    <p>¿Tienes ideas, sugerencias o simplemente quieres hablar? Escríbenos a <a href="mailto:hola@truquo.app" style="color:#4e8fba">hola@truquo.app</a></p>
+    <p>¿Tienes ideas, sugerencias o simplemente quieres hablar? Escríbenos a <a href="/cdn-cgi/l/email-protection#0b6364676a4b7f797e7a7e64256a7b7b" style="color:#4e8fba"><span class="__cf_email__" data-cfemail="2f4740434e6f5b5d5a5e5a40014e5f5f">[email&#160;protected]</span></a></p>
   </div>
 </div>
 
@@ -3248,7 +3248,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── FILTER DRAWER LOGIC ──
 let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '', subcat: '' };
 
@@ -5468,45 +5468,82 @@ function _renderDemandList(list) {
   if (!el) return;
 
   if (!list.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Nadie ha publicado objetos aún.</div>';
+    el.innerHTML = `
+      <div style="padding:60px 20px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">🔍</div>
+        <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Aún no hay demanda</div>
+        <div style="font-size:13px;color:var(--muted)">Sé el primero en publicar un objeto y generar matches.</div>
+      </div>`;
     return;
   }
 
   el.innerHTML = list.map((d, idx) => {
     const n = d.entries.length;
-    const personLabel = n === 1 ? '1 persona' : n + ' personas';
+    const personLabel = n === 1 ? '1 persona lo acepta' : n + ' personas lo aceptan';
+    const catIcon = CAT_ICONS[d.entries[0]?.item_cat] || '✦';
 
-    // Detalle: cada persona que acepta esto + el objeto que ofrece
+    // Avatares apilados (hasta 4)
+    const avatarsHtml = d.entries.slice(0,4).map((e, i) => {
+      const bg = `hsl(${strHash(e.user_id||'')%360},55%,60%)`;
+      const initial = (e.user_name||'U')[0].toUpperCase();
+      return `<div style="width:28px;height:28px;border-radius:50%;background:${bg};border:2.5px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-left:${i===0?'0':'-8px'};z-index:${4-i}">${initial}</div>`;
+    }).join('');
+    const extraCount = n > 4 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:2.5px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0;margin-left:-8px">+${n-4}</div>` : '';
+
+    // Miniaturas de objetos que ofrecen (hasta 3)
+    const thumbsHtml = d.entries.slice(0,3).map(e => {
+      return e.item_photo
+        ? `<img src="${e.item_photo}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;border:2px solid var(--white)">`
+        : `<div style="width:44px;height:44px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;border:2px solid var(--white)">${e.item_emoji||'📦'}</div>`;
+    }).join('');
+
+    // Panel expandido: cada persona con su objeto
     const detailHtml = d.entries.map(e => {
-      const bg = `hsl(${strHash(e.user_id||'')%360},55%,65%)`;
+      const bg = `hsl(${strHash(e.user_id||'')%360},55%,60%)`;
       const initial = (e.user_name||'U')[0].toUpperCase();
       return `
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer" onclick="openDetail(${e.item_id})">
+      <div onclick="openDetail(${e.item_id})" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
         ${e.item_photo
-          ? `<img src="${e.item_photo}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0">`
-          : `<div style="width:48px;height:48px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${e.item_emoji||'📦'}</div>`
+          ? `<img src="${e.item_photo}" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0">`
+          : `<div style="width:56px;height:56px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">${e.item_emoji||'📦'}</div>`
         }
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.item_title}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-            <div style="width:18px;height:18px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0">${initial}</div>
-            <span style="font-size:11px;color:var(--muted)">${e.user_name}</span>
+          <div style="font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.item_title}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">Lo ofrece a cambio</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px">
+            <div style="width:20px;height:20px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">${initial}</div>
+            <span style="font-size:11px;font-weight:600;color:var(--text2)">${e.user_name}</span>
           </div>
         </div>
-        <span style="font-size:11px;color:var(--accent);font-weight:700;flex-shrink:0">Ver →</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--muted)"><path d="M6 12l4-4-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>`;
     }).join('');
 
     return `
-    <div style="margin-bottom:8px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border)">
-      <div onclick="demandToggle(${idx})" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--white);cursor:pointer;gap:12px">
-        <div style="font-weight:700;font-size:14px;color:var(--text)">${d.label}</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <span style="background:var(--accent-l);color:var(--accent);font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px">${personLabel}</span>
-          <span id="demand-arrow-${idx}" style="color:var(--muted);font-size:12px;transition:transform .2s">▾</span>
+    <div style="border-radius:var(--r-lg);overflow:hidden;border:1.5px solid var(--border);background:var(--white);margin-bottom:10px;transition:box-shadow .15s" id="demand-card-${idx}">
+      <!-- Cabecera card -->
+      <div onclick="demandToggle(${idx})" style="padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px">
+        <!-- Icono categoría -->
+        <div style="width:48px;height:48px;border-radius:12px;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${catIcon}</div>
+        <!-- Info central -->
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:15px;color:var(--text);margin-bottom:4px">${d.label}</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <!-- Avatares apilados -->
+            <div style="display:flex;align-items:center">${avatarsHtml}${extraCount}</div>
+            <span style="font-size:12px;color:var(--muted);font-weight:600">${personLabel}</span>
+          </div>
         </div>
+        <!-- Miniaturas objetos ofrecidos -->
+        <div style="display:flex;align-items:center;gap:-4px;flex-shrink:0">${thumbsHtml}</div>
+        <!-- Flecha -->
+        <div id="demand-arrow-${idx}" style="color:var(--muted);font-size:18px;transition:transform .2s;flex-shrink:0">▾</div>
       </div>
-      <div id="demand-detail-${idx}" style="display:none;background:var(--bg)">
+      <!-- Panel expandido -->
+      <div id="demand-detail-${idx}" style="display:none;border-top:1px solid var(--border);background:var(--bg)">
+        <div style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
+          Objetos que ofrecen a cambio
+        </div>
         ${detailHtml}
       </div>
     </div>`;
@@ -5516,10 +5553,12 @@ function _renderDemandList(list) {
 function demandToggle(idx) {
   const detail = document.getElementById('demand-detail-' + idx);
   const arrow = document.getElementById('demand-arrow-' + idx);
+  const card = document.getElementById('demand-card-' + idx);
   if (!detail) return;
   const open = detail.style.display !== 'none';
   detail.style.display = open ? 'none' : 'block';
   if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+  if (card) card.style.boxShadow = open ? '' : '0 4px 20px rgba(0,0,0,.08)';
 }
 
 function filterDemand(q) {
@@ -10274,23 +10313,4 @@ document.addEventListener('mouseup', e => {
         </div>
         <button onclick="closeOnboarding()" style="width:100%;background:#4a9cc5;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">✓ ¡Listo, empezar!</button>
         <div style="display:flex;justify-content:space-between;margin-top:8px">
-          <button onclick="obGoTo(3)" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;font-family:inherit;padding:4px">← Atrás</button>
-          <button onclick="closeOnboarding()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;font-family:inherit;padding:4px">Saltar</button>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Dots + navegación -->
-    <div style="display:flex;justify-content:center;gap:6px;padding:0 28px 20px">
-      <div class="ob-dot active" id="ob-dot-1"></div>
-      <div class="ob-dot" id="ob-dot-2"></div>
-      <div class="ob-dot" id="ob-dot-3"></div>
-      <div class="ob-dot" id="ob-dot-4"></div>
-    </div>
-
-  </div>
-</div>
-
-</body>
-</html>
+          <button onclick="obGoTo(3)" style="background:none;border:none;color:#999;font-siz
