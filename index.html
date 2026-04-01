@@ -2802,13 +2802,13 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <div style="background:var(--white);border-radius:20px;max-width:460px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2)">
     <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between">
       <div>
-        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem">🔄 Contraproponar</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">Selecciona objetos adicionales de tu perfil</div>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem">🔄 Contraoferta</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Selecciona qué objeto extra quieres pedir</div>
       </div>
       <button onclick="closeCounterModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%">×</button>
     </div>
     <div style="padding:16px 24px 0;font-size:12px;color:var(--text2);background:#fffbeb;margin:16px 24px;border-radius:var(--r);padding:12px 14px;border:1px solid #fde68a">
-      💡 Pides añadir estos objetos a lo que ya se ha ofrecido. La otra parte deberá aceptar o rechazar.
+      💡 Pides un objeto extra de la otra persona a cambio de aceptar. La otra parte deberá aceptar o rechazar.
     </div>
     <div style="padding:0 24px" id="counter-items-grid">
       <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">⏳ Cargando tus objetos...</div>
@@ -4713,7 +4713,7 @@ async function loadProposals() {
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
         ${(p.status === 'pending' && isOwner) || myTurnToRespond ? `
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','accepted')">✅ Aceptar</button>
-          <button class="btn btn-secondary btn-sm" onclick="openCounterModal('${p.id}','${isOwner ? p.offerer_id : p.owner_id}','${(isOwner ? p.offerer_name : p.owner_id).replace(/'/g,"\\'")}')">🔄 Contraproponar</button>
+          <button class="btn btn-secondary btn-sm" onclick="openCounterModal('${p.id}','${isOwner ? p.offerer_id : p.owner_id}','${(isOwner ? p.offerer_name : p.owner_id).replace(/'/g,"\\'")}')">🔄 Contraoferta</button>
           <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none" onclick="respondProposal('${p.id}','rejected')">❌ Rechazar</button>
         ` : ''}
         ${!isOwner && p.status === 'pending' ? `<button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="deleteProposal('${p.id}')">🗑 Retirar</button>` : ''}
@@ -5000,24 +5000,24 @@ async function openCounterModal(proposalId, otherUserId, otherUserName) {
   document.getElementById('counter-modal-overlay').style.display = 'flex';
   document.getElementById('counter-selected-list').innerHTML = '<span style="font-size:12px;color:var(--muted)" id="counter-empty-msg">Ninguno seleccionado</span>';
 
-  // Cargar mis objetos disponibles
+  // Cargar objetos disponibles DEL OTRO USUARIO — los que podemos pedir
   const grid = document.getElementById('counter-items-grid');
   grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
 
-  const { data: myItms } = await db.from('items')
+  const { data: theirItms } = await db.from('items')
     .select('id, title, emoji, photos, photo_urls')
-    .eq('user_id', currentUser.id)
+    .eq('user_id', otherUserId)
     .eq('status', 'available');
 
-  if (!myItms || !myItms.length) {
-    grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No tienes objetos disponibles para añadir.</div>';
+  if (!theirItms || !theirItms.length) {
+    grid.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">${otherUserName} no tiene más objetos disponibles.</div>`;
     return;
   }
 
   grid.innerHTML = `
-    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">Tus objetos disponibles:</div>
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">Objetos disponibles de ${otherUserName}:</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
-      ${myItms.map(i => {
+      ${theirItms.map(i => {
         const photo = (i.photo_urls && i.photo_urls[0]) || i.photos || '';
         return `<div id="counter-item-${i.id}" onclick="counterToggleItem(${i.id},'${(i.title||'').replace(/'/g,"\\'")}','${i.emoji||'📦'}')"
           style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .12s">
