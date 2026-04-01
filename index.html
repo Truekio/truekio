@@ -2797,6 +2797,32 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <button class="photo-sheet-cancel" onclick="closeDemandSheet()">Cerrar</button>
 </div>
 
+<!-- Modal contraoferta -->
+<div id="counter-modal-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCounterModal()">
+  <div style="background:var(--white);border-radius:20px;max-width:460px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2)">
+    <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem">🔄 Contraproponar</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Selecciona objetos adicionales de tu perfil</div>
+      </div>
+      <button onclick="closeCounterModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%">×</button>
+    </div>
+    <div style="padding:16px 24px 0;font-size:12px;color:var(--text2);background:#fffbeb;margin:16px 24px;border-radius:var(--r);padding:12px 14px;border:1px solid #fde68a">
+      💡 Pides añadir estos objetos a lo que ya se ha ofrecido. La otra parte deberá aceptar o rechazar.
+    </div>
+    <div style="padding:0 24px" id="counter-items-grid">
+      <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">⏳ Cargando tus objetos...</div>
+    </div>
+    <div style="padding:16px 24px 24px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Objetos seleccionados:</div>
+      <div id="counter-selected-list" style="min-height:40px;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+        <span style="font-size:12px;color:var(--muted)" id="counter-empty-msg">Ninguno seleccionado</span>
+      </div>
+      <button onclick="submitCounter()" class="btn btn-primary btn-lg" style="width:100%">🔄 Enviar contraoferta</button>
+    </div>
+  </div>
+</div>
+
 <!-- Action sheet fotos -->
 <div class="photo-sheet-overlay" id="photo-sheet-overlay" onclick="closePhotoSheet()"></div>
 <div class="photo-sheet" id="photo-sheet">
@@ -4613,7 +4639,7 @@ async function loadProposals() {
     .from('proposals')
     .select('*')
     .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'countered'])
     .order('created_at', { ascending: false });
 
   if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
@@ -4630,12 +4656,41 @@ async function loadProposals() {
 
   el.innerHTML = data.map(p => {
     const isOwner = p.owner_id === currentUser.id;
-    const statusLabel = { pending: '⏳ Pendiente', accepted: '✅ Aceptada', rejected: '❌ Rechazada' }[p.status] || p.status;
-    const statusColor = { pending: 'var(--accent)', accepted: 'var(--green)', rejected: 'var(--muted)' }[p.status];
+    const isCountered = p.status === 'countered';
+    const counterBy = p.counter_by;
+    const counterOffer = p.counter_offer ? (typeof p.counter_offer === 'string' ? JSON.parse(p.counter_offer) : p.counter_offer) : null;
+    // ¿Soy yo quien hizo la contraoferta?
+    const iMadeCounter = counterBy === currentUser.id;
+    // ¿Tengo que responder a una contraoferta?
+    const myTurnToRespond = isCountered && !iMadeCounter;
+
+    const statusLabel = {
+      pending: '⏳ Pendiente',
+      accepted: '✅ Aceptada',
+      rejected: '❌ Rechazada',
+      countered: iMadeCounter ? '🔄 Contraoferta enviada' : '🔄 Contraoferta recibida'
+    }[p.status] || p.status;
+    const statusColor = {
+      pending: 'var(--accent)',
+      accepted: 'var(--green)',
+      rejected: 'var(--muted)',
+      countered: '#d97706'
+    }[p.status];
     const date = new Date(p.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
 
+    // Items adicionales de la contraoferta
+    const counterItemsHtml = counterOffer?.extra_items?.length ? `
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r);padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">🔄 ${iMadeCounter ? 'Añadiste' : 'Añaden'} a cambio:</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${counterOffer.extra_items.map(i => `
+            <div style="font-size:12px;font-weight:600;color:#78350f">${i.emoji||'📦'} ${i.title}</div>
+          `).join('')}
+        </div>
+      </div>` : '';
+
     return `
-    <div style="border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:14px;background:var(--white)">
+    <div style="border:1.5px solid ${myTurnToRespond ? '#f59e0b' : 'var(--border)'};border-radius:var(--r-lg);padding:16px 18px;margin-bottom:14px;background:var(--white)${myTurnToRespond ? ';box-shadow:0 0 0 3px rgba(245,158,11,.1)' : ''}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:11px;font-weight:700;color:${statusColor}">${statusLabel}</div>
         <div style="font-size:11px;color:var(--muted)">${date}</div>
@@ -4653,13 +4708,15 @@ async function loadProposals() {
           <div style="font-size:11px;color:var(--muted)">${isOwner ? '' : 'de ' + (p.offerer_name || '—')}</div>
         </div>
       </div>
+      ${counterItemsHtml}
       ${p.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${p.message}"</div>` : ''}
-      <div style="display:flex;gap:8px;margin-top:${isOwner && p.status === 'pending' ? '0' : '6px'}">
-        ${isOwner && p.status === 'pending' ? `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        ${(p.status === 'pending' && isOwner) || myTurnToRespond ? `
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','accepted')">✅ Aceptar</button>
-          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','rejected')">❌ Rechazar</button>
+          <button class="btn btn-secondary btn-sm" onclick="openCounterModal('${p.id}','${isOwner ? p.offerer_id : p.owner_id}','${(isOwner ? p.offerer_name : p.owner_id).replace(/'/g,"\\'")}')">🔄 Contraproponar</button>
+          <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none" onclick="respondProposal('${p.id}','rejected')">❌ Rechazar</button>
         ` : ''}
-        ${!isOwner ? `<button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="deleteProposal('${p.id}')">🗑 Retirar propuesta</button>` : ''}
+        ${!isOwner && p.status === 'pending' ? `<button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="deleteProposal('${p.id}')">🗑 Retirar</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -4933,7 +4990,95 @@ function renderObWishes() {
 // Calcula el % de match entre dos items de forma simétrica.
 // itemA = mi item, itemB = su item
 // Devuelve un número entre 0 y 99
-// ═══ DEMANDA PÚBLICA ═══
+// ═══ CONTRATRUEQUE ═══
+let _counterProposalId = null;
+let _counterSelectedItems = []; // items extra seleccionados
+
+async function openCounterModal(proposalId, otherUserId, otherUserName) {
+  _counterProposalId = proposalId;
+  _counterSelectedItems = [];
+  document.getElementById('counter-modal-overlay').style.display = 'flex';
+  document.getElementById('counter-selected-list').innerHTML = '<span style="font-size:12px;color:var(--muted)" id="counter-empty-msg">Ninguno seleccionado</span>';
+
+  // Cargar mis objetos disponibles
+  const grid = document.getElementById('counter-items-grid');
+  grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
+
+  const { data: myItms } = await db.from('items')
+    .select('id, title, emoji, photos, photo_urls')
+    .eq('user_id', currentUser.id)
+    .eq('status', 'available');
+
+  if (!myItms || !myItms.length) {
+    grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No tienes objetos disponibles para añadir.</div>';
+    return;
+  }
+
+  grid.innerHTML = `
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">Tus objetos disponibles:</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
+      ${myItms.map(i => {
+        const photo = (i.photo_urls && i.photo_urls[0]) || i.photos || '';
+        return `<div id="counter-item-${i.id}" onclick="counterToggleItem(${i.id},'${(i.title||'').replace(/'/g,"\\'")}','${i.emoji||'📦'}')"
+          style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .12s">
+          ${photo
+            ? `<img src="${photo}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0">`
+            : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">${i.emoji||'📦'}</div>`
+          }
+          <span style="font-weight:600;font-size:13px">${i.title}</span>
+          <span id="counter-check-${i.id}" style="margin-left:auto;display:none;color:var(--accent);font-size:18px">✓</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function counterToggleItem(id, title, emoji) {
+  const idx = _counterSelectedItems.findIndex(i => i.id === id);
+  const el = document.getElementById('counter-item-' + id);
+  const check = document.getElementById('counter-check-' + id);
+  if (idx === -1) {
+    _counterSelectedItems.push({ id, title, emoji });
+    if (el) { el.style.borderColor = 'var(--accent)'; el.style.background = 'var(--accent-l)'; }
+    if (check) check.style.display = '';
+  } else {
+    _counterSelectedItems.splice(idx, 1);
+    if (el) { el.style.borderColor = 'var(--border)'; el.style.background = ''; }
+    if (check) check.style.display = 'none';
+  }
+  // Actualizar lista de seleccionados
+  const listEl = document.getElementById('counter-selected-list');
+  if (!_counterSelectedItems.length) {
+    listEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">Ninguno seleccionado</span>';
+  } else {
+    listEl.innerHTML = _counterSelectedItems.map(i =>
+      `<span style="background:var(--accent-l);color:var(--accent);font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px">${i.emoji} ${i.title}</span>`
+    ).join('');
+  }
+}
+
+async function submitCounter() {
+  if (!_counterSelectedItems.length) { showToast('⚠️ Selecciona al menos un objeto'); return; }
+  if (!_counterProposalId) return;
+
+  const { error } = await db.from('proposals').update({
+    status: 'countered',
+    counter_offer: JSON.stringify({ extra_items: _counterSelectedItems }),
+    counter_by: currentUser.id,
+  }).eq('id', _counterProposalId);
+
+  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+
+  closeCounterModal();
+  showToast('🔄 Contraoferta enviada');
+  loadProposals();
+}
+
+function closeCounterModal() {
+  document.getElementById('counter-modal-overlay').style.display = 'none';
+  _counterProposalId = null;
+  _counterSelectedItems = [];
+}
+// ═══ FIN CONTRATRUEQUE ═══
 let _demandData = [];
 
 async function loadPublicDemand() {
