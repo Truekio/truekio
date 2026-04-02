@@ -5423,9 +5423,9 @@ async function loadPublicDemand() {
   if (!el) return;
   el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
 
-  // Cargar todos los items disponibles con su campo wants
+  // 1. Cargar items disponibles con lat/lng
   const { data: allItems, error } = await db.from('items')
-    .select('id, title, emoji, photos, photo_urls, user_id, user_name, wants, wants_open, category')
+    .select('id, title, emoji, photos, photo_urls, user_id, user_name, wants, wants_open, category, lat, lng')
     .eq('status', 'available')
     .neq('user_id', currentUser?.id || '');
 
@@ -5434,13 +5434,64 @@ async function loadPublicDemand() {
     return;
   }
 
-  // Agrupar por lo que acepta cada item
-  // wants es un string "Libros, Electrónica" o "☕ ¡Te lo doy por un café!"
-  const groups = {}; // want → [{item, user_name, user_id}]
+  // 2. Obtener IDs únicos de usuarios
+  const userIds = [...new Set(allItems.map(i => i.user_id).filter(Boolean))];
+
+  // 3. Cargar avatares de perfil
+  const avatarMap = {};
+  if (userIds.length) {
+    const { data: profiles } = await db.from('profiles')
+      .select('id, avatar_url')
+      .in('id', userIds);
+    if (profiles) profiles.forEach(p => { if (p.avatar_url) avatarMap[p.id] = p.avatar_url; });
+    // También intentar desde auth metadata
+    allItems.forEach(item => {
+      if (item.user_avatar && !avatarMap[item.user_id]) avatarMap[item.user_id] = item.user_avatar;
+    });
+  }
+
+  // 4. Cargar ratings medios por usuario
+  const ratingMap = {}; // user_id → avgStars (0–5)
+  if (userIds.length) {
+    const { data: reviews } = await db.from('reviews')
+      .select('reviewed_user_id, stars')
+      .in('reviewed_user_id', userIds);
+    if (reviews && reviews.length) {
+      const acc = {};
+      reviews.forEach(r => {
+        if (!acc[r.reviewed_user_id]) acc[r.reviewed_user_id] = { sum: 0, n: 0 };
+        acc[r.reviewed_user_id].sum += r.stars;
+        acc[r.reviewed_user_id].n++;
+      });
+      Object.entries(acc).forEach(([uid, v]) => { ratingMap[uid] = v.sum / v.n; });
+    }
+  }
+
+  // 5. Calcular distancia al usuario actual
+  const myLat = userCoords?.lat || parseFloat(currentUser?.user_metadata?.lat);
+  const myLng = userCoords?.lng || parseFloat(currentUser?.user_metadata?.lng);
+  const getDistKm = (item) => {
+    if (!myLat || !myLng) return 9999;
+    if (item.lat && item.lng) return distanceKm(myLat, myLng, parseFloat(item.lat), parseFloat(item.lng));
+    if (item.location && CITY_COORDS?.[item.location])
+      return distanceKm(myLat, myLng, CITY_COORDS[item.location].lat, CITY_COORDS[item.location].lng);
+    return 9999;
+  };
+
+  // 6. Score de relevancia: cercanía (60%) + valoración (40%)
+  const scoreItem = (item) => {
+    const dist = getDistKm(item);
+    const proxScore = dist < 5 ? 100 : dist < 20 ? 80 : dist < 50 ? 60 : dist < 100 ? 40 : dist < 200 ? 20 : 5;
+    const rating = ratingMap[item.user_id] || 3; // neutral por defecto
+    const ratingScore = (rating / 5) * 100;
+    return proxScore * 0.6 + ratingScore * 0.4;
+  };
+
+  // 7. Agrupar por want → por usuario (un usuario puede ofrecer varios items)
+  const groups = {};
 
   allItems.forEach(item => {
     if (!item.wants) return;
-    // Parsear wants: puede ser string separado por comas
     const wantList = typeof item.wants === 'string'
       ? item.wants.split(',').map(w => w.trim()).filter(Boolean)
       : (Array.isArray(item.wants) ? item.wants : []);
@@ -5448,22 +5499,46 @@ async function loadPublicDemand() {
     wantList.forEach(w => {
       if (!w || w.length < 2) return;
       const key = w.toLowerCase().trim();
-      if (!groups[key]) groups[key] = { label: w, entries: [] };
-      groups[key].entries.push({
+      if (!groups[key]) groups[key] = { label: w, userMap: {} };
+
+      const uid = item.user_id;
+      if (!groups[key].userMap[uid]) {
+        groups[key].userMap[uid] = {
+          user_id: uid,
+          user_name: item.user_name || 'Usuario',
+          user_avatar: avatarMap[uid] || null,
+          user_rating: ratingMap[uid] || null,
+          score: scoreItem(item),
+          items: []
+        };
+      }
+      groups[key].userMap[uid].items.push({
         item_id: item.id,
         item_title: item.title,
         item_emoji: item.emoji,
         item_photo: (item.photo_urls && item.photo_urls[0]) || item.photos || '',
-        user_id: item.user_id,
-        user_name: item.user_name || 'Usuario',
+        item_cat: item.category,
+        dist: getDistKm(item)
       });
     });
   });
 
-  // Ordenar por número de personas que lo aceptan
+  // 8. Convertir userMap → array ordenado por score, y calcular miniaturas
   _demandData = Object.values(groups)
-    .filter(g => g.entries.length > 0)
-    .sort((a, b) => b.entries.length - a.entries.length);
+    .map(g => {
+      const users = Object.values(g.userMap)
+        .sort((a, b) => b.score - a.score);
+      // Para las miniaturas de la cabecera: primer objeto de cada usuario (top 3)
+      const thumbItems = users.slice(0, 3).map(u => u.items[0]);
+      return {
+        label: g.label,
+        users,                          // usuarios ordenados
+        thumbItems,                     // miniaturas cabecera
+        totalItems: users.reduce((s, u) => s + u.items.length, 0)
+      };
+    })
+    .filter(g => g.users.length > 0)
+    .sort((a, b) => b.users.length - a.users.length);
 
   _renderDemandList(_demandData);
 }
@@ -5482,73 +5557,93 @@ function _renderDemandList(list) {
     return;
   }
 
+  // Helper: avatar (foto real o inicial con color)
+  const avatarEl = (user, size=32) => {
+    if (user.user_avatar) {
+      return `<img src="${user.user_avatar}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--white)">`;
+    }
+    const bg = `hsl(${strHash(user.user_id||'')%360},55%,58%)`;
+    const initial = (user.user_name||'U')[0].toUpperCase();
+    const fs = Math.round(size * 0.4);
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:800;color:#fff;flex-shrink:0">${initial}</div>`;
+  };
+
+  // Helper: estrella + nota
+  const starsEl = (rating) => {
+    if (!rating) return `<span style="font-size:10px;color:var(--muted)">Sin valoraciones</span>`;
+    const r = Math.round(rating * 10) / 10;
+    return `<span style="font-size:10px;color:var(--gold)">★</span><span style="font-size:10px;font-weight:700;color:var(--text2);margin-left:2px">${r.toFixed(1)}</span>`;
+  };
+
   el.innerHTML = list.map((d, idx) => {
-    const n = d.entries.length;
-    const personLabel = n === 1 ? '1 persona lo acepta' : n + ' personas lo aceptan';
-    const catIcon = CAT_ICONS[d.entries[0]?.item_cat] || '✦';
+    const nUsers = d.users.length;
+    const nItems = d.totalItems;
+    const catIcon = CAT_ICONS[d.users[0]?.items[0]?.item_cat] || '✦';
+    const personLabel = nUsers === 1 ? '1 persona lo acepta' : `${nUsers} personas lo aceptan`;
+    const itemExtra = nItems > nUsers ? ` · ${nItems} objetos` : '';
 
-    // Avatares apilados (hasta 4)
-    const avatarsHtml = d.entries.slice(0,4).map((e, i) => {
-      const bg = `hsl(${strHash(e.user_id||'')%360},55%,60%)`;
-      const initial = (e.user_name||'U')[0].toUpperCase();
-      return `<div style="width:28px;height:28px;border-radius:50%;background:${bg};border:2.5px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-left:${i===0?'0':'-8px'};z-index:${4-i}">${initial}</div>`;
-    }).join('');
-    const extraCount = n > 4 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:2.5px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0;margin-left:-8px">+${n-4}</div>` : '';
+    // Avatares apilados cabecera (hasta 4, fotos reales si existen)
+    const avatarsHtml = d.users.slice(0, 4).map((u, i) =>
+      `<div style="margin-left:${i===0?'0':'-8px'};z-index:${4-i};position:relative">${avatarEl(u, 28)}</div>`
+    ).join('');
+    const extraCount = nUsers > 4
+      ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);margin-left:-8px">+${nUsers-4}</div>`
+      : '';
 
-    // Miniaturas de objetos que ofrecen (hasta 3)
-    const thumbsHtml = d.entries.slice(0,3).map(e => {
-      return e.item_photo
-        ? `<img src="${e.item_photo}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;border:2px solid var(--white)">`
-        : `<div style="width:44px;height:44px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;border:2px solid var(--white)">${e.item_emoji||'📦'}</div>`;
-    }).join('');
+    // Miniaturas objetos (primer objeto de cada usuario, hasta 3)
+    const thumbsHtml = d.thumbItems.map(item =>
+      item.item_photo
+        ? `<img src="${item.item_photo}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:2px solid var(--white);margin-left:-4px">`
+        : `<div style="width:40px;height:40px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:2px solid var(--white);margin-left:-4px">${item.item_emoji||'📦'}</div>`
+    ).join('');
 
-    // Panel expandido: cada persona con su objeto
-    const detailHtml = d.entries.map(e => {
-      const bg = `hsl(${strHash(e.user_id||'')%360},55%,60%)`;
-      const initial = (e.user_name||'U')[0].toUpperCase();
+    // Panel expandido: un bloque por usuario, con todos sus objetos
+    const detailHtml = d.users.map(user => {
+      const itemsHtml = user.items.map(item => `
+        <div onclick="openDetail(${item.item_id})" style="display:flex;align-items:center;gap:10px;padding:10px 16px 10px 52px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+          ${item.item_photo
+            ? `<img src="${item.item_photo}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0">`
+            : `<div style="width:48px;height:48px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${item.item_emoji||'📦'}</div>`
+          }
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.item_title}</div>
+            ${item.dist < 9990 ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${item.dist < 1 ? 'Muy cerca' : item.dist < 50 ? item.dist.toFixed(0)+'km' : '+50km'}</div>` : ''}
+          </div>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;opacity:.35"><path d="M5 11l4-4-4-4" stroke="var(--text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>`).join('');
+
       return `
-      <div onclick="openDetail(${e.item_id})" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        ${e.item_photo
-          ? `<img src="${e.item_photo}" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0">`
-          : `<div style="width:56px;height:56px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">${e.item_emoji||'📦'}</div>`
-        }
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.item_title}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">Lo ofrece a cambio</div>
-          <div style="display:flex;align-items:center;gap:5px;margin-top:5px">
-            <div style="width:20px;height:20px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">${initial}</div>
-            <span style="font-size:11px;font-weight:600;color:var(--text2)">${e.user_name}</span>
+      <div style="border-bottom:2px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--white)">
+          ${avatarEl(user, 36)}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px;color:var(--text)">${user.user_name}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+              ${starsEl(user.user_rating)}
+              <span style="font-size:11px;color:var(--muted);margin-left:4px">${user.items.length} objeto${user.items.length!==1?'s':''} a ofrecer</span>
+            </div>
           </div>
         </div>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--muted)"><path d="M6 12l4-4-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        ${itemsHtml}
       </div>`;
     }).join('');
 
     return `
     <div style="border-radius:var(--r-lg);overflow:hidden;border:1.5px solid var(--border);background:var(--white);margin-bottom:10px;transition:box-shadow .15s" id="demand-card-${idx}">
-      <!-- Cabecera card -->
-      <div onclick="demandToggle(${idx})" style="padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px">
-        <!-- Icono categoría -->
-        <div style="width:48px;height:48px;border-radius:12px;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${catIcon}</div>
-        <!-- Info central -->
+      <div onclick="demandToggle(${idx})" style="padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px">
+        <div style="width:46px;height:46px;border-radius:12px;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">${catIcon}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:800;font-size:15px;color:var(--text);margin-bottom:4px">${d.label}</div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <!-- Avatares apilados -->
+          <div style="font-weight:800;font-size:15px;color:var(--text);margin-bottom:5px">${d.label}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <div style="display:flex;align-items:center">${avatarsHtml}${extraCount}</div>
-            <span style="font-size:12px;color:var(--muted);font-weight:600">${personLabel}</span>
+            <span style="font-size:12px;color:var(--muted);font-weight:600">${personLabel}${itemExtra}</span>
           </div>
         </div>
-        <!-- Miniaturas objetos ofrecidos -->
-        <div style="display:flex;align-items:center;gap:-4px;flex-shrink:0">${thumbsHtml}</div>
-        <!-- Flecha -->
+        <div style="display:flex;align-items:center;flex-shrink:0;margin-right:4px">${thumbsHtml}</div>
         <div id="demand-arrow-${idx}" style="color:var(--muted);font-size:18px;transition:transform .2s;flex-shrink:0">▾</div>
       </div>
-      <!-- Panel expandido -->
       <div id="demand-detail-${idx}" style="display:none;border-top:1px solid var(--border);background:var(--bg)">
-        <div style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
-          Objetos que ofrecen a cambio
-        </div>
+        <div style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Ordenado por cercanía y valoración</div>
         ${detailHtml}
       </div>
     </div>`;
