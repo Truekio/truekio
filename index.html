@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Truquo · Intercambia sin dinero</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔄</text></svg>"><circle cx='35' cy='30' r='12' stroke='%231e3a6e' stroke-width='8' fill='none'/><circle cx='65' cy='30' r='10' stroke='%234e9fd4' stroke-width='8' fill='none'/><path d='M23 52 C18 65 22 80 35 82 C45 84 52 74 50 63 C48 54 55 50 62 52 C72 56 76 70 70 80 C64 89 52 90 44 85' stroke='%231e3a6e' stroke-width='8' fill='none' stroke-linecap='round'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔄</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -101,8 +101,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 @media(max-width:640px){nav#main-nav{display:none!important;}}
 .nav-inner{max-width:1080px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;gap:12px;}
 .logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none;}
-.logo-icon{display:flex;align-items:center;}
-.logo-text{display:flex;align-items:center;font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem;color:#1e3a6e;letter-spacing:-.02em;}
+.logo-icon{display:none;}
+.logo-text{display:none;}
 .nav-tabs{display:flex;gap:1px;}
 .nav-tab{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:99px;border:none;background:transparent;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;font-size:13px;cursor:pointer;transition:all .15s;letter-spacing:-.01em;}
 .nav-tab:hover{color:var(--text2);}
@@ -1836,44 +1836,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 </head>
 <body>
 
-<!-- ══ SPLASH SCREEN TRUQUO ══ -->
-<div id="truquo-splash" style="position:fixed;inset:0;z-index:99999;background:#f5f8fb;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease,transform .5s ease;">
-  <div style="width:180px;animation:tqPulse 2s ease-in-out infinite;">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" fill="none">
-  <defs>
-    <linearGradient id="tq-grad" x1="120" y1="0" x2="160" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#1e3a6e"/>
-      <stop offset="100%" stop-color="#4e9fd4"/>
-    </linearGradient>
-  </defs>
-  <!-- Figura izquierda — azul marino -->
-  <circle cx="76" cy="36" r="14" stroke="#1e3a6e" stroke-width="9" fill="none" stroke-linecap="round"/>
-  <path d="M62 62 C55 74 52 88 56 101 C61 116 77 122 91 117 C103 112 109 99 106 86 C104 75 96 67 88 66 C80 65 72 72 72 81 C72 91 79 100 88 102" stroke="#1e3a6e" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Cruce central con gradiente -->
-  <path d="M106 83 C112 79 118 77 124 79" stroke="url(#tq-grad)" stroke-width="9" fill="none" stroke-linecap="round"/>
-  <!-- Punto central (objeto intercambiado) -->
-  <circle cx="140" cy="88" r="7" stroke="#2a5090" stroke-width="7" fill="none"/>
-  <path d="M156 88 C162 86 168 79 174 83" stroke="url(#tq-grad)" stroke-width="9" fill="none" stroke-linecap="round"/>
-  <!-- Figura derecha — azul claro -->
-  <circle cx="204" cy="36" r="13" stroke="#4e9fd4" stroke-width="9" fill="none" stroke-linecap="round"/>
-  <path d="M218 62 C225 74 228 88 224 101 C219 116 203 122 189 117 C177 112 171 99 174 86 C176 75 184 67 192 66 C200 65 208 72 208 81 C208 91 201 100 192 102" stroke="#4e9fd4" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-  </div>
-  <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:2rem;color:#1e3a6e;letter-spacing:-.02em;margin-top:20px;opacity:0;animation:tqFadeUp .6s ease .5s forwards;">Truquo</div>
-  <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:#7a8fa6;font-weight:500;margin-top:6px;opacity:0;animation:tqFadeUp .6s ease .75s forwards;">Intercambia sin dinero</div>
-</div>
-<style>
-@keyframes tqPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
-@keyframes tqFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-</style>
-<script>
-window.addEventListener('DOMContentLoaded',function(){
-  setTimeout(function(){
-    var s=document.getElementById('truquo-splash');
-    if(s){s.style.opacity='0';s.style.transform='scale(1.04)';setTimeout(function(){s.style.display='none';},500);}
-  },1800);
-});
-</script>
 <!-- NAV -->
 <nav id="main-nav" style="display:none;">
   <div class="nav-inner">
