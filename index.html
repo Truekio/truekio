@@ -1919,6 +1919,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="modal-body">
       <div class="modal-item-preview" id="modal-preview"></div>
       <div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Tu oferta</div>
+      <div id="offer-nada-wrap" style="display:none;margin-bottom:10px">
+        <div id="offer-nada-btn" class="offer-opt" onclick="selectNoOffer(this)" style="display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px">
+          <div style="font-size:1.6rem;flex-shrink:0">☕</div>
+          <div>
+            <div class="oo-n" style="white-space:normal">Sin nada a cambio</div>
+            <div class="oo-c" style="margin-top:2px">Me lo llevo con gusto, ¡gracias por el gesto!</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin:8px 0 4px">— o elige uno de tus objetos —</div>
+      </div>
       <div class="offer-grid" id="offer-grid"></div>
       <div class="swap-arrow">⇅</div>
       <div class="modal-msg">
@@ -7570,6 +7580,8 @@ async function openModal(itemId) {
   if(!item) return;
   activeModalItem = item;
   selectedOfferIdx = null;
+  window._offerNoObject = false;
+  document.getElementById('offer-nada-wrap').style.display = 'none';
 
   // Preview del objeto
   const imgHtml = item.photos && item.photos.length
@@ -7633,14 +7645,19 @@ async function openModal(itemId) {
       w === '☕ Un café' || w === '☕ ¡Te lo doy por un café!' || (typeof w === 'string' && w.toLowerCase().includes('café'))
     );
 
+    if (isCafeItem) {
+      // Es objeto de café — mostrar opción "sin nada a cambio" + todos los objetos
+      document.getElementById('offer-nada-wrap').style.display = 'block';
+    }
+
     if (!goodMatch.length || isCafeItem) {
       // Sin match suficiente, o es objeto de café — mostrar todos con aviso apropiado
       const msg = isCafeItem
-        ? '☕ Este objeto se ofrece por un café simbólico. ¡Cualquiera de tus objetos sirve para proponerlo!'
+        ? '— o elige uno de tus objetos como gesto de cortesía —'
         : 'Ninguno de tus objetos encaja directamente. Puedes proponer igualmente si crees que hay interés.';
-      offerGrid.innerHTML = `<div style="padding:12px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--muted);text-align:center;grid-column:1/-1;margin-bottom:8px">
-        ${msg}
-      </div>` + scored.map(o => renderCard(o, scored.indexOf(o))).join('');
+      offerGrid.innerHTML = isCafeItem
+        ? scored.map(o => renderCard(o, scored.indexOf(o))).join('')
+        : `<div style="padding:12px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--muted);text-align:center;grid-column:1/-1;margin-bottom:8px">${msg}</div>` + scored.map(o => renderCard(o, scored.indexOf(o))).join('');
       const sendBtn = document.querySelector('[onclick="sendOffer()"]');
       if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ''; }
       window._offerObjects = scored;
@@ -7666,16 +7683,30 @@ function selectOffer(el, idx) {
   document.querySelectorAll('.offer-opt').forEach(o=>o.classList.remove('selected'));
   el.classList.add('selected');
   selectedOfferIdx = idx;
+  window._offerNoObject = false;
 }
+
+function selectNoOffer(el) {
+  document.querySelectorAll('.offer-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedOfferIdx = null;
+  window._offerNoObject = true;
+}
+
+
+
+
+
 
 function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 function closeModalBg(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 
 async function sendOffer() {
-  if(selectedOfferIdx === null){ showToast('⚠️ Selecciona qué ofreces a cambio'); return; }
+  const isNoObject = window._offerNoObject === true;
+  if(selectedOfferIdx === null && !isNoObject){ showToast('⚠️ Selecciona qué ofreces a cambio'); return; }
   if(!currentUser){ requireAuth('messages'); return; }
 
-  const offeredObj = window._offerObjects[selectedOfferIdx];
+  const offeredObj = isNoObject ? null : window._offerObjects[selectedOfferIdx];
   const msg = document.getElementById('modal-msg-txt').value.trim();
   const btn = document.querySelector('[onclick="sendOffer()"]');
   const originalText = btn ? btn.textContent : '';
@@ -7690,9 +7721,9 @@ async function sendOffer() {
     item_title: activeModalItem.name,
     offerer_id: currentUser.id,
     offerer_name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
-    offered_item_id: offeredObj.id || null,
-    offered_item_title: offeredObj.title,
-    offered_item_emoji: offeredObj.emoji || '📦',
+    offered_item_id: offeredObj?.id || null,
+    offered_item_title: offeredObj?.title || '☕ Sin objeto a cambio',
+    offered_item_emoji: offeredObj?.emoji || '☕',
     owner_id: ownerId,
     message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
     status: 'pending',
