@@ -7614,20 +7614,7 @@ async function openModal(itemId) {
     }).sort((a, b) => b.score - a.score);
     const goodMatch = scored.filter(o => o.score >= 30);
 
-    if (!goodMatch.length) {
-      // Sin match suficiente — mostrar todos con aviso
-      offerGrid.innerHTML = `<div style="padding:12px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--muted);text-align:center;grid-column:1/-1;margin-bottom:8px">
-        Ninguno de tus objetos encaja directamente. Puedes proponer igualmente si crees que hay interés.
-      </div>` + scored.map(o => renderCard(o, scored.indexOf(o))).join('');
-      const sendBtn = document.querySelector('[onclick="sendOffer()"]');
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ''; }
-      window._offerObjects = scored;
-      document.getElementById('modal-msg-txt').value = '';
-      document.getElementById('modal-overlay').style.display = 'flex';
-      return;
-    }
-
-    // Solo mostrar objetos con match >= 50%
+    // renderCard definido aquí para estar disponible en ambos bloques
     const renderCard = (o, globalIdx) => {
       const photo = (o.photo_urls && o.photo_urls[0]) || o.photos || '';
       const scoreBadge = `<div style="font-size:9px;font-weight:800;color:var(--accent);margin-top:2px">⚡ ${o.score}% match</div>`;
@@ -7640,6 +7627,27 @@ async function openModal(itemId) {
         ${scoreBadge}
       </div>`;
     };
+
+    // Detectar si es objeto de café (acepta cualquier cosa)
+    const isCafeItem = item.wants && item.wants.some(w =>
+      w === '☕ Un café' || w === '☕ ¡Te lo doy por un café!' || (typeof w === 'string' && w.toLowerCase().includes('café'))
+    );
+
+    if (!goodMatch.length || isCafeItem) {
+      // Sin match suficiente, o es objeto de café — mostrar todos con aviso apropiado
+      const msg = isCafeItem
+        ? '☕ Este objeto se ofrece por un café simbólico. ¡Cualquiera de tus objetos sirve para proponerlo!'
+        : 'Ninguno de tus objetos encaja directamente. Puedes proponer igualmente si crees que hay interés.';
+      offerGrid.innerHTML = `<div style="padding:12px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--muted);text-align:center;grid-column:1/-1;margin-bottom:8px">
+        ${msg}
+      </div>` + scored.map(o => renderCard(o, scored.indexOf(o))).join('');
+      const sendBtn = document.querySelector('[onclick="sendOffer()"]');
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ''; }
+      window._offerObjects = scored;
+      document.getElementById('modal-msg-txt').value = '';
+      document.getElementById('modal-overlay').style.display = 'flex';
+      return;
+    }
 
     offerGrid.innerHTML = goodMatch.map(o => renderCard(o, scored.indexOf(o))).join('');
 
