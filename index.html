@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Truquo · Intercambia sin dinero</title>
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Truquo">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔄</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -1807,29 +1804,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 </style>
 <script>
 // Funciones de navegación — disponibles inmediatamente, sin depender de Supabase
-function showAuthScreen() {
-  document.getElementById('view-landing').style.display = 'none';
-  document.getElementById('view-landing').classList.remove('active');
-  document.getElementById('view-auth').style.display = '';
-  document.getElementById('view-auth').classList.add('active');
-  document.getElementById('main-nav').style.display = 'none';
-  const bn = document.querySelector('.bottom-nav');
-  if (bn) bn.style.display = 'none';
-}
-function scrollToHow() {
-  document.getElementById('lp-how').scrollIntoView({ behavior: 'smooth' });
-}
-function switchAuthTab(tab) {
-  const isLogin = tab === 'login';
-  document.getElementById('auth-form-login').style.display = isLogin ? '' : 'none';
-  document.getElementById('auth-form-register').style.display = isLogin ? 'none' : '';
-  document.getElementById('auth-tab-login').style.borderBottomColor = isLogin ? 'var(--accent)' : 'transparent';
-  document.getElementById('auth-tab-login').style.color = isLogin ? 'var(--accent)' : 'var(--muted)';
-  document.getElementById('auth-tab-login').style.fontWeight = isLogin ? '700' : '500';
-  document.getElementById('auth-tab-register').style.borderBottomColor = isLogin ? 'transparent' : 'var(--accent)';
-  document.getElementById('auth-tab-register').style.color = isLogin ? 'var(--muted)' : 'var(--accent)';
-  document.getElementById('auth-tab-register').style.fontWeight = isLogin ? '500' : '700';
-}
 function handleLogin() { if(window._handleLogin) window._handleLogin(); }
 function handleRegister() { if(window._handleRegister) window._handleRegister(); }
 function enterApp() { if(window._enterApp) window._enterApp(); }
@@ -4130,261 +4104,6 @@ function requireAuth(intendedView) {
   setTimeout(() => showAuthScreen(), 600);
 }
 
-function navTo(v) {
-  // Redirect home/matches/wishlist
-  if(v === 'home') v = 'explore';
-  if(v === 'matches') { navToActivity('proposals'); return; }
-  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  const el = document.getElementById('view-'+v);
-  if(el) el.classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  const nt = document.getElementById('ntab-'+v);
-  if(nt) nt.classList.add('active');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-'+v);
-  if(bn) bn.classList.add('active');
-  closeNotif();
-  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
-}
-
-function navToActivity(tab) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-activity').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  const nt = document.getElementById('ntab-activity');
-  if(nt) nt.classList.add('active');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-activity');
-  if(bn) bn.classList.add('active');
-  switchMatchTab(tab || 'proposals');
-  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
-  closeNotif();
-  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
-}
-
-// ═══ ONBOARDING (eliminado del MVP v1) ═══
-function showOnboarding() {}
-function obSelectCat() {}
-function obWantInput() {}
-function obAddSuggestion() {}
-function obSetCity() {}
-function obNext() {}
-function obBack() {}
-function obSkip() {}
-function obFinish() {}
-
-// ═══ ADVANCED SEARCH PANEL ═══
-let searchPanelOpen = false;
-
-function toggleSearchPanel() {
-  searchPanelOpen = !searchPanelOpen;
-  const panel = document.getElementById('search-panel');
-  const btn = document.getElementById('filter-toggle');
-  panel.classList.toggle('hidden', !searchPanelOpen);
-  btn.classList.toggle('active', searchPanelOpen);
-}
-
-function toggleSpChip(el, type, val) {
-  el.classList.toggle('on');
-  const arr = spFilters[type+'s'] || spFilters[type];
-  if(el.classList.contains('on')) {
-    if(!arr.includes(val)) arr.push(val);
-  } else {
-    const idx = arr.indexOf(val);
-    if(idx > -1) arr.splice(idx, 1);
-  }
-  applySearchPanel();
-}
-
-function applySearchPanel() {
-  spFilters.cat = document.getElementById('sp-cat')?.value || '';
-  spFilters.city = document.getElementById('sp-city')?.value || '';
-  const q = document.getElementById('search-input')?.value || '';
-  applyFilter(q, currentFilter);
-  renderActiveFilterChips();
-  updateFilterBadge();
-}
-
-function clearAllFilters() {
-  spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance' };
-  ['sp-cat','sp-city'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.querySelectorAll('.sp-chip.on').forEach(c=>c.classList.remove('on'));
-  applyFilter('', 'Todos');
-  currentFilter = 'Todos';
-  document.querySelectorAll('.filter-btn[data-sort]').forEach(b=>b.classList.toggle('active',b.dataset.sort==='relevance'));
-  renderActiveFilterChips();
-  updateFilterBadge();
-}
-
-function updateFilterBadge() {
-  const count = [spFilters.cat,spFilters.city].filter(Boolean).length
-    + spFilters.conditions.length + spFilters.shipping.length;
-  const badge = document.getElementById('filter-count-badge');
-  if(badge){ badge.textContent = count; badge.style.display = count>0?'inline':'none'; }
-}
-
-function renderActiveFilterChips() {
-  const el = document.getElementById('active-filters');
-  if(!el) return;
-  const chips = [];
-  if(spFilters.cat) chips.push({label:'Categoría: '+spFilters.cat, key:'cat'});
-  if(spFilters.city) chips.push({label:'Ciudad: '+spFilters.city, key:'city'});
-  spFilters.conditions.forEach(c=>chips.push({label:c,key:'condition:'+c}));
-  spFilters.shipping.forEach(s=>chips.push({label:s,key:'shipping:'+s}));
-  el.innerHTML = chips.map(c=>`<div class="active-filter-chip"><span style="opacity:.75;font-size:10px">⚙</span>${c.label}<button onclick="removeFilterChip('${c.key}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`).join('');
-}
-
-function removeFilterChip(key) {
-  if(key==='cat'){spFilters.cat='';const el=document.getElementById('sp-cat');if(el)el.value='';}
-  else if(key==='city'){spFilters.city='';const el=document.getElementById('sp-city');if(el)el.value='';}
-  else if(key.startsWith('condition:')){const v=key.slice(10);spFilters.conditions=spFilters.conditions.filter(c=>c!==v);document.querySelectorAll('.sp-chip').forEach(c=>{if(c.textContent===v)c.classList.remove('on');});}
-  else if(key.startsWith('shipping:')){const v=key.slice(9);spFilters.shipping=spFilters.shipping.filter(s=>s!==v);document.querySelectorAll('.sp-chip').forEach(c=>{if(c.textContent.includes(v))c.classList.remove('on');});}
-  applyFilter(document.getElementById('search-input')?.value||'', currentFilter);
-  renderActiveFilterChips();
-  updateFilterBadge();
-}
-
-// ═══ NOTIFICATIONS ═══
-function toggleNotif() {
-  const p = document.getElementById('notif-panel');
-  p.classList.toggle('open');
-  document.getElementById('notif-dot').style.display = 'none';
-}
-function closeNotif() { document.getElementById('notif-panel').classList.remove('open'); }
-
-// ═══ TOAST ═══
-let toastTimer;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
-}
-
-// ═══ ITEM CARD HTML — redesigned ═══
-function itemCardHTML(item, isPremiumView=false) {
-  const matchScore = matchScoreByItemId.get(String(item.id));
-  const isMatch = !!matchScore;
-  const isPremium = item.price && parseInt(item.price) >= 300;
-  const wantTags = item.wants.map(w => `<span class="wants-tag">${w}</span>`).join('');
-  const catIcon = CAT_ICONS[item.cat] || '✦';
-  const trustCls = getTrustClass ? getTrustClass(item.user) : '';
-  const trustLbl = getTrustLabel ? getTrustLabel(item.user) : '';
-  const userBg = `hsl(${strHash(item.user)%360},55%,70%)`;
-
-  // Build photos array: uploaded > item.photos > single item.photo > emoji fallback
-  const allPhotos = (item.images && item.images.length) ? item.images
-    : (item.photos && item.photos.length) ? item.photos
-    : item.photo ? [item.photo] : [];
-  const cid = 'car-' + String(item.id).replace(/-/g, '');
-  const imgContent = allPhotos.length > 0 ? (() => {
-    const slides = allPhotos.map((src, i) =>
-      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onerror="this.parentElement.style.background='var(--bg2)'"></div>`
-    ).join('');
-    const dots = allPhotos.length > 1 ? `<div class="carousel-dots" id="${cid}-dots">${allPhotos.map((_,i)=>
-      `<div class="carousel-dot${i===0?' active':''}"></div>`).join('')}</div>` : '';
-    const arrows = allPhotos.length > 1 ? `
-      <button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button>
-      <button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
-    const count = ''; // contador de fotos eliminado
-    return `<div class="card-carousel" id="${cid}" data-idx="0" data-total="${allPhotos.length}"
-      onmousedown="carouselDragStart(event,'${cid}')"
-      ontouchstart="carouselTouchStart(event,'${cid}')"
-      ontouchmove="carouselTouchMove(event,'${cid}')"
-      ontouchend="carouselTouchEnd(event,'${cid}')"
-      style="position:absolute;inset:0">
-      <div class="carousel-track" id="${cid}-track">${slides}</div>
-      ${dots}${arrows}${count}
-    </div>`;
-  })()
-  : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-       <div class="item-img-emoji">${item.emoji}</div>
-     </div>`;
-
-  const isCafe = item.wants && item.wants.some(w => w === '☕ ¡Te lo doy por un café!' || w === '☕ Un café');
-  const topBadge = item.status === 'reserved'
-    ? `<div class="item-match-badge" style="background:rgba(234,88,12,.85)">🔒 Reservado</div>`
-    : isCafe
-    ? `<div class="item-match-badge" style="background:rgba(146,64,14,.85)">☕ Un café</div>`
-    : isPremium && !isMatch
-    ? `<div class="item-premium-badge">✦ Premium</div>`
-    : isMatch ? `<div class="item-match-badge">⚡ ${matchScore}% match</div>` : '';
-
-  return `
-  <div class="card card-hover item-card${isPremium?' is-premium':''}" data-cat="${item.cat}">
-    <div class="item-img" style="cursor:pointer" onclick="openDetail(${item.id})">
-      ${imgContent}
-      ${topBadge}
-
-      <button class="${favorites.includes(String(item.id)) ? 'fav-btn faved' : 'fav-btn'}" title="Guardar en favoritos" onclick="toggleFavorite(${item.id},'${item.name.replace(/['"\`]/g,'')}',event)"><svg class="fav-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-    </div>
-    <div class="item-body" onclick="openDetail(${item.id})" style="cursor:pointer">
-      <div class="item-name">${item.name}</div>
-      ${(sortByDistance && item._dist != null && item._dist !== Infinity) ? `<div class="item-location">📍 ${item._dist < 1 ? '<1' : Math.round(item._dist)} km</div>` : ''}
-    </div>
-  </div>`;
-}
-
-function openConvFromDash(el) {
-  navTo('messages');
-  var id = el.getAttribute('data-id');
-  if(id) setTimeout(function(){ openConv(id); }, 80);
-}
-
-function renderDashboard() {
-  // Dashboard eliminado del MVP v1 — redirige a Explorar
-}
-
-function renderHomeItems() {
-  // Eliminado del MVP v1
-}
-
 
 function navTo(v) {
   // Redirect home/matches/wishlist
@@ -4464,15 +4183,7 @@ function navToActivity(tab) {
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
-function showOnboarding() {}
-function obSelectCat() {}
-function obWantInput() {}
-function obAddSuggestion() {}
-function obSetCity() {}
-function obNext() {}
-function obBack() {}
-function obSkip() {}
-function obFinish() {}
+
 
 // ═══ ADVANCED SEARCH PANEL ═══
 
@@ -10208,12 +9919,6 @@ function handleWishAlertClick(alertId, itemId) {
   }
 }
 
-function markAllWishAlertsRead() {
-  wishAlerts.forEach(a=>a.unread=false);
-  renderWishAlerts();
-  updateWishBadges();
-  showToast('✓ Todas las alertas marcadas como leídas');
-}
 
 async function renderSupplyDemand() {
   const el = document.getElementById('supply-demand-grid');
