@@ -657,7 +657,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 /* ── MODAL ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(44,26,14,.65);backdrop-filter:blur(12px);z-index:400;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}
-.modal-box{background:var(--white);border-radius:var(--r-lg);max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-xl);animation:scaleIn .25s ease;}
+.modal-box{background:var(--white);border-radius:var(--r-lg);max-width:480px;width:100%;max-height:90vh;overflow:hidden;box-shadow:var(--sh-xl);animation:scaleIn .25s ease;display:flex;flex-direction:column;}
 .modal-head{padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;}
 .modal-title{font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;}
 .modal-sub{font-size:12px;color:var(--muted);margin-top:2px;}
@@ -676,7 +676,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 }
 .modal-close:hover{background:#fff;transform:scale(1.08);}
 .modal-close svg{display:block;flex-shrink:0;}
-.modal-body{padding:20px 24px 24px;}
+.modal-body{padding:20px 24px 0;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
 .modal-item-preview{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:18px;display:flex;gap:14px;align-items:center;}
 .mip-emoji{font-size:2.4rem;}
 .mip-info h4{font-weight:700;font-size:.95rem;}
@@ -691,7 +691,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .swap-arrow{text-align:center;font-size:1.4rem;color:var(--muted2);margin:8px 0;}
 .modal-msg{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;}
 .modal-msg label{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:7px;display:block;text-transform:uppercase;letter-spacing:.06em;}
-.modal-msg textarea{background:none;border:none;color:var(--text);width:100%;resize:none;outline:none;min-height:65px;font-size:13px;line-height:1.6;}
+.modal-msg textarea{background:none;border:none;color:var(--text);width:100%;resize:none;outline:none;height:40px;min-height:40px;max-height:40px;font-size:13px;line-height:1.4;overflow:hidden;}
 .ship-info-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--r);padding:11px 14px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;}
 .ship-info-box p{font-size:12px;color:#92400e;line-height:1.55;}
 .modal-footer{display:flex;gap:10px;}
@@ -1797,12 +1797,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
   .lp-footer-top { grid-template-columns: 1fr 1fr; }
 }
 @media(max-width: 640px) {
-  .lp-hero { padding: 48px 20px 50px; }
+  .lp-hero { padding: 90px 20px 50px; }
   .lp-feat-grid { grid-template-columns: 1fr; }
   .lp-cats-grid { grid-template-columns: repeat(4,1fr); }
   .lp-footer-top { grid-template-columns: 1fr; }
   .lp-nav-link { display: none; }
-  .lp-nav { display: none; }
 }
 
 </style>
@@ -1933,15 +1932,19 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
         <div style="font-size:11px;color:var(--muted);text-align:center;margin:8px 0 4px">— o elige uno de tus objetos —</div>
       </div>
-      <div class="offer-grid" id="offer-grid"></div>
-      <div class="swap-arrow">⇅</div>
-      <div class="modal-msg">
-        <label>Mensaje</label>
-        <textarea id="modal-msg-txt" placeholder="Cuéntale el estado de tu objeto y por qué te interesa el trueque..."></textarea>
+      <div style="flex:1;overflow-y:auto;min-height:0;padding-bottom:4px;">
+        <div class="offer-grid" id="offer-grid"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-md btn-full" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary btn-md btn-full" onclick="sendOffer()">Enviar propuesta →</button>
+      <div style="flex-shrink:0;border-top:1px solid var(--border);padding:12px 0 18px;">
+        <div class="swap-arrow" style="margin:0 0 8px;">⇅</div>
+        <div class="modal-msg" style="margin-bottom:10px;">
+          <label>Mensaje</label>
+          <textarea id="modal-msg-txt" placeholder="Cuéntale el estado de tu objeto y por qué te interesa el trueque..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-md btn-full" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary btn-md btn-full" onclick="sendOffer()">Enviar propuesta →</button>
+        </div>
       </div>
     </div>
   </div>
