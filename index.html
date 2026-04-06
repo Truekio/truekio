@@ -7011,83 +7011,13 @@ async function startBgPolling() {
   // Poblar lastMsgCount inicial sin notificar
   if (initConvs) {
     for (const conv of initConvs) {
-      const { count } = await db
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('conversation_id', conv.id)
-        .neq('sender_id', currentUser.id);
-      lastMsgCount[conv.id] = count || 0;
+      const isUser1 = conv.user1_id === currentUser.id;
+      const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
+      lastMsgCount[conv.id] = conv[unreadField] || 0;
     }
   }
-
-  // ── Canal mensajes: escuchamos UPDATE en conversations (last_message_at cambia cuando hay mensaje nuevo)
-  // Esto evita el problema de RLS en messages sin filtro de conversation_id
-  const msgChannel = db
-    .channel('bg-messages-' + currentUser.id)
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'conversations',
-      filter: `user1_id=eq.${currentUser.id}`,
-    }, async (payload) => {
-      const conv = payload.new;
-      if (!conv || !conv.last_message_at) return;
-      // Detectar si el unread del usuario actual aumentó
-      const isUser1 = conv.user1_id === currentUser.id;
-      const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
-      const newUnread = conv[unreadField] || 0;
-      const prevUnread = lastMsgCount[conv.id] || 0;
-      if (newUnread <= prevUnread) return; // no es un mensaje nuevo para nosotros
-      lastMsgCount[conv.id] = newUnread;
-      const otherName = isUser1 ? conv.user2_name : conv.user1_name;
-      updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
-      pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
-      if (document.visibilityState === 'visible') playNotifSound();
-      if (document.visibilityState !== 'visible') {
-        sendEmail('new_message', currentUser.email, {
-          senderName: otherName,
-          itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
-          preview: conv.last_message || 'Tienes un nuevo mensaje',
-        });
-        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
-      }
-      if (document.getElementById('view-messages')?.classList.contains('active')) loadConversations();
-    })
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'conversations',
-      filter: `user2_id=eq.${currentUser.id}`,
-    }, async (payload) => {
-      const conv = payload.new;
-      if (!conv || !conv.last_message_at) return;
-      const isUser1 = conv.user1_id === currentUser.id;
-      const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
-      const newUnread = conv[unreadField] || 0;
-      const prevUnread = lastMsgCount[conv.id] || 0;
-      if (newUnread <= prevUnread) return;
-      lastMsgCount[conv.id] = newUnread;
-      const otherName = isUser1 ? conv.user2_name : conv.user1_name;
-      updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
-      pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
-      if (document.visibilityState === 'visible') playNotifSound();
-      if (document.visibilityState !== 'visible') {
-        sendEmail('new_message', currentUser.email, {
-          senderName: otherName,
-          itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
-          preview: conv.last_message || 'Tienes un nuevo mensaje',
-        });
-        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
-      }
-      if (document.getElementById('view-messages')?.classList.contains('active')) loadConversations();
-    })
-    .subscribe((status, err) => {
-      if (status === 'SUBSCRIBED') console.log('[Realtime] ✅ messages → SUBSCRIBED');
-      else if (status === 'CHANNEL_ERROR') { console.warn('[Realtime] ❌ messages error:', err); _realtimeStatusUI('error'); }
-      else if (status === 'TIMED_OUT')     { console.warn('[Realtime] ⏱ messages timeout');    _realtimeStatusUI('error'); }
-      else if (status === 'CLOSED')        console.log('[Realtime] 🔴 messages → CLOSED');
-    });
-  realtimeChannels.push(msgChannel);
+  // El canal bg-messages se elimina — las notificaciones de mensajes
+  // las gestiona el canal conv-list que ya escucha UPDATE en conversations
 
   // ── 2. Canal propuestas: detecta INSERT/UPDATE en proposals donde owner_id = yo ──
   // Carga inicial del contador
@@ -7221,6 +7151,35 @@ let _convRealtimeChannel = null;
 function startConvPolling() {
   stopConvPolling();
   if (!currentUser) return;
+
+  const handleConvUpdate = (payload) => {
+    if (!currentUser) return;
+    // Detectar mensaje nuevo por incremento de unread
+    const conv = payload.new;
+    if (conv && payload.eventType === 'UPDATE') {
+      const isUser1 = conv.user1_id === currentUser.id;
+      const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
+      const newUnread = conv[unreadField] || 0;
+      const prevUnread = lastMsgCount[conv.id] || 0;
+      if (newUnread > prevUnread) {
+        lastMsgCount[conv.id] = newUnread;
+        const otherName = isUser1 ? conv.user2_name : conv.user1_name;
+        updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
+        pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
+        if (document.visibilityState === 'visible') playNotifSound();
+        if (document.visibilityState !== 'visible') {
+          sendEmail('new_message', currentUser.email, {
+            senderName: otherName,
+            itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
+            preview: conv.last_message || 'Tienes un nuevo mensaje',
+          });
+          sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje');
+        }
+      }
+    }
+    loadConversations();
+  };
+
   _convRealtimeChannel = db
     .channel('conv-list-' + currentUser.id)
     .on('postgres_changes', {
@@ -7228,13 +7187,13 @@ function startConvPolling() {
       schema: 'public',
       table: 'conversations',
       filter: `user1_id=eq.${currentUser.id}`,
-    }, () => { if (currentUser) loadConversations(); })
+    }, handleConvUpdate)
     .on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'conversations',
       filter: `user2_id=eq.${currentUser.id}`,
-    }, () => { if (currentUser) loadConversations(); })
+    }, handleConvUpdate)
     .subscribe((status, err) => {
       if (status === 'SUBSCRIBED') console.log('[Realtime] ✅ conv-list → SUBSCRIBED');
       else if (status === 'CHANNEL_ERROR') console.warn('[Realtime] ❌ conv-list error:', err);
@@ -10826,7 +10785,11 @@ document.addEventListener('mouseup', e => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+      // En GitHub Pages con subcarpeta /truekio/ el SW debe registrarse con la ruta correcta
+      const swUrl = '/truekio/sw.js';
+      const swScope = '/truekio/';
+
+      const reg = await navigator.serviceWorker.register(swUrl, { scope: swScope });
 
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
@@ -10846,7 +10809,7 @@ if ('serviceWorker' in navigator) {
         if (document.visibilityState === 'visible') reg.update();
       });
 
-      console.log('[SW] Registrado correctamente:', reg.scope);
+      console.log('[SW] ✅ Registrado correctamente:', reg.scope);
 
       // Si el permiso ya estaba concedido (sesión restaurada), suscribir ahora que el SW está listo
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
@@ -10856,7 +10819,7 @@ if ('serviceWorker' in navigator) {
       }
 
     } catch(e) {
-      console.warn('[SW] Error al registrar:', e);
+      console.warn('[SW] ❌ Error al registrar:', e.message, e);
     }
   });
 }
