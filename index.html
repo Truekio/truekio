@@ -6867,34 +6867,46 @@ async function requestNotifPermission() {
 
 async function _subscribeToPush() {
   try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    if (!currentUser) return;
+    if (!('serviceWorker' in navigator)) { console.warn('[Push] serviceWorker no soportado'); return; }
+    if (!('PushManager' in window))      { console.warn('[Push] PushManager no soportado'); return; }
+    if (!currentUser)                    { console.warn('[Push] No hay usuario'); return; }
 
+    console.log('[Push] Esperando SW ready...');
     const reg = await navigator.serviceWorker.ready;
+    console.log('[Push] SW ready:', reg.scope);
 
     // Comprobar si ya hay suscripción activa
     let sub = await reg.pushManager.getSubscription();
+    console.log('[Push] Suscripción existente:', sub ? 'sí' : 'no');
 
-    // Si no hay o expiró, crear nueva
+    // Si no hay, crear nueva
     if (!sub) {
+      console.log('[Push] Creando nueva suscripción...');
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
+      console.log('[Push] Suscripción creada:', sub.endpoint.substring(0, 60) + '...');
     }
 
-    // Guardar en Supabase (upsert — evita duplicados)
+    // Guardar en Supabase
     const subJson = sub.toJSON();
-    await db.from('push_subscriptions').upsert({
+    console.log('[Push] Guardando en Supabase para user:', currentUser.id);
+
+    const { error } = await db.from('push_subscriptions').upsert({
       user_id:  currentUser.id,
       endpoint: subJson.endpoint,
       p256dh:   subJson.keys.p256dh,
       auth:     subJson.keys.auth,
     }, { onConflict: 'user_id,endpoint' });
 
-    console.log('[Push] ✅ Suscripción guardada');
+    if (error) {
+      console.error('[Push] ❌ Error guardando suscripción:', error.message);
+    } else {
+      console.log('[Push] ✅ Suscripción guardada correctamente');
+    }
   } catch(e) {
-    console.warn('[Push] Error al suscribir:', e.message);
+    console.error('[Push] ❌ Error en _subscribeToPush:', e.message, e);
   }
 }
 
@@ -7138,12 +7150,13 @@ async function startBgPolling() {
 }
 
 // ── Reconexión Realtime al volver a primer plano ──
-// Cuando el SO suspende la app (móvil), el websocket puede caer.
-// Al recuperar el foco reconfiguramos todos los canales.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && currentUser && _bgRealtimeReady) {
-    // Pequeño delay para que la red se estabilice antes de reconectar
     setTimeout(() => startBgPolling(), 1200);
+  }
+  // Reintentar suscripción push si aún no se guardó
+  if (document.visibilityState === 'visible' && currentUser && notifPermission === 'granted') {
+    setTimeout(() => _subscribeToPush(), 2000);
   }
 });
 
