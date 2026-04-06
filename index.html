@@ -6881,11 +6881,12 @@ async function _subscribeToPush() {
 
     console.log('[Push] Obteniendo registro SW...');
 
-    // Usar getRegistration en lugar de ready (que puede bloquearse)
-    let reg = await navigator.serviceWorker.getRegistration('/truekio/');
+    // Usar getRegistration con la ruta base dinámica
+    const basePath = window.location.pathname.replace(/\/[^/]*$/, '/') || '/';
+    let reg = await navigator.serviceWorker.getRegistration(basePath);
     if (!reg) {
       console.log('[Push] Registrando SW...');
-      reg = await navigator.serviceWorker.register('/truekio/sw.js', { scope: '/truekio/' });
+      reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
     }
 
     // Esperar a que esté activo (con timeout de 5s)
@@ -10800,9 +10801,9 @@ document.addEventListener('mouseup', e => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // En GitHub Pages con subcarpeta /truekio/ el SW debe registrarse con la ruta correcta
-      const swUrl = '/truekio/sw.js';
-      const swScope = '/truekio/';
+      // Detectar la ruta base automáticamente (funciona en Vercel, GitHub Pages y cualquier host)
+      const swUrl = './sw.js';
+      const swScope = './';
 
       const reg = await navigator.serviceWorker.register(swUrl, { scope: swScope });
 
