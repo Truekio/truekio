@@ -3565,6 +3565,23 @@ async function sendEmail(type, toEmail, data) {
   }
 }
 
+// ── Web Push: enviar notificación push a un usuario por su ID ──
+async function sendPush(userId, title, body, url = '/') {
+  if (!userId) return;
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+      },
+      body: JSON.stringify({ user_id: userId, title, body, url }),
+    });
+  } catch(e) {
+    console.warn('Push notification failed (non-blocking):', e.message);
+  }
+}
+
 // Obtener email de un usuario por su ID
 async function getUserEmail(userId) {
   if (!userId) return null;
@@ -5148,6 +5165,8 @@ async function respondProposal(proposalId, status) {
         itemTitle: p.item_title,
         offeredItem: p.offered_item_title,
       });
+      // Push al que hizo la propuesta
+      sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`);
     }
     setTimeout(async () => {
       navTo('messages');
@@ -7003,13 +7022,14 @@ async function startBgPolling() {
       pushNotif(`💬 Nuevo mensaje de ${otherName}`, msg.text || `${conv.item1_title} ↔ ${conv.item2_title}`);
       if (document.visibilityState === 'visible') playNotifSound();
 
-      // Email solo si la app está en segundo plano
+      // Email + Push solo si la app está en segundo plano
       if (document.visibilityState !== 'visible') {
         sendEmail('new_message', currentUser.email, {
           senderName: otherName,
           itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
           preview: msg.text || 'Tienes un nuevo mensaje',
         });
+        sendPush(currentUser.id, `💬 ${otherName}`, msg.text || `${conv.item1_title} ↔ ${conv.item2_title}`);
       }
 
       // Si estamos en la vista messages, recargar la lista de convs
@@ -7058,6 +7078,9 @@ async function startBgPolling() {
       if (n > lastProposalCount) {
         pushNotif('🤝 Nueva propuesta de trueque', 'Alguien quiere intercambiar contigo');
         if (document.visibilityState === 'visible') playNotifSound();
+        if (document.visibilityState !== 'visible') {
+          sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo');
+        }
       }
       lastProposalCount = n;
       window._pendingProposalCount = n;
