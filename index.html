@@ -6853,15 +6853,20 @@ function _urlBase64ToUint8Array(base64String) {
 
 async function requestNotifPermission() {
   if (!('Notification' in window)) return;
-  if (Notification.permission === 'granted') { notifPermission = 'granted'; }
-  else if (Notification.permission === 'denied') { notifPermission = 'denied'; return; }
-  else {
-    const result = await Notification.requestPermission();
-    notifPermission = result;
+
+  if (Notification.permission === 'denied') { notifPermission = 'denied'; return; }
+
+  if (Notification.permission === 'granted') {
+    notifPermission = 'granted';
+    // Permiso ya concedido — suscribir siempre al entrar (idempotente)
+    setTimeout(() => _subscribeToPush(), 1500);
+    return;
   }
-  // Si concedió permiso, esperar a que el SW esté listo y suscribir
+
+  // Primera vez — pedir permiso
+  const result = await Notification.requestPermission();
+  notifPermission = result;
   if (notifPermission === 'granted') {
-    // Pequeño delay para asegurar que el SW está activo
     setTimeout(() => _subscribeToPush(), 1500);
   }
 }
