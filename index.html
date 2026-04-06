@@ -7,7 +7,10 @@
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Truquo">
+<meta name="theme-color" content="#4e8fba">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -5287,18 +5290,24 @@ function obPublish() {
 async function _ensureSession() {
   try {
     const { data, error } = await db.auth.getSession();
+    console.log('[Session] getSession:', { user: data?.session?.user?.id, error: error?.message });
     if (!error && data?.session?.user) {
       currentUser = data.session.user;
       return true;
     }
     // Intentar refresh explícito
     const { data: r, error: re } = await db.auth.refreshSession();
+    console.log('[Session] refreshSession:', { user: r?.session?.user?.id, error: re?.message });
     if (!re && r?.session?.user) {
       currentUser = r.session.user;
       return true;
     }
+    console.warn('[Session] Sin sesión válida — getSession y refreshSession fallaron');
     return false;
-  } catch(e) { return false; }
+  } catch(e) {
+    console.error('[Session] Excepción:', e.message);
+    return false;
+  }
 }
 
 async function obSaveCity() {
@@ -10689,3 +10698,52 @@ document.addEventListener('mouseup', e => {
         <button onclick="closeOnboarding()" style="width:100%;background:#4a9cc5;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">✓ ¡Listo, empezar!</button>
         <div style="display:flex;justify-content:space-between;margin-top:8px">
           <button onclick="obGoTo(3)" style="background:none;border:none;color:#999;font-siz
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Service Worker: registro y auto-actualización ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+
+      // Comprobar actualizaciones cada vez que se abre la app
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // Hay versión nueva disponible — activar sin pedir confirmación
+            newWorker.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+
+      // Cuando el SW se activa (versión nueva lista) → recargar la página
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+
+      // Buscar actualizaciones al volver a primer plano
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update();
+        }
+      });
+
+      console.log('[SW] Registrado correctamente:', reg.scope);
+    } catch(e) {
+      console.warn('[SW] Error al registrar:', e);
+    }
+  });
+}
+</script>
+</body>
+</html>

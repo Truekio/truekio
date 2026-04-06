@@ -1,0 +1,27 @@
+{
+  "name": "Truquo · Intercambia sin dinero",
+  "short_name": "Truquo",
+  "description": "Intercambia objetos sin dinero con personas de tu ciudad",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f8fb",
+  "theme_color": "#4e8fba",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "shopping", "social"],
+  "lang": "es",
+  "dir": "ltr"
+}
