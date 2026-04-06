@@ -6879,28 +6879,43 @@ async function _subscribeToPush() {
     if (!('PushManager' in window))      { console.warn('[Push] PushManager no soportado'); return; }
     if (!currentUser)                    { console.warn('[Push] No hay usuario'); return; }
 
-    console.log('[Push] Esperando SW ready...');
-    const reg = await navigator.serviceWorker.ready;
-    console.log('[Push] SW ready:', reg.scope);
+    console.log('[Push] Obteniendo registro SW...');
 
-    // Comprobar si ya hay suscripción activa
+    // Usar getRegistration en lugar de ready (que puede bloquearse)
+    let reg = await navigator.serviceWorker.getRegistration('/truekio/');
+    if (!reg) {
+      console.log('[Push] Registrando SW...');
+      reg = await navigator.serviceWorker.register('/truekio/sw.js', { scope: '/truekio/' });
+    }
+
+    // Esperar a que esté activo (con timeout de 5s)
+    if (!reg.active) {
+      console.log('[Push] Esperando activación SW...');
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('SW activation timeout')), 5000);
+        const sw = reg.installing || reg.waiting;
+        if (!sw) { clearTimeout(timeout); resolve(); return; }
+        sw.addEventListener('statechange', () => {
+          if (sw.state === 'activated') { clearTimeout(timeout); resolve(); }
+        });
+      });
+    }
+
+    console.log('[Push] SW activo, obteniendo suscripción...');
     let sub = await reg.pushManager.getSubscription();
     console.log('[Push] Suscripción existente:', sub ? 'sí' : 'no');
 
-    // Si no hay, crear nueva
     if (!sub) {
       console.log('[Push] Creando nueva suscripción...');
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
-      console.log('[Push] Suscripción creada:', sub.endpoint.substring(0, 60) + '...');
+      console.log('[Push] Suscripción creada');
     }
 
-    // Guardar en Supabase
     const subJson = sub.toJSON();
-    console.log('[Push] Guardando en Supabase para user:', currentUser.id);
-
+    console.log('[Push] Guardando en Supabase...');
     const { error } = await db.from('push_subscriptions').upsert({
       user_id:  currentUser.id,
       endpoint: subJson.endpoint,
@@ -6908,13 +6923,11 @@ async function _subscribeToPush() {
       auth:     subJson.keys.auth,
     }, { onConflict: 'user_id,endpoint' });
 
-    if (error) {
-      console.error('[Push] ❌ Error guardando suscripción:', error.message);
-    } else {
-      console.log('[Push] ✅ Suscripción guardada correctamente');
-    }
+    if (error) console.error('[Push] ❌ Error guardando:', error.message);
+    else console.log('[Push] ✅ Suscripción guardada correctamente');
+
   } catch(e) {
-    console.error('[Push] ❌ Error en _subscribeToPush:', e.message, e);
+    console.error('[Push] ❌ Error:', e.message);
   }
 }
 
@@ -7038,9 +7051,11 @@ async function startBgPolling() {
       event: '*',
       schema: 'public',
       table: 'proposals',
-      filter: `owner_id=eq.${currentUser.id}`,
-    }, async () => {
-      // Re-query solo las propuestas activas (es 1 sola query pequeña)
+    }, async (payload) => {
+      // Filtrar manualmente — solo propuestas donde soy owner
+      const p = payload.new || payload.old;
+      if (!p || p.owner_id !== currentUser.id) return;
+      // Re-query solo las propuestas activas
       const { data } = await db
         .from('proposals')
         .select('id, status, counter_by')
