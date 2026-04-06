@@ -6852,13 +6852,14 @@ function _urlBase64ToUint8Array(base64String) {
 }
 
 async function requestNotifPermission() {
-  if (!('Notification' in window)) return;
+  console.log('[Push] requestNotifPermission llamado, estado actual:', Notification.permission);
+  if (!('Notification' in window)) { console.warn('[Push] Notification API no disponible'); return; }
 
   if (Notification.permission === 'denied') { notifPermission = 'denied'; return; }
 
   if (Notification.permission === 'granted') {
     notifPermission = 'granted';
-    // Permiso ya concedido — suscribir siempre al entrar (idempotente)
+    console.log('[Push] Permiso ya concedido, suscribiendo en 1.5s...');
     setTimeout(() => _subscribeToPush(), 1500);
     return;
   }
@@ -6866,6 +6867,7 @@ async function requestNotifPermission() {
   // Primera vez — pedir permiso
   const result = await Notification.requestPermission();
   notifPermission = result;
+  console.log('[Push] Resultado del permiso:', result);
   if (notifPermission === 'granted') {
     setTimeout(() => _subscribeToPush(), 1500);
   }
@@ -10826,7 +10828,6 @@ if ('serviceWorker' in navigator) {
     try {
       const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
 
-      // Comprobar actualizaciones cada vez que se abre la app
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
@@ -10836,18 +10837,24 @@ if ('serviceWorker' in navigator) {
         });
       });
 
-      // Cuando el SW se activa (versión nueva lista) → recargar la página
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) { refreshing = true; window.location.reload(); }
       });
 
-      // Buscar actualizaciones al volver a primer plano
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') reg.update();
       });
 
       console.log('[SW] Registrado correctamente:', reg.scope);
+
+      // Si el permiso ya estaba concedido (sesión restaurada), suscribir ahora que el SW está listo
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        console.log('[Push] SW listo y permiso concedido — suscribiendo...');
+        await navigator.serviceWorker.ready;
+        if (typeof _subscribeToPush === 'function') _subscribeToPush();
+      }
+
     } catch(e) {
       console.warn('[SW] Error al registrar:', e);
     }
