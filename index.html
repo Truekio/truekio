@@ -6820,12 +6820,63 @@ function stopAllRealtime() {
 }
 
 // Pedir permiso al usuario la primera vez que entra a la app
+// ── VAPID Public Key para Web Push ──
+const VAPID_PUBLIC_KEY = 'BJNDwk6LrTO8zmXLEETlKIUzIEnTVFHaRvf8_mUp2TFawysYsjdHiVu58o662XlKZ4X5PCuqCQkmWMmg8dROmck';
+
+function _urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
 async function requestNotifPermission() {
   if (!('Notification' in window)) return;
-  if (Notification.permission === 'granted') { notifPermission = 'granted'; return; }
-  if (Notification.permission === 'denied') { notifPermission = 'denied'; return; }
-  const result = await Notification.requestPermission();
-  notifPermission = result;
+  if (Notification.permission === 'granted') { notifPermission = 'granted'; }
+  else if (Notification.permission === 'denied') { notifPermission = 'denied'; return; }
+  else {
+    const result = await Notification.requestPermission();
+    notifPermission = result;
+  }
+  // Si concedió permiso, intentar suscribir a Web Push
+  if (notifPermission === 'granted') {
+    await _subscribeToPush();
+  }
+}
+
+async function _subscribeToPush() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!currentUser) return;
+
+    const reg = await navigator.serviceWorker.ready;
+
+    // Comprobar si ya hay suscripción activa
+    let sub = await reg.pushManager.getSubscription();
+
+    // Si no hay o expiró, crear nueva
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+
+    // Guardar en Supabase (upsert — evita duplicados)
+    const subJson = sub.toJSON();
+    await db.from('push_subscriptions').upsert({
+      user_id:  currentUser.id,
+      endpoint: subJson.endpoint,
+      p256dh:   subJson.keys.p256dh,
+      auth:     subJson.keys.auth,
+    }, { onConflict: 'user_id,endpoint' });
+
+    console.log('[Push] ✅ Suscripción guardada');
+  } catch(e) {
+    console.warn('[Push] Error al suscribir:', e.message);
+  }
 }
 
 // Mostrar notificación nativa del sistema
@@ -10714,7 +10765,6 @@ if ('serviceWorker' in navigator) {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // Hay versión nueva disponible — activar sin pedir confirmación
             newWorker.postMessage('SKIP_WAITING');
           }
         });
@@ -10723,17 +10773,12 @@ if ('serviceWorker' in navigator) {
       // Cuando el SW se activa (versión nueva lista) → recargar la página
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
+        if (!refreshing) { refreshing = true; window.location.reload(); }
       });
 
       // Buscar actualizaciones al volver a primer plano
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          reg.update();
-        }
+        if (document.visibilityState === 'visible') reg.update();
       });
 
       console.log('[SW] Registrado correctamente:', reg.scope);

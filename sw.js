@@ -1,82 +1,52 @@
-// ── Truquo Service Worker v1 ──
-// Estrategia: Network First para HTML, Cache First para assets estáticos
-// El HTML siempre se intenta desde red → garantiza versión fresca
+// ── Truquo Service Worker v2 — Web Push + Network First ──
+const CACHE_NAME = 'truquo-v2';
 
-const CACHE_NAME = 'truquo-v1';
-const CACHE_ASSETS = [
-  // Solo assets verdaderamente estáticos (no el HTML principal)
-];
+self.addEventListener('install', event => { self.skipWaiting(); });
 
-// Instalar: precachear assets estáticos
-self.addEventListener('install', event => {
-  self.skipWaiting(); // activar inmediatamente sin esperar a que cierren las tabs
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(CACHE_ASSETS);
-    })
-  );
-});
-
-// Activar: limpiar caches antiguas
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
-    ).then(() => self.clients.claim()) // tomar control de todas las tabs inmediatamente
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-// Fetch: Network First para todo
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-
-  // No interceptar requests a Supabase ni a APIs externas
-  if (
-    url.hostname.includes('supabase.co') ||
-    url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('gstatic.com') ||
-    request.method !== 'GET'
-  ) {
-    return; // dejar pasar sin interceptar
-  }
-
-  // Para el HTML principal: Network First con fallback a cache
+  if (url.hostname.includes('supabase.co') || url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com') || request.method !== 'GET') return;
   if (request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          // Guardar copia fresca en cache
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-          return response;
-        })
-        .catch(() => {
-          // Sin red: servir desde cache (modo offline)
-          return caches.match(request).then(cached => cached || caches.match('/'));
-        })
-    );
+    event.respondWith(fetch(request).then(response => { const clone = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, clone)); return response; }).catch(() => caches.match(request).then(cached => cached || caches.match('/'))));
     return;
   }
+  event.respondWith(caches.match(request).then(cached => { if (cached) return cached; return fetch(request).then(response => { const clone = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, clone)); return response; }); }));
+});
 
-  // Para assets estáticos (fuentes, iconos, etc.): Cache First
-  event.respondWith(
-    caches.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-        return response;
-      });
+// ── PUSH ──
+self.addEventListener('push', event => {
+  let data = { title: 'Truquo', body: 'Tienes una novedad', icon: './icon.png', badge: './icon.png', url: '/' };
+  try { if (event.data) data = { ...data, ...event.data.json() }; } catch(e) { if (event.data) data.body = event.data.text(); }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body, icon: data.icon || './icon.png', badge: data.badge || './icon.png',
+      tag: data.tag || 'truquo-notif', data: { url: data.url || '/' },
+      vibrate: [200, 100, 200], requireInteraction: false,
     })
   );
 });
 
-// Escuchar mensaje de la app para forzar actualización
-self.addEventListener('message', event => {
-  if (event.data === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+// ── CLICK ──
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
+  );
 });
+
+self.addEventListener('message', event => { if (event.data === 'SKIP_WAITING') self.skipWaiting(); });
