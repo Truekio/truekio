@@ -6859,9 +6859,10 @@ async function requestNotifPermission() {
     const result = await Notification.requestPermission();
     notifPermission = result;
   }
-  // Si concedió permiso, intentar suscribir a Web Push
+  // Si concedió permiso, esperar a que el SW esté listo y suscribir
   if (notifPermission === 'granted') {
-    await _subscribeToPush();
+    // Pequeño delay para asegurar que el SW está activo
+    setTimeout(() => _subscribeToPush(), 1500);
   }
 }
 
@@ -7012,42 +7013,66 @@ async function startBgPolling() {
     }
   }
 
+  // ── Canal mensajes: escuchamos UPDATE en conversations (last_message_at cambia cuando hay mensaje nuevo)
+  // Esto evita el problema de RLS en messages sin filtro de conversation_id
   const msgChannel = db
     .channel('bg-messages-' + currentUser.id)
     .on('postgres_changes', {
-      event: 'INSERT',
+      event: 'UPDATE',
       schema: 'public',
-      table: 'messages',
+      table: 'conversations',
+      filter: `user1_id=eq.${currentUser.id}`,
     }, async (payload) => {
-      const msg = payload.new;
-      if (!msg || msg.sender_id === currentUser.id) return; // ignorar los propios
-
-      // Buscar la conversación en memoria para obtener nombres
-      const conv = initConvs?.find(c => c.id === msg.conversation_id);
-      if (!conv) return; // mensaje de una conv que no es nuestra
-
-      const otherName = conv.user1_id === currentUser.id ? conv.user2_name : conv.user1_name;
-
-      lastMsgCount[conv.id] = (lastMsgCount[conv.id] || 0) + 1;
+      const conv = payload.new;
+      if (!conv || !conv.last_message_at) return;
+      // Detectar si el unread del usuario actual aumentó
+      const isUser1 = conv.user1_id === currentUser.id;
+      const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
+      const newUnread = conv[unreadField] || 0;
+      const prevUnread = lastMsgCount[conv.id] || 0;
+      if (newUnread <= prevUnread) return; // no es un mensaje nuevo para nosotros
+      lastMsgCount[conv.id] = newUnread;
+      const otherName = isUser1 ? conv.user2_name : conv.user1_name;
       updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
-
-      pushNotif(`💬 Nuevo mensaje de ${otherName}`, msg.text || `${conv.item1_title} ↔ ${conv.item2_title}`);
+      pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
       if (document.visibilityState === 'visible') playNotifSound();
-
-      // Email + Push solo si la app está en segundo plano
       if (document.visibilityState !== 'visible') {
         sendEmail('new_message', currentUser.email, {
           senderName: otherName,
           itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
-          preview: msg.text || 'Tienes un nuevo mensaje',
+          preview: conv.last_message || 'Tienes un nuevo mensaje',
         });
-        sendPush(currentUser.id, `💬 ${otherName}`, msg.text || `${conv.item1_title} ↔ ${conv.item2_title}`);
+        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
       }
-
-      // Si estamos en la vista messages, recargar la lista de convs
-      if (document.getElementById('view-messages')?.classList.contains('active')) {
-        loadConversations();
+      if (document.getElementById('view-messages')?.classList.contains('active')) loadConversations();
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'conversations',
+      filter: `user2_id=eq.${currentUser.id}`,
+    }, async (payload) => {
+      const conv = payload.new;
+      if (!conv || !conv.last_message_at) return;
+      const isUser1 = conv.user1_id === currentUser.id;
+      const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
+      const newUnread = conv[unreadField] || 0;
+      const prevUnread = lastMsgCount[conv.id] || 0;
+      if (newUnread <= prevUnread) return;
+      lastMsgCount[conv.id] = newUnread;
+      const otherName = isUser1 ? conv.user2_name : conv.user1_name;
+      updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
+      pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
+      if (document.visibilityState === 'visible') playNotifSound();
+      if (document.visibilityState !== 'visible') {
+        sendEmail('new_message', currentUser.email, {
+          senderName: otherName,
+          itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
+          preview: conv.last_message || 'Tienes un nuevo mensaje',
+        });
+        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || `${conv.item1_title} ↔ ${conv.item2_title}`);
       }
+      if (document.getElementById('view-messages')?.classList.contains('active')) loadConversations();
     })
     .subscribe((status, err) => {
       if (status === 'SUBSCRIBED') console.log('[Realtime] ✅ messages → SUBSCRIBED');
