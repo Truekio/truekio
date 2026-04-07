@@ -7407,9 +7407,7 @@ async function openConv(convId) {
     main.classList.add('mobile-open');
   }
 
-  const cancelBtn = isReserved
-    ? `<button onclick="cancelTrade('${convId}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;font-family:inherit;white-space:nowrap">✕ Cancelar trueque</button>`
-    : '';
+  const cancelBtn = '';
 
   main.innerHTML = `
     <div class="chat-head">
