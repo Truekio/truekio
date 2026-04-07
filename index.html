@@ -7286,6 +7286,7 @@ function renderConvList(data) {
 
   list.innerHTML = data.map(c => {
     const isUser1 = c.user1_id === currentUser.id;
+    const otherUserId = isUser1 ? c.user2_id : c.user1_id;
     const otherName = isUser1 ? c.user2_name : c.user1_name;
     const subject = `${c.item1_title} ↔ ${c.item2_title}`;
     const time = new Date(c.last_message_at).toLocaleDateString('es-ES', { day:'numeric', month:'short' });
@@ -7293,12 +7294,17 @@ function renderConvList(data) {
     const unread = isUser1 ? (c.unread_user1 || 0) : (c.unread_user2 || 0);
     totalUnread += unread;
     const isUnread = unread > 0;
+    // Buscar avatar del otro usuario en items
+    const otherAvatar = items.find(i => i.user_id === otherUserId)?.userAvatar || null;
+    const convAvatarHtml = otherAvatar
+      ? `<img src="${otherAvatar}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+      : `<div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>`;
 
     return `
     <div class="conv-item${activeConvId===c.id?' active':''}${isUnread?' conv-item-unread':''}" id="conv-item-${c.id}" style="display:flex;align-items:center;gap:0">
       <div onclick="openConv('${c.id}')" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;padding:0">
         <div style="position:relative;flex-shrink:0">
-          <div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
+          ${convAvatarHtml}
           ${isUnread ? `<div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:#e53e3e;border-radius:50%;border:2px solid var(--white)"></div>` : ''}
         </div>
         <div class="conv-info" style="min-width:0">
@@ -7387,8 +7393,13 @@ async function openConv(convId) {
     await db.from('conversations').update({ [unreadField]: 0 }).eq('id', convId);
   }
   const otherName = isUser1 ? conv.user2_name : conv.user1_name;
+  const otherUserId = isUser1 ? conv.user2_id : conv.user1_id;
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
   const subject = `${conv.item1_title} ↔ ${conv.item2_title}`;
+  const otherAvatarChat = items.find(i => i.user_id === otherUserId)?.userAvatar || null;
+  const chatAvatarHtml = otherAvatarChat
+    ? `<img src="${otherAvatarChat}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+    : `<div class="chat-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>`;
 
   // Comprobar si la propuesta está reservada para mostrar botón cancelar
   let isReserved = false;
@@ -7412,7 +7423,7 @@ async function openConv(convId) {
   main.innerHTML = `
     <div class="chat-head">
       ${isMobile ? `<button class="mobile-back-btn" onclick="closeMobileChat()">Volver</button>` : ''}
-      <div class="chat-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>
+      ${chatAvatarHtml}
       <div class="chat-info" style="flex:1;min-width:0">
         <h4>${otherName||'Usuario'}</h4>
         <p>${subject}</p>
@@ -7503,7 +7514,9 @@ async function loadMessages(convId) {
   const conv = activeConvData;
   const isUser1 = conv && conv.user1_id === currentUser.id;
   const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
+  const otherUserId = conv ? (isUser1 ? conv.user2_id : conv.user1_id) : null;
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
+  const otherAvatarChat = otherUserId ? (items.find(i => i.user_id === otherUserId)?.userAvatar || null) : null;
 
   // Mensaje inicial del sistema
   const systemMsg = `
@@ -7522,8 +7535,11 @@ async function loadMessages(convId) {
   el.innerHTML = systemMsg + data.map(m => {
     const isOut = m.sender_id === currentUser.id;
     const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+    const msgAvatarHtml = otherAvatarChat
+      ? `<img src="${otherAvatarChat}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+      : `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>`;
     return `<div class="msg ${isOut?'msg-out':'msg-in'}" id="msg-${m.id}">
-      ${!isOut ? `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>` : ''}
+      ${!isOut ? msgAvatarHtml : ''}
       <div>
         ${isOut ? `<div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
           <button onclick="deleteMessage('${m.id}')" class="msg-delete-btn" title="Eliminar">🗑</button>
