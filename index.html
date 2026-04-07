@@ -9819,7 +9819,7 @@ function openDemandSheet() {
       // Buscar nombre real y avatar desde items publicados
       const theirItem = items.find(i => i.user_id === w.user_id);
       const userName = theirItem ? theirItem.user : 'Usuario';
-      const userAvatar = theirItem?.user_avatar || null;
+      const userAvatar = theirItem?.userAvatar || null;
       byUser[w.user_id] = { user_id: w.user_id, user_name: userName, user_avatar: userAvatar, wishes: [] };
     }
     byUser[w.user_id].wishes.push(w);
