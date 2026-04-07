@@ -3821,6 +3821,35 @@ function distanceKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// Limpia items que quedaron como 'reserved' pero su propuesta está cancelada
+async function _fixOrphanedReservedItems() {
+  try {
+    const { data: orphaned } = await db
+      .from('items')
+      .select('id')
+      .eq('status', 'reserved')
+      .eq('user_id', currentUser?.id); // solo nuestros items
+
+    if (!orphaned?.length) return;
+
+    for (const item of orphaned) {
+      const { data: props } = await db
+        .from('proposals')
+        .select('status')
+        .or(`item_id.eq.${item.id},offered_item_id.eq.${item.id}`)
+        .in('status', ['pending', 'accepted', 'countered']);
+
+      // Si no hay propuesta activa, liberar el item
+      if (!props?.length) {
+        await db.from('items').update({ status: 'available' }).eq('id', item.id);
+        console.log('[Cleanup] Item liberado:', item.id);
+      }
+    }
+  } catch(e) {
+    // silencioso — no crítico
+  }
+}
+
 async function loadItemsFromSupabase() {
   let query = db.from('items')
     .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value')
@@ -4041,6 +4070,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   items = supabaseItems || [];
   const countEl = document.getElementById('items-count');
   if (countEl) countEl.textContent = items.length + ' objetos disponibles';
+
+  // Limpiar items reservados huérfanos (propuesta cancelada pero item sigue reserved)
+  _fixOrphanedReservedItems();
 
   applyFilter('', 'Todos');
   renderMatches();
