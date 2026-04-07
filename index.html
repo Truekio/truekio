@@ -5520,7 +5520,7 @@ async function loadPublicDemand() {
 
   // 1. Cargar items disponibles con lat/lng
   const { data: allItems, error } = await db.from('items')
-    .select('id, title, emoji, photos, photo_urls, user_id, user_name, wants, wants_open, category, lat, lng')
+    .select('id, title, emoji, photos, photo_urls, user_id, user_name, user_avatar, wants, wants_open, category, lat, lng')
     .eq('status', 'available')
     .neq('user_id', currentUser?.id || '');
 
