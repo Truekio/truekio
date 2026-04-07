@@ -3569,12 +3569,9 @@ async function sendEmail(type, toEmail, data) {
 async function sendPush(userId, title, body, url = '/') {
   if (!userId) return;
   try {
-    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+    await fetch('/api/send-push', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, title, body, url }),
     });
   } catch(e) {
