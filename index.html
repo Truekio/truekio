@@ -6531,10 +6531,13 @@ async function renderConfirmations() {
     if (props) props.filter(p => p.status === 'cancelled').forEach(p => cancelledProposalIds.add(p.id));
   }
 
-  // Filtrar: mostrar solo las pendientes de confirmar O de valorar
+  // Filtrar: mostrar solo las pendientes de confirmar O de valorar (excluyendo descartadas)
+  const dismissed = (() => { try { return JSON.parse(localStorage.getItem('truquo_dismissed_trades') || '[]'); } catch(e) { return []; } })();
   const visibleConvs = convs.filter(c => {
     // Excluir trueques cancelados
     if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
+    // Excluir descartados manualmente
+    if (dismissed.includes(c.id)) return false;
     const confirmed = getConfirmed(c);
     const myConfirmed = confirmed.includes(currentUser.id);
     // Si el usuario no ha confirmado aún → mostrar
@@ -6644,8 +6647,12 @@ async function renderConfirmations() {
         <div style="padding:12px 14px;background:var(--green-l);border:1px solid #86efac;border-radius:var(--r);font-size:13px;color:#166534;font-weight:700;text-align:center;margin-bottom:10px">
           🎉 ¡Trueque completado! Ambas partes confirmaron.
         </div>
-        <div style="text-align:center">
-          <button class="btn btn-ghost btn-md" onclick="this.closest('.card').remove()">✓ Cerrar</button>
+        <div style="text-align:center;display:flex;gap:8px;justify-content:center">
+          ${!reviewedConvIds.has(c.id)
+            ? `<button class="btn btn-primary btn-md" onclick="openReviewModal('${c.id}')">⭐ Valorar a ${otherName}</button>
+               <button class="btn btn-ghost btn-sm" onclick="dismissCompletedTrade('${c.id}',this)">Omitir</button>`
+            : `<button class="btn btn-ghost btn-md" onclick="dismissCompletedTrade('${c.id}',this)">✓ Cerrar</button>`
+          }
         </div>` : ''}
       </div>
     </div>`;
@@ -6853,6 +6860,20 @@ async function reportIssue(cfId) {
 
 function closeConfirmModal() { document.getElementById('confirm-modal-overlay').classList.remove('open'); }
 function closeConfirmModalBg(e) { if(e.target===document.getElementById('confirm-modal-overlay')) closeConfirmModal(); }
+
+// Descartar trueque completado de la lista de confirmaciones (sin valorar)
+async function dismissCompletedTrade(convId, btn) {
+  // Guardar en localStorage que este trueque fue descartado
+  try {
+    const dismissed = JSON.parse(localStorage.getItem('truquo_dismissed_trades') || '[]');
+    if (!dismissed.includes(convId)) dismissed.push(convId);
+    localStorage.setItem('truquo_dismissed_trades', JSON.stringify(dismissed));
+  } catch(e) {}
+  // Eliminar la tarjeta visualmente
+  btn.closest('.card')?.remove();
+  // Recargar para actualizar badge
+  await renderConfirmations();
+}
 
 // ═══ NOTIFICACIONES ═══
 let notifPermission = 'default';
