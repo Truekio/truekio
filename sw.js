@@ -1,9 +1,13 @@
-// ── Truquo Service Worker v3 ──
-const CACHE_NAME = 'truquo-v3';
+// ── Truquo Service Worker v4 ──
+const CACHE_NAME = 'truquo-v4';
 
-self.addEventListener('install', event => { self.skipWaiting(); });
+self.addEventListener('install', event => {
+  console.log('[SW] Installing v4');
+  self.skipWaiting();
+});
 
 self.addEventListener('activate', event => {
+  console.log('[SW] Activating v4');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
@@ -33,50 +37,52 @@ self.addEventListener('fetch', event => {
   }));
 });
 
-// ── PUSH: recibir notificación ──
+// ── PUSH ──
 self.addEventListener('push', event => {
+  console.log('[SW] Push recibido:', event.data ? 'con datos' : 'sin datos');
+
   let title = 'Truquo';
-  let body  = 'Tienes una novedad — abre la app';
+  let body  = 'Tienes una novedad';
   let url   = '/';
   let tag   = 'truquo';
 
-  // Intentar leer datos del payload si existen
   if (event.data) {
     try {
-      const data = event.data.json();
+      const text = event.data.text();
+      console.log('[SW] Push data text:', text.substring(0, 100));
+      const data = JSON.parse(text);
       title = data.title || title;
       body  = data.body  || body;
       url   = data.url   || url;
       tag   = data.tag   || tag;
     } catch(e) {
-      // payload no es JSON — usar valores por defecto
+      console.log('[SW] Push data no es JSON:', e.message);
       body = event.data.text() || body;
     }
   }
 
+  console.log('[SW] Mostrando notificación:', title, body);
+
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon:    './icon.png',
-      badge:   './icon.png',
+      icon:    '/icon.png',
+      badge:   '/icon.png',
       tag,
       data:    { url },
       vibrate: [200, 100, 200],
-      requireInteraction: false,
     })
   );
 });
 
-// ── CLICK: abrir/enfocar la app ──
+// ── CLICK ──
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus();
-        }
+        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(targetUrl);
     })
