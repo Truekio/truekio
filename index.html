@@ -9797,6 +9797,23 @@ async function triggerDemandPanel() {
     document.getElementById('demand-pill-text').textContent =
       `${n} ${n === 1 ? 'persona lo está buscando' : 'personas lo están buscando'}`;
     pill.style.display = '';
+
+    // Cargar avatares y nombres desde profiles para los usuarios de los wishes
+    const userIds = uniqueUsers.map(u => u.user_id);
+    const { data: profilesData } = await db.from('profiles')
+      .select('id, avatar_url, name')
+      .in('id', userIds);
+
+    // Construir mapa user_id → { avatar_url, name }
+    const profileMap = {};
+    if (profilesData) profilesData.forEach(p => { profileMap[p.id] = p; });
+
+    // Enriquecer demandWishMatches con avatar y nombre del perfil
+    demandWishMatches = demandWishMatches.map(w => ({
+      ...w,
+      user_avatar: profileMap[w.user_id]?.avatar_url || items.find(i => i.user_id === w.user_id)?.userAvatar || null,
+      user_name:   profileMap[w.user_id]?.name || items.find(i => i.user_id === w.user_id)?.user || null,
+    }));
   } catch(e) {
     console.warn('triggerDemandPanel error:', e);
     pill.style.display = 'none';
@@ -9816,10 +9833,10 @@ function openDemandSheet() {
   const byUser = {};
   demandWishMatches.forEach(w => {
     if (!byUser[w.user_id]) {
-      // Buscar nombre real y avatar desde items publicados
+      // Usar datos ya cargados en triggerDemandPanel, con fallback a items
       const theirItem = items.find(i => i.user_id === w.user_id);
-      const userName = theirItem ? theirItem.user : 'Usuario';
-      const userAvatar = theirItem?.userAvatar || null;
+      const userName = w.user_name || (theirItem ? theirItem.user : 'Usuario');
+      const userAvatar = w.user_avatar || theirItem?.userAvatar || null;
       byUser[w.user_id] = { user_id: w.user_id, user_name: userName, user_avatar: userAvatar, wishes: [] };
     }
     byUser[w.user_id].wishes.push(w);
