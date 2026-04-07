@@ -7065,9 +7065,7 @@ async function startBgPolling() {
       if (n > lastProposalCount) {
         pushNotif('🤝 Nueva propuesta de trueque', 'Alguien quiere intercambiar contigo');
         if (document.visibilityState === 'visible') playNotifSound();
-        if (document.visibilityState !== 'visible') {
-          sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo');
-        }
+        sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo');
       }
       lastProposalCount = n;
       window._pendingProposalCount = n;
@@ -7180,13 +7178,13 @@ function startConvPolling() {
         updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
         pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
         if (document.visibilityState === 'visible') playNotifSound();
+        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje');
         if (document.visibilityState !== 'visible') {
           sendEmail('new_message', currentUser.email, {
             senderName: otherName,
             itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
             preview: conv.last_message || 'Tienes un nuevo mensaje',
           });
-          sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje');
         }
       }
     }
