@@ -1861,16 +1861,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <button class="nav-tab" id="ntab-messages" onclick="navTo('messages')">Mensajes <span class="nav-badge green" id="msg-badge-nav" style="display:none">3</span></button>
     </div>
     <div class="nav-right">
-      <div class="icon-btn" onclick="toggleNotif()">🔔<div class="notif-dot" id="notif-dot"></div></div>
       <button class="btn-pub" onclick="navTo('publish')">+ Publicar</button>
       <div class="avatar-nav" onclick="navTo('profile')">😎</div>
-    </div>
-  </div>
-  <!-- Notif panel -->
-  <div class="notif-panel" id="notif-panel">
-    <div class="notif-head"><span>Notificaciones</span><button onclick="closeNotif()">Cerrar</button></div>
-    <div id="notif-list">
-      <div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No tienes notificaciones nuevas</div>
     </div>
   </div>
 </nav>
