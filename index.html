@@ -4366,49 +4366,6 @@ function renderHomeItems() {
   // Eliminado del MVP v1
 }
 
-
-function navTo(v) {
-  // Redirects legacy
-  if(v === 'home') v = 'explore';
-  if(v === 'matches') { navTo('messages'); return; }
-  if(v === 'activity') { navTo('messages'); return; }
-  if(v === 'wishlist-act') { navTo('wishlist'); return; }
-
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  const el = document.getElementById('view-'+v);
-  if(el) el.classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  const nt = document.getElementById('ntab-'+v);
-  if(nt) nt.classList.add('active');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-'+v);
-  if(bn) bn.classList.add('active');
-  closeNotif();
-  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-
-  const authRequired = ['publish','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) { requireAuth(v); return; }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1; pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
-}
-
-function navToActivity(tab) {
-  // Actividad eliminada — redirigir a Mensajes
-  navTo('messages');
-}
-
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
 function showOnboarding() {}
 function obSelectCat() {}
