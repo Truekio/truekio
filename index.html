@@ -3621,6 +3621,8 @@ window._enterApp = function() {
 
   navTo('explore');
   loadAllRatings(); // cargar ratings de todos los usuarios para ordenación bayesiana
+  // Cargar conversaciones en background para tener el badge actualizado
+  if (currentUser) setTimeout(() => { loadConversations(); startConvPolling(); }, 500);
 
   // ── Geolocalización: usar coords guardadas al instante, actualizar en bg ──
   function applyGeoAndRender(coords) {
@@ -4039,7 +4041,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   applyFilter('', 'Todos');
   renderMatches();
-  renderConvList();
   renderProfile();
   renderWishlist();
 
@@ -7388,6 +7389,9 @@ async function cancelTrade(convId) {
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
 }
 
+// Set de IDs de mensajes eliminados localmente para no rerenderizarlos
+const _deletedMsgIds = new Set();
+
 async function loadMessages(convId) {
   const { data, error } = await db
     .from('messages')
@@ -7416,12 +7420,15 @@ async function loadMessages(convId) {
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${conv ? conv.item1_title + ' ↔ ' + conv.item2_title : ''}</div>
     </div>`;
 
-  if (!data || !data.length) {
+  // Filtrar mensajes eliminados localmente
+  const visibleData = (data || []).filter(m => !_deletedMsgIds.has(m.id));
+
+  if (!visibleData.length) {
     el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
     return;
   }
 
-  el.innerHTML = systemMsg + data.map(m => {
+  el.innerHTML = systemMsg + visibleData.map(m => {
     const isOut = m.sender_id === currentUser.id;
     const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
     const msgAvatarHtml = otherAvatarChat
@@ -7444,12 +7451,20 @@ async function loadMessages(convId) {
 
 async function deleteMessage(msgId) {
   if (!currentUser) { showToast('⚠️ No hay sesión'); return; }
-  console.log('Eliminando mensaje:', msgId);
-  const { error } = await db.from('messages').delete().eq('id', msgId).eq('sender_id', currentUser.id);
-  console.log('Resultado delete:', error);
-  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+  // Marcar como eliminado localmente ANTES de llamar a Supabase
+  _deletedMsgIds.add(msgId);
+  // Quitar del DOM inmediatamente
   const el = document.getElementById('msg-' + msgId);
   if (el) el.remove();
+  // Eliminar en Supabase
+  const { error } = await db.from('messages').delete().eq('id', msgId).eq('sender_id', currentUser.id);
+  if (error) {
+    // Si falla, revertir
+    _deletedMsgIds.delete(msgId);
+    showToast('⚠️ Error al eliminar: ' + error.message);
+    loadMessages(activeConvId);
+    return;
+  }
   showToast('🗑 Mensaje eliminado');
 }
 
