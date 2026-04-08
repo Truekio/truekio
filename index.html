@@ -955,6 +955,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .filter-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:99px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .18s;white-space:nowrap;box-shadow:var(--sh);flex-shrink:0;}
 .filter-btn.active{color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.2);}
 .filter-btn.active[data-sort]{background:var(--accent);border-color:var(--accent);}
+.filter-btn.active[data-sort="surprise"]{background:var(--purple);border-color:var(--purple);}
 .filter-btn.active[data-cat="Electrónica"]{background:var(--cat-electronica);border-color:var(--cat-electronica);}
 .filter-btn.active[data-cat="Música"]{background:var(--cat-musica);border-color:var(--cat-musica);}
 .filter-btn.active[data-cat="Deporte"]{background:var(--cat-deporte);border-color:var(--cat-deporte);}
@@ -4632,6 +4633,7 @@ function buildFilters() {
     { val: 'distance',  icon: '📍', label: 'Distancia' },
     { val: 'recent',    icon: '🕒', label: 'Reciente' },
     { val: 'cafe',      icon: '☕', label: 'Café' },
+    { val: 'surprise',  icon: '🎲', label: 'Sorpréndeme' },
   ];
   row.innerHTML = sorts.map(s => `
     <button class="filter-btn${s.val==='relevance'?' active':''}" data-sort="${s.val}" onclick="setSortFilter(this,'${s.val}')">
@@ -4790,6 +4792,9 @@ function applyFilter(q, cat) {
   } else if (sortMode === 'cafe') {
     // Filtrar solo objetos de café
     f = f.filter(i => i.wants && i.wants.some(w => w === '☕ Un café' || w === '☕ ¡Te lo doy por un café!'));
+  } else if (sortMode === 'surprise') {
+    // Filtrar solo objetos "¡Sorpréndeme!"
+    f = f.filter(i => i.wants && i.wants.some(w => w === '🎲 ¡Sorpréndeme!'));
   }
 
   const countEl = document.getElementById('sp-results-n');
