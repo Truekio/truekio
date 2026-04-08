@@ -1861,8 +1861,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <button class="nav-tab" id="ntab-messages" onclick="navTo('messages')">Mensajes <span class="nav-badge green" id="msg-badge-nav" style="display:none">3</span></button>
     </div>
     <div class="nav-right">
+      <div class="icon-btn" onclick="toggleNotif()">🔔<div class="notif-dot" id="notif-dot"></div></div>
       <button class="btn-pub" onclick="navTo('publish')">+ Publicar</button>
       <div class="avatar-nav" onclick="navTo('profile')">😎</div>
+    </div>
+  </div>
+  <!-- Notif panel -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-head"><span>Notificaciones</span><button onclick="closeNotif()">Cerrar</button></div>
+    <div id="notif-list">
+      <div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No tienes notificaciones nuevas</div>
     </div>
   </div>
 </nav>
@@ -2639,7 +2647,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <input placeholder="Buscar en la demanda..." oninput="filterDemand(this.value)" id="demand-search-input">
       </div>
     </div>
-    <div id="demand-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div id="demand-list" style="display:flex;flex-direction:column;gap:10px">
+      <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>
+    </div>
   </div>
 </div>
 
@@ -4172,6 +4182,7 @@ function requireAuth(intendedView) {
 }
 
 function navTo(v) {
+  // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
   if(v === 'matches') { navToActivity('proposals'); return; }
   if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
@@ -4186,10 +4197,16 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
+  // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) { requireAuth(v); return; }
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
   if(v === 'publish') {
-    pubCurrentScreen = 1; pubGoTo(1);
+    pubCurrentScreen = 1;
+    pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -4206,8 +4223,7 @@ function navTo(v) {
 
 function navToActivity(tab) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  const actEl = document.getElementById('view-activity');
-  if(actEl) actEl.classList.add('active');
+  document.getElementById('view-activity').classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   const nt = document.getElementById('ntab-activity');
   if(nt) nt.classList.add('active');
@@ -4215,12 +4231,31 @@ function navToActivity(tab) {
   const bn = document.getElementById('bnav-activity');
   if(bn) bn.classList.add('active');
   switchMatchTab(tab || 'proposals');
-  if(currentUser) setTimeout(() => loadProposals(), 300);
+  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  const _bn = document.querySelector('.bottom-nav');
-  if(_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  stopConvPolling();
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
+  if(v === 'publish') {
+    pubCurrentScreen = 1;
+    pubGoTo(1);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
+  if(v === 'demand') { loadPublicDemand(); }
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4404,6 +4439,83 @@ function renderHomeItems() {
   // Eliminado del MVP v1
 }
 
+
+function navTo(v) {
+  // Redirect home/matches/wishlist
+  if(v === 'home') v = 'explore';
+  if(v === 'matches') { navToActivity('proposals'); return; }
+  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('view-'+v);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const nt = document.getElementById('ntab-'+v);
+  if(nt) nt.classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bn = document.getElementById('bnav-'+v);
+  if(bn) bn.classList.add('active');
+  closeNotif();
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
+  if(v === 'publish') {
+    pubCurrentScreen = 1;
+    pubGoTo(1);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
+  if(v === 'demand') { loadPublicDemand(); }
+}
+
+function navToActivity(tab) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-activity').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const nt = document.getElementById('ntab-activity');
+  if(nt) nt.classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bn = document.getElementById('bnav-activity');
+  if(bn) bn.classList.add('active');
+  switchMatchTab(tab || 'proposals');
+  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
+  closeNotif();
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
+  if(v === 'publish') {
+    pubCurrentScreen = 1;
+    pubGoTo(1);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
+  if(v === 'demand') { loadPublicDemand(); }
+}
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
 function showOnboarding() {}
@@ -4898,45 +5010,46 @@ function emptyState({icon, title, body, cta, ctaAction, ctaSecondary, ctaSeconda
 // ═══ MATCH TABS ═══
 // ═══ PROPUESTAS DE TRUEQUE ═══
 async function loadProposals() {
+  if (!currentUser) return;
   const el = document.getElementById('proposals-list');
   if (!el) return;
-  if (!currentUser) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Inicia sesión para ver tus propuestas.</div>';
-    return;
-  }
   el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
 
-  try {
-    const { data, error } = await db
-      .from('proposals')
-      .select('id,item_id,item_title,item_emoji,offered_item_id,offered_item_title,offered_item_emoji,owner_id,offerer_id,offerer_name,status,counter_by,counter_offer,created_at,note')
-      .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
-      .in('status', ['pending', 'countered'])
-      .order('created_at', { ascending: false });
+  const { data, error } = await db
+    .from('proposals')
+    .select('id,item_id,item_title,item_emoji,offered_item_id,offered_item_title,offered_item_emoji,owner_id,offerer_id,offerer_name,status,counter_by,counter_offer,created_at,note')
+    .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
+    .in('status', ['pending', 'countered'])
+    .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+  if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
 
-    // Badge con pendientes
-    const pending = (data||[]).filter(p => p.owner_id === currentUser.id && p.status === 'pending');
-    const myTurnCountered = (data||[]).filter(p => p.status === 'countered' && p.counter_by !== currentUser.id);
-    const totalPending = pending.length + myTurnCountered.length;
-    const badge = document.getElementById('mtab-proposals-count');
-    if (badge) { badge.textContent = totalPending; badge.style.display = totalPending ? '' : 'none'; }
-    window._pendingProposalCount = totalPending;
-    if (typeof updateActivityBadge === 'function') updateActivityBadge();
+  // Cargar fotos de todos los items involucrados
+  const allItemIds = [...new Set(data.flatMap(p => [p.item_id, p.offered_item_id]).filter(Boolean))];
+  let itemPhotos = {}; // id → first photo url
+  if (allItemIds.length) {
+    const { data: itemData } = await db.from('items')
+      .select('id, photos, photo_urls')
+      .in('id', allItemIds);
+    if (itemData) itemData.forEach(i => {
+      itemPhotos[i.id] = (i.photo_urls && i.photo_urls[0]) || i.photos || '';
+    });
+  }
 
-    if (!data || !data.length) {
-      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes propuestas.<br><span style="font-size:12px">Cuando alguien proponga un trueque contigo aparecerá aquí.</span></div>';
-      return;
-    }
+  // Badge con pendientes recibidas (pending + countered donde me toca responder)
+  const pending = data.filter(p => p.owner_id === currentUser.id && p.status === 'pending');
+  const myTurnCountered = data.filter(p => p.status === 'countered' && p.counter_by !== currentUser.id);
+  const totalPending = pending.length + myTurnCountered.length;
+  const badge = document.getElementById('mtab-proposals-count');
+  if (badge) { badge.textContent = totalPending; badge.style.display = totalPending ? '' : 'none'; }
+  // Guardar para el badge global de actividad
+  window._pendingProposalCount = totalPending;
+  if (typeof updateActivityBadge === 'function') updateActivityBadge();
 
-    // Cargar fotos
-    const allItemIds = [...new Set(data.flatMap(p => [p.item_id, p.offered_item_id]).filter(Boolean))];
-    let itemPhotos = {};
-    if (allItemIds.length) {
-      const { data: itemData } = await db.from('items').select('id, photos, photo_urls').in('id', allItemIds);
-      if (itemData) itemData.forEach(i => { itemPhotos[i.id] = (i.photo_urls && i.photo_urls[0]) || i.photos || ''; });
-    }
+  if (!data.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes propuestas.<br><span style="font-size:12px">Cuando alguien proponga un trueque contigo aparecerá aquí.</span></div>';
+    return;
+  }
 
   el.innerHTML = data.map(p => {
     const isOwner = p.owner_id === currentUser.id;
@@ -5016,9 +5129,6 @@ async function loadProposals() {
       </div>
     </div>`;
   }).join('');
-  } catch(e) {
-    if (el) el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⚠️ Error: ${e.message}</div>`;
-  }
 }
 
 async function deleteProposal(proposalId) {
@@ -5414,110 +5524,230 @@ let _demandData = [];
 async function loadPublicDemand() {
   const el = document.getElementById('demand-list');
   if (!el) return;
-  el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando comunidad...</div>';
+  el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
 
-  try {
-    let query = db.from('items')
-      .select('id, title, emoji, photo_urls, user_id, user_name, wants, category')
-      .eq('status', 'available');
-    if (currentUser?.id) query = query.neq('user_id', currentUser.id);
+  // 1. Cargar items disponibles con lat/lng
+  const { data: allItems, error } = await db.from('items')
+    .select('id, title, emoji, photos, photo_urls, user_id, user_name, user_avatar, wants, wants_open, category, lat, lng')
+    .eq('status', 'available')
+    .neq('user_id', currentUser?.id || '');
 
-    const { data: allItems, error } = await query;
-    if (error) throw new Error(error.message);
+  if (error || !allItems) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar.</div>';
+    return;
+  }
 
-    if (!allItems || !allItems.length) {
-      el.innerHTML = '<div style="padding:60px 20px;text-align:center"><div style="font-size:3rem;margin-bottom:12px">🔍</div><div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Aún no hay objetos publicados</div><div style="font-size:13px;color:var(--muted)">Sé el primero en publicar un objeto.</div></div>';
-      return;
-    }
+  // 2. Obtener IDs únicos de usuarios
+  const userIds = [...new Set(allItems.map(i => i.user_id).filter(Boolean))];
 
-    // Agrupar por lo que buscan a cambio (campo wants)
-    const groups = {};
+  // 3. Cargar avatares de perfil
+  const avatarMap = {};
+  if (userIds.length) {
+    const { data: profiles } = await db.from('profiles')
+      .select('id, avatar_url')
+      .in('id', userIds);
+    if (profiles) profiles.forEach(p => { if (p.avatar_url) avatarMap[p.id] = p.avatar_url; });
+    // También intentar desde auth metadata
     allItems.forEach(item => {
-      if (!item.wants || item.wants.trim().length < 2) return;
-      const wantList = item.wants.split(',').map(w => w.trim()).filter(w => w.length > 1);
-      wantList.forEach(w => {
-        const key = w.toLowerCase().trim();
-        if (!groups[key]) groups[key] = { label: w, cat: item.category, users: new Set(), items: [] };
-        groups[key].users.add(item.user_id);
-        groups[key].items.push(item);
+      if (item.user_avatar && !avatarMap[item.user_id]) avatarMap[item.user_id] = item.user_avatar;
+    });
+  }
+
+  // 4. Cargar ratings medios por usuario
+  const ratingMap = {}; // user_id → avgStars (0–5)
+  if (userIds.length) {
+    const { data: reviews } = await db.from('reviews')
+      .select('reviewed_user_id, stars')
+      .in('reviewed_user_id', userIds);
+    if (reviews && reviews.length) {
+      const acc = {};
+      reviews.forEach(r => {
+        if (!acc[r.reviewed_user_id]) acc[r.reviewed_user_id] = { sum: 0, n: 0 };
+        acc[r.reviewed_user_id].sum += r.stars;
+        acc[r.reviewed_user_id].n++;
+      });
+      Object.entries(acc).forEach(([uid, v]) => { ratingMap[uid] = v.sum / v.n; });
+    }
+  }
+
+  // 5. Calcular distancia al usuario actual
+  const myLat = userCoords?.lat || parseFloat(currentUser?.user_metadata?.lat);
+  const myLng = userCoords?.lng || parseFloat(currentUser?.user_metadata?.lng);
+  const getDistKm = (item) => {
+    if (!myLat || !myLng) return 9999;
+    if (item.lat && item.lng) return distanceKm(myLat, myLng, parseFloat(item.lat), parseFloat(item.lng));
+    if (item.location && CITY_COORDS?.[item.location])
+      return distanceKm(myLat, myLng, CITY_COORDS[item.location].lat, CITY_COORDS[item.location].lng);
+    return 9999;
+  };
+
+  // 6. Score de relevancia: cercanía (60%) + valoración (40%)
+  const scoreItem = (item) => {
+    const dist = getDistKm(item);
+    const proxScore = dist < 5 ? 100 : dist < 20 ? 80 : dist < 50 ? 60 : dist < 100 ? 40 : dist < 200 ? 20 : 5;
+    const rating = ratingMap[item.user_id] || 3; // neutral por defecto
+    const ratingScore = (rating / 5) * 100;
+    return proxScore * 0.6 + ratingScore * 0.4;
+  };
+
+  // 7. Agrupar por want → por usuario (un usuario puede ofrecer varios items)
+  const groups = {};
+
+  allItems.forEach(item => {
+    if (!item.wants) return;
+    const wantList = typeof item.wants === 'string'
+      ? item.wants.split(',').map(w => w.trim()).filter(Boolean)
+      : (Array.isArray(item.wants) ? item.wants : []);
+
+    wantList.forEach(w => {
+      if (!w || w.length < 2) return;
+      const key = w.toLowerCase().trim();
+      if (!groups[key]) groups[key] = { label: w, userMap: {} };
+
+      const uid = item.user_id;
+      if (!groups[key].userMap[uid]) {
+        groups[key].userMap[uid] = {
+          user_id: uid,
+          user_name: item.user_name || 'Usuario',
+          user_avatar: avatarMap[uid] || null,
+          user_rating: ratingMap[uid] || null,
+          score: scoreItem(item),
+          items: []
+        };
+      }
+      groups[key].userMap[uid].items.push({
+        item_id: item.id,
+        item_title: item.title,
+        item_emoji: item.emoji,
+        item_photo: (item.photo_urls && item.photo_urls[0]) || item.photos || '',
+        item_cat: item.category,
+        dist: getDistKm(item)
       });
     });
+  });
 
-    _demandData = Object.values(groups)
-      .filter(g => g.users.size > 0)
-      .sort((a, b) => b.users.size - a.users.size)
-      .map(g => ({ label: g.label, cat: g.cat, userCount: g.users.size, items: g.items.slice(0, 5) }));
+  // 8. Convertir userMap → array ordenado por score, y calcular miniaturas
+  _demandData = Object.values(groups)
+    .map(g => {
+      const users = Object.values(g.userMap)
+        .sort((a, b) => b.score - a.score);
+      // Para las miniaturas de la cabecera: primer objeto de cada usuario (top 3)
+      const thumbItems = users.slice(0, 3).map(u => u.items[0]);
+      return {
+        label: g.label,
+        users,                          // usuarios ordenados
+        thumbItems,                     // miniaturas cabecera
+        totalItems: users.reduce((s, u) => s + u.items.length, 0)
+      };
+    })
+    .filter(g => g.users.length > 0)
+    .sort((a, b) => b.users.length - a.users.length);
 
-    if (!_demandData.length) {
-      el.innerHTML = '<div style="padding:60px 20px;text-align:center"><div style="font-size:3rem;margin-bottom:12px">📦</div><div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">'+allItems.length+' objetos publicados</div><div style="font-size:13px;color:var(--muted)">Ninguno ha especificado qué quiere a cambio todavía.</div><button class="btn btn-primary btn-md" style="margin-top:16px" onclick="navTo(\'publish\')">+ Publicar objeto</button></div>';
-      return;
-    }
-
-    _renderDemandList(_demandData);
-
-  } catch(e) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⚠️ Error al cargar: ' + e.message + '</div>';
-  }
+  _renderDemandList(_demandData);
 }
 
 function _renderDemandList(list) {
   const el = document.getElementById('demand-list');
   if (!el) return;
 
-  if (!list || !list.length) {
-    el.innerHTML = `<div style="padding:60px 20px;text-align:center">
-      <div style="font-size:3rem;margin-bottom:12px">🔍</div>
-      <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Aún no hay demanda</div>
-      <div style="font-size:13px;color:var(--muted)">Sé el primero en publicar un objeto y generar matches.</div>
-    </div>`;
+  if (!list.length) {
+    el.innerHTML = `
+      <div style="padding:60px 20px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">🔍</div>
+        <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Aún no hay demanda</div>
+        <div style="font-size:13px;color:var(--muted)">Sé el primero en publicar un objeto y generar matches.</div>
+      </div>`;
     return;
   }
 
+  // Helper: avatar (foto real o inicial con color)
+  const avatarEl = (user, size=32) => {
+    if (user.user_avatar) {
+      return `<img src="${user.user_avatar}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--white)">`;
+    }
+    const bg = `hsl(${strHash(user.user_id||'')%360},55%,58%)`;
+    const initial = (user.user_name||'U')[0].toUpperCase();
+    const fs = Math.round(size * 0.4);
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:800;color:#fff;flex-shrink:0">${initial}</div>`;
+  };
+
+  // Helper: estrella + nota
+  const starsEl = (rating) => {
+    if (!rating) return `<span style="font-size:10px;color:var(--muted)">Sin valoraciones</span>`;
+    const r = Math.round(rating * 10) / 10;
+    return `<span style="font-size:10px;color:var(--gold)">★</span><span style="font-size:10px;font-weight:700;color:var(--text2);margin-left:2px">${r.toFixed(1)}</span>`;
+  };
+
   el.innerHTML = list.map((d, idx) => {
-    const catIcon = CAT_ICONS[d.cat] || '✦';
-    const nUsers = d.userCount;
+    const nUsers = d.users.length;
+    const nItems = d.totalItems;
+    const catIcon = CAT_ICONS[d.users[0]?.items[0]?.item_cat] || '✦';
     const personLabel = nUsers === 1 ? '1 persona lo acepta' : `${nUsers} personas lo aceptan`;
+    const itemExtra = nItems > nUsers ? ` · ${nItems} objetos` : '';
 
-    // Miniaturas de los primeros items
-    const thumbsHtml = d.items.slice(0, 3).map(item => {
-      const photo = item.photo_urls && item.photo_urls[0];
-      return photo
-        ? `<img src="${photo}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;border:2px solid var(--white);margin-left:-4px">`
-        : `<div style="width:36px;height:36px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1rem;border:2px solid var(--white);margin-left:-4px">${item.emoji||'📦'}</div>`;
-    }).join('');
+    // Avatares apilados cabecera (hasta 4, fotos reales si existen)
+    const avatarsHtml = d.users.slice(0, 4).map((u, i) =>
+      `<div style="margin-left:${i===0?'0':'-8px'};z-index:${4-i};position:relative">${avatarEl(u, 28)}</div>`
+    ).join('');
+    const extraCount = nUsers > 4
+      ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);margin-left:-8px">+${nUsers-4}</div>`
+      : '';
 
-    // Panel expandido con los items
-    const detailHtml = d.items.map(item => {
-      const photo = item.photo_urls && item.photo_urls[0];
-      return `<div onclick="openDetail('${item.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        ${photo
-          ? `<img src="${photo}" style="width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0">`
-          : `<div style="width:46px;height:46px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">${item.emoji||'📦'}</div>`
-        }
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.title}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${item.user_name||'Usuario'} · ${item.category||''}</div>
+    // Miniaturas objetos (primer objeto de cada usuario, hasta 3)
+    const thumbsHtml = d.thumbItems.map(item =>
+      item.item_photo
+        ? `<img src="${item.item_photo}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:2px solid var(--white);margin-left:-4px">`
+        : `<div style="width:40px;height:40px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:2px solid var(--white);margin-left:-4px">${item.item_emoji||'📦'}</div>`
+    ).join('');
+
+    // Panel expandido: un bloque por usuario, con todos sus objetos
+    const detailHtml = d.users.map(user => {
+      const itemsHtml = user.items.map(item => `
+        <div onclick="openDetail(${item.item_id})" style="display:flex;align-items:center;gap:10px;padding:10px 16px 10px 52px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+          ${item.item_photo
+            ? `<img src="${item.item_photo}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0">`
+            : `<div style="width:48px;height:48px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${item.item_emoji||'📦'}</div>`
+          }
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.item_title}</div>
+            ${item.dist < 9990 ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${item.dist < 1 ? 'Muy cerca' : item.dist < 50 ? item.dist.toFixed(0)+'km' : '+50km'}</div>` : ''}
+          </div>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;opacity:.35"><path d="M5 11l4-4-4-4" stroke="var(--text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>`).join('');
+
+      return `
+      <div style="border-bottom:2px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--white)">
+          ${avatarEl(user, 36)}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px;color:var(--text)">${user.user_name}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+              ${starsEl(user.user_rating)}
+              <span style="font-size:11px;color:var(--muted);margin-left:4px">${user.items.length} objeto${user.items.length!==1?'s':''} a ofrecer</span>
+            </div>
+          </div>
         </div>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;opacity:.35"><path d="M5 11l4-4-4-4" stroke="var(--text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        ${itemsHtml}
       </div>`;
     }).join('');
 
     return `
     <div style="border-radius:var(--r-lg);overflow:hidden;border:1.5px solid var(--border);background:var(--white);margin-bottom:10px;transition:box-shadow .15s" id="demand-card-${idx}">
       <div onclick="demandToggle(${idx})" style="padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px">
-        <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">${catIcon}</div>
+        <div style="width:46px;height:46px;border-radius:12px;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">${catIcon}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:800;font-size:14px;color:var(--text);margin-bottom:4px">${d.label}</div>
-          <div style="font-size:12px;color:var(--muted);font-weight:600">${personLabel}</div>
+          <div style="font-weight:800;font-size:15px;color:var(--text);margin-bottom:5px">${d.label}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center">${avatarsHtml}${extraCount}</div>
+            <span style="font-size:12px;color:var(--muted);font-weight:600">${personLabel}${itemExtra}</span>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;flex-shrink:0">${thumbsHtml}</div>
-        <div id="demand-arrow-${idx}" style="color:var(--muted);font-size:18px;transition:transform .2s;flex-shrink:0;margin-left:4px">▾</div>
+        <div style="display:flex;align-items:center;flex-shrink:0;margin-right:4px">${thumbsHtml}</div>
+        <div id="demand-arrow-${idx}" style="color:var(--muted);font-size:18px;transition:transform .2s;flex-shrink:0">▾</div>
       </div>
       <div id="demand-detail-${idx}" style="display:none;border-top:1px solid var(--border);background:var(--bg)">
+        <div style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Ordenado por cercanía y valoración</div>
         ${detailHtml}
-        <div style="padding:10px 16px">
-          <button class="btn btn-primary btn-sm btn-full" onclick="navTo('publish')">+ Publicar algo a cambio</button>
-        </div>
       </div>
     </div>`;
   }).join('');
@@ -8059,24 +8289,6 @@ async function loadProfileStats() {
   const tmTiempo = document.getElementById('tm-tiempo');
   if (tmTiempo) tmTiempo.textContent = avgResponseTime || '—';
 
-  // 6. Ratio: trueques completados / propuestas enviadas
-  let myRatio = '—';
-  try {
-    const { data: sentProps } = await db
-      .from('proposals')
-      .select('id', { count: 'exact' })
-      .eq('offerer_id', currentUser.id);
-    const sentCount = (sentProps || []).length;
-    if (sentCount > 0) {
-      const pct = Math.round((completedCount / sentCount) * 100);
-      myRatio = pct + '%';
-    } else if (completedCount > 0) {
-      myRatio = '100%';
-    }
-  } catch(e) {}
-  const tmRatioStat = document.getElementById('tm-ratio');
-  if (tmRatioStat) tmRatioStat.textContent = myRatio;
-
   renderProfile();
 }
 
@@ -8108,7 +8320,9 @@ function renderProfile() {
   if(tmCompletados) tmCompletados.textContent = myCompletedTrades;
   const tmPublicados = document.getElementById('tm-publicados');
   if(tmPublicados) tmPublicados.textContent = myItems.length;
-  // tm-ratio se actualiza en loadProfileStats con el ratio real
+  const tmRatio = document.getElementById('tm-ratio');
+  if(tmRatio) tmRatio.textContent = '100%';
+  // savings-amount eliminado
   const profStatItems = document.getElementById('prof-stat-items');
   if(profStatItems) profStatItems.textContent = myItems.length;
 
