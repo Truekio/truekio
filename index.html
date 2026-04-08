@@ -4174,7 +4174,6 @@ function requireAuth(intendedView) {
 }
 
 function navTo(v) {
-  // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
   if(v === 'matches') { navToActivity('proposals'); return; }
   if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
@@ -4189,16 +4188,10 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
   const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
+  if (authRequired.includes(v) && !currentUser) { requireAuth(v); return; }
   if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
+    pubCurrentScreen = 1; pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
@@ -4215,7 +4208,8 @@ function navTo(v) {
 
 function navToActivity(tab) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-activity').classList.add('active');
+  const actEl = document.getElementById('view-activity');
+  if(actEl) actEl.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   const nt = document.getElementById('ntab-activity');
   if(nt) nt.classList.add('active');
@@ -4223,31 +4217,12 @@ function navToActivity(tab) {
   const bn = document.getElementById('bnav-activity');
   if(bn) bn.classList.add('active');
   switchMatchTab(tab || 'proposals');
-  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
+  if(currentUser) setTimeout(() => loadProposals(), 300);
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
+  const _bn = document.querySelector('.bottom-nav');
+  if(_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  stopConvPolling();
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4431,83 +4406,6 @@ function renderHomeItems() {
   // Eliminado del MVP v1
 }
 
-
-function navTo(v) {
-  // Redirect home/matches/wishlist
-  if(v === 'home') v = 'explore';
-  if(v === 'matches') { navToActivity('proposals'); return; }
-  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  const el = document.getElementById('view-'+v);
-  if(el) el.classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  const nt = document.getElementById('ntab-'+v);
-  if(nt) nt.classList.add('active');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-'+v);
-  if(bn) bn.classList.add('active');
-  closeNotif();
-  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
-}
-
-function navToActivity(tab) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-activity').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  const nt = document.getElementById('ntab-activity');
-  if(nt) nt.classList.add('active');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-activity');
-  if(bn) bn.classList.add('active');
-  switchMatchTab(tab || 'proposals');
-  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
-  closeNotif();
-  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
-}
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
 function showOnboarding() {}
@@ -8281,6 +8179,24 @@ async function loadProfileStats() {
   const tmTiempo = document.getElementById('tm-tiempo');
   if (tmTiempo) tmTiempo.textContent = avgResponseTime || '—';
 
+  // 6. Ratio: trueques completados / propuestas enviadas
+  let myRatio = '—';
+  try {
+    const { data: sentProps } = await db
+      .from('proposals')
+      .select('id', { count: 'exact' })
+      .eq('offerer_id', currentUser.id);
+    const sentCount = (sentProps || []).length;
+    if (sentCount > 0) {
+      const pct = Math.round((completedCount / sentCount) * 100);
+      myRatio = pct + '%';
+    } else if (completedCount > 0) {
+      myRatio = '100%';
+    }
+  } catch(e) {}
+  const tmRatioStat = document.getElementById('tm-ratio');
+  if (tmRatioStat) tmRatioStat.textContent = myRatio;
+
   renderProfile();
 }
 
@@ -8312,9 +8228,7 @@ function renderProfile() {
   if(tmCompletados) tmCompletados.textContent = myCompletedTrades;
   const tmPublicados = document.getElementById('tm-publicados');
   if(tmPublicados) tmPublicados.textContent = myItems.length;
-  const tmRatio = document.getElementById('tm-ratio');
-  if(tmRatio) tmRatio.textContent = '100%';
-  // savings-amount eliminado
+  // tm-ratio se actualiza en loadProfileStats con el ratio real
   const profStatItems = document.getElementById('prof-stat-items');
   if(profStatItems) profStatItems.textContent = myItems.length;
 
