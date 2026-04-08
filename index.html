@@ -2607,7 +2607,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
         <div style="display:flex;gap:0;min-width:max-content">
           <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
-          <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
           <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
         </div>
       </div>
@@ -2618,13 +2617,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
     <div id="matches-proposals" class="match-tab-content active">
       <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
-    </div>
-    <div id="matches-chain" class="match-tab-content" style="display:none">
-      <div style="background:var(--purple-l);border:1px solid rgba(99,68,168,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
-        <div style="font-size:1.6rem;flex-shrink:0">🔗</div>
-        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--purple)">Cadenas de trueque</div><div style="font-size:12px;color:var(--purple);opacity:.8;line-height:1.6">A da a B → B da a C → C da a A. Todos consiguen lo que quieren sin match directo.</div></div>
-      </div>
-      <div id="chains-list"></div>
     </div>
     <div id="matches-confirm" class="match-tab-content" style="display:none">
       <div style="background:var(--green-l);border:1px solid rgba(45,158,95,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
@@ -6171,15 +6163,12 @@ window.loadMatches = async function loadMatches() {
 function renderMatches() {
   const list = document.getElementById('matches-list');
   if(!list) return;
-  const total = matches.length + chains.length;
+  const total = matches.length;
   const badge = document.getElementById('match-count-badge');
   if(badge) badge.textContent = total + (total===1?' elemento activo':' elementos activos');
-  // Actualizar badge de actividad con el total real
   updateActivityBadge();
   const directCount = document.getElementById('mtab-direct-count');
   if(directCount) directCount.textContent = matches.length;
-  const chainCount = document.getElementById('mtab-chain-count');
-  if(chainCount) chainCount.textContent = chains.length;
   const confCount = document.getElementById('mtab-confirm-count');
   if(confCount) confCount.textContent = confirmations.filter(c=>c.status!=='done').length;
   const wishBadge = document.getElementById('wish-badge-nav');
@@ -6210,8 +6199,6 @@ function updateActivityBadge() {
       body: 'El sistema busca coincidencias con más del 50% de compatibilidad. Publica objetos y añade deseos para aumentar tus probabilidades.',
       cta: '+ Publicar objeto',
       ctaAction: "navTo('publish')",
-      ctaSecondary: 'Ver cadenas de trueque',
-      ctaSecondaryAction: "switchMatchTab('chain')",
       tip: 'Cuantas más opciones de cambio indiques, más matches encontrarás.'
     });
   } else {
@@ -6257,7 +6244,6 @@ function updateActivityBadge() {
     </div>`;
     }).join('');
   }
-  renderChains();
   renderConfirmations(); // async, fire and forget
 }
 
