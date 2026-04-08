@@ -144,9 +144,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 }
 .bottom-nav-inner{display:flex;}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;background:none;border:none;cursor:pointer;}
-.bnav-btn span:first-child{font-size:17px;transition:all .15s;}
+.bnav-btn span:first-child{font-size:19px;transition:all .15s;}
 .bnav-btn:not(.active) span:first-child{filter:grayscale(1);opacity:.4;}
-.bnav-label{font-size:8.5px;font-weight:600;letter-spacing:.01em;color:var(--muted2);}
+.bnav-label{font-size:9px;font-weight:600;letter-spacing:.02em;color:var(--muted2);}
 .bnav-btn.active .bnav-label{color:var(--accent);}
 
 /* ── LAYOUT ── */
@@ -1853,7 +1853,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="ntab-explore" onclick="navTo('explore')">Explorar</button>
-      <button class="nav-tab" id="ntab-demand" onclick="navTo('demand')">💡 Comunidad</button>
+      <button class="nav-tab" id="ntab-activity" onclick="navTo('activity')">
+        <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
+        <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent)">6</span>
+      </button>
       <button class="nav-tab" id="ntab-messages" onclick="navTo('messages')">Mensajes <span class="nav-badge green" id="msg-badge-nav" style="display:none">3</span></button>
     </div>
     <div class="nav-right">
@@ -2595,53 +2598,87 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </div>
 
-<!-- COMUNIDAD (ex-DEMANDA PÚBLICA) -->
+<!-- ACTIVITY HUB -->
+<div class="view" id="view-activity">
+  <!-- Barra de tabs sticky -->
+  <div class="activity-sticky">
+    <div class="wrap">
+      <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
+        <div style="display:flex;gap:0;min-width:max-content">
+          <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
+          <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
+          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Contenido -->
+  <div class="wrap page-pad" style="padding-top:24px">
+    <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
+    <div id="matches-proposals" class="match-tab-content active">
+      <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
+    </div>
+    <div id="matches-chain" class="match-tab-content" style="display:none">
+      <div style="background:var(--purple-l);border:1px solid rgba(99,68,168,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
+        <div style="font-size:1.6rem;flex-shrink:0">🔗</div>
+        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--purple)">Cadenas de trueque</div><div style="font-size:12px;color:var(--purple);opacity:.8;line-height:1.6">A da a B → B da a C → C da a A. Todos consiguen lo que quieren sin match directo.</div></div>
+      </div>
+      <div id="chains-list"></div>
+    </div>
+    <div id="matches-confirm" class="match-tab-content" style="display:none">
+      <div style="background:var(--green-l);border:1px solid rgba(45,158,95,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
+        <div style="font-size:1.6rem;flex-shrink:0">🛡️</div>
+        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--green)">Confirmación de recepción</div><div style="font-size:12px;color:var(--green);opacity:.8;line-height:1.6">El trueque no se cierra hasta que ambas partes confirman la recepción.</div></div>
+      </div>
+      <div id="confirmations-list"></div>
+    </div>
+    <div id="matches-wishlist-act" class="match-tab-content" style="display:none">
+      <div id="activity-wishlist-content"></div>
+    </div>
+  </div><!-- end contenido -->
+</div><!-- end view-activity -->
+
+<!-- MATCHES (legacy alias) -->
+<div class="view" id="view-matches" style="display:none"></div>
+
+<!-- DEMANDA PÚBLICA -->
 <div class="view" id="view-demand">
   <div class="wrap page-pad">
-
-    <!-- Hero banner — colores del design system -->
-    <div style="background:var(--accent-l);border:1.5px solid rgba(78,143,186,.18);border-radius:var(--r-lg);padding:24px 26px 20px;margin-bottom:22px;position:relative;overflow:hidden">
-      <div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:4.5rem;opacity:.08;pointer-events:none">💡</div>
-      <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.25rem;color:var(--text);margin-bottom:5px;letter-spacing:-.02em">Lo que busca la comunidad</div>
-      <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;max-width:420px">Si tienes algo de lo que buscan, publícalo y genera un match automático.</div>
-      <!-- Stats en vivo -->
-      <div style="display:flex;gap:20px;flex-wrap:wrap">
-        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;color:var(--accent)" id="demand-stat-wishes">—</div><div style="font-size:11px;color:var(--muted);margin-top:1px">deseos activos</div></div>
-        <div style="width:1px;background:var(--border)"></div>
-        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;color:var(--accent)" id="demand-stat-users">—</div><div style="font-size:11px;color:var(--muted);margin-top:1px">usuarios buscando</div></div>
-        <div style="width:1px;background:var(--border)"></div>
-        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;color:var(--accent)" id="demand-stat-cats">—</div><div style="font-size:11px;color:var(--muted);margin-top:1px">categorías</div></div>
-      </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem">💡 Lo que busca la comunidad</div>
     </div>
-
-    <!-- Buscador -->
-    <div style="margin-bottom:16px">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">Si tienes algo de lo que buscan, ¡publícalo y genera un match!</div>
+    <div id="demand-search-bar" style="margin-bottom:16px">
       <div class="search-bar" style="background:var(--white)">
         <span style="color:var(--muted);font-size:14px">🔍</span>
-        <input placeholder="Buscar en la comunidad..." oninput="filterDemand(this.value)" id="demand-search-input" style="background:none;border:none;color:var(--text);font-size:14px;outline:none;width:100%">
+        <input placeholder="Buscar en la demanda..." oninput="filterDemand(this.value)" id="demand-search-input">
       </div>
     </div>
-
-    <!-- Tabs: Más buscado / Por categoría (sin Reciente) -->
-    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px">
-      <button class="match-tab active" id="dtab-trending" onclick="switchDemandTab('trending')">🔥 Más buscado</button>
-      <button class="match-tab" id="dtab-cats" onclick="switchDemandTab('cats')">📂 Por categoría</button>
-    </div>
-
-    <!-- Lista principal -->
     <div id="demand-list" style="display:flex;flex-direction:column;gap:10px">
-      <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando comunidad...</div>
+      <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>
     </div>
+  </div>
+</div>
 
-    <!-- CTA al fondo -->
-    <div style="margin-top:28px;background:var(--accent-l);border:1.5px solid rgba(78,143,186,.2);border-radius:var(--r-lg);padding:20px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.92rem;margin-bottom:3px">¿Tienes algo que busca la comunidad?</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5">Publícalo ahora y recibe propuestas de intercambio al momento.</div>
-      </div>
-      <button class="btn btn-primary btn-md" onclick="navTo('publish')">+ Publicar objeto</button>
+<!-- CONFIRMATION MODAL -->
+<div class="modal-overlay" id="confirm-modal-overlay" onclick="closeConfirmModalBg(event)">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-head">
+      <div><div class="modal-title" id="confirm-modal-title">Confirmar recepción</div><div class="modal-sub" id="confirm-modal-sub">¿Has recibido el objeto en buen estado?</div></div>
+      <button class="modal-close" onclick="closeConfirmModal()">×</button>
     </div>
+    <div class="modal-body" id="confirm-modal-body"></div>
+  </div>
+</div>
 
+<!-- CHAIN DETAIL MODAL -->
+<div class="modal-overlay" id="chain-modal-overlay" onclick="closeChainModalBg(event)">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-head">
+      <div><div class="modal-title">🔗 Cadena de trueque</div><div class="modal-sub">Todos los participantes deben aceptar para activar la cadena</div></div>
+      <button class="modal-close" onclick="closeChainModal()">×</button>
+    </div>
+    <div class="modal-body" id="chain-modal-body"></div>
   </div>
 </div>
 
@@ -3621,8 +3658,6 @@ window._enterApp = function() {
 
   navTo('explore');
   loadAllRatings(); // cargar ratings de todos los usuarios para ordenación bayesiana
-  // Cargar conversaciones en background para tener el badge actualizado
-  if (currentUser) setTimeout(() => { loadConversations(); startConvPolling(); }, 500);
 
   // ── Geolocalización: usar coords guardadas al instante, actualizar en bg ──
   function applyGeoAndRender(coords) {
@@ -4041,6 +4076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   applyFilter('', 'Todos');
   renderMatches();
+  renderConvList();
   renderProfile();
   renderWishlist();
 
@@ -4148,12 +4184,10 @@ function requireAuth(intendedView) {
 }
 
 function navTo(v) {
-  // Redirects legacy
+  // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
-  if(v === 'matches') { navTo('messages'); return; }
-  if(v === 'activity') { navTo('messages'); return; }
-  if(v === 'wishlist-act') { navTo('wishlist'); return; }
-
+  if(v === 'matches') { navToActivity('proposals'); return; }
+  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('view-'+v);
   if(el) el.classList.add('active');
@@ -4165,18 +4199,23 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-
-  const authRequired = ['publish','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) { requireAuth(v); return; }
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
 
   if(v === 'publish') {
-    pubCurrentScreen = 1; pubGoTo(1);
+    pubCurrentScreen = 1;
+    pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -4185,8 +4224,40 @@ function navTo(v) {
 }
 
 function navToActivity(tab) {
-  // Actividad eliminada — redirigir a Mensajes
-  navTo('messages');
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-activity').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const nt = document.getElementById('ntab-activity');
+  if(nt) nt.classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bn = document.getElementById('bnav-activity');
+  if(bn) bn.classList.add('active');
+  switchMatchTab(tab || 'proposals');
+  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
+  closeNotif();
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
+  if(v === 'publish') {
+    pubCurrentScreen = 1;
+    pubGoTo(1);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
+  if(v === 'demand') { loadPublicDemand(); }
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4365,6 +4436,84 @@ function renderDashboard() {
 
 function renderHomeItems() {
   // Eliminado del MVP v1
+}
+
+
+function navTo(v) {
+  // Redirect home/matches/wishlist
+  if(v === 'home') v = 'explore';
+  if(v === 'matches') { navToActivity('proposals'); return; }
+  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('view-'+v);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const nt = document.getElementById('ntab-'+v);
+  if(nt) nt.classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bn = document.getElementById('bnav-'+v);
+  if(bn) bn.classList.add('active');
+  closeNotif();
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
+  if(v === 'publish') {
+    pubCurrentScreen = 1;
+    pubGoTo(1);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
+  if(v === 'demand') { loadPublicDemand(); }
+}
+
+function navToActivity(tab) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-activity').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const nt = document.getElementById('ntab-activity');
+  if(nt) nt.classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bn = document.getElementById('bnav-activity');
+  if(bn) bn.classList.add('active');
+  switchMatchTab(tab || 'proposals');
+  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
+  closeNotif();
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
+
+  if(v === 'publish') {
+    pubCurrentScreen = 1;
+    pubGoTo(1);
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn) _bn.style.display = 'none';
+  } else {
+    const _bn = document.querySelector('.bottom-nav');
+    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  }
+  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
+  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
+  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
+  if(v === 'favorites') renderFavorites();
+  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
+  if(v === 'demand') { loadPublicDemand(); }
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4829,7 +4978,7 @@ function renderExplore(list) {
       icon:'🔍', title:'Sin resultados',
       body:'Prueba con otro término, categoría o ajusta los filtros. También puedes publicar lo que buscas en tu lista de deseos.',
       cta:'Limpiar filtros', ctaAction:"clearAllFilters()",
-      ctaSecondary:'Añadir a lista de deseos', ctaSecondaryAction:"navTo('wishlist')",
+      ctaSecondary:'Añadir a lista de deseos', ctaSecondaryAction:"navTo('activity');switchMatchTab('wishlist-act')",
     }) + `</div>`;
     return;
   }
@@ -5076,7 +5225,7 @@ async function respondProposal(proposalId, status) {
   loadProposals();
 }
 
-function switchMatchTab(tab) { /* eliminado */ return;
+function switchMatchTab(tab) {
   document.querySelectorAll('.match-tab').forEach(b=>b.classList.remove('active'));
   const tabBtn = document.getElementById('mtab-'+tab);
   if(tabBtn) tabBtn.classList.add('active');
@@ -5487,7 +5636,6 @@ async function loadPublicDemand() {
     .sort((a, b) => b.users.length - a.users.length);
 
   _renderDemandList(_demandData);
-  _updateDemandHeroStats();
 }
 
 function _renderDemandList(list) {
@@ -5613,44 +5761,6 @@ function filterDemand(q) {
   const ql = q.toLowerCase();
   const filtered = _demandData.filter(d => d.label.toLowerCase().includes(ql));
   _renderDemandList(filtered);
-}
-
-// ── Tabs de Comunidad ──
-let _demandTab = 'trending';
-function switchDemandTab(tab) {
-  _demandTab = tab;
-  // Actualizar estilos de tabs
-  ['trending','cats'].forEach(t => {
-    const btn = document.getElementById('dtab-' + t);
-    if (!btn) return;
-    if (t === tab) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-  // Ordenar según tab
-  let sorted = [..._demandData];
-  if (tab === 'trending') {
-    sorted.sort((a, b) => b.users.length - a.users.length);
-  } else if (tab === 'cats') {
-    sorted.sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  }
-  _renderDemandList(sorted);
-}
-
-// ── Actualizar estadísticas del hero de Comunidad ──
-function _updateDemandHeroStats() {
-  if (!_demandData.length) return;
-  const totalWishes = _demandData.reduce((s, d) => s + d.users.length, 0);
-  const uniqueUsers = new Set(_demandData.flatMap(d => d.users.map(u => u.user_id))).size;
-  const uniqueCats = new Set(_demandData.flatMap(d => d.users.flatMap(u => u.items.map(i => i.item_cat)))).size;
-  const ws = document.getElementById('demand-stat-wishes');
-  const us = document.getElementById('demand-stat-users');
-  const cs = document.getElementById('demand-stat-cats');
-  if (ws) ws.textContent = totalWishes > 999 ? '+' + Math.floor(totalWishes/1000) + 'k' : totalWishes;
-  if (us) us.textContent = uniqueUsers;
-  if (cs) cs.textContent = uniqueCats;
 }
 // ═══ FIN DEMANDA PÚBLICA ═══
 
@@ -6059,9 +6169,9 @@ function renderMatches() {
   const wishBadge = document.getElementById('wish-badge-nav');
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
 
-function updateActivityBadge() { /* eliminado */ return;
-  const actBadge = null;
-  const actDot = null;
+function updateActivityBadge() {
+  const actBadge = document.getElementById('activity-badge-nav');
+  const actDot = document.getElementById('activity-dot');
   if (!actBadge) return;
   // Calcular total pendiente: propuestas recibidas pending + countered + confirmaciones pendientes
   const pendingProposals = (window._pendingProposalCount || 0);
@@ -6187,7 +6297,7 @@ async function proposeFromMatch(theirItemId, matchId) {
 
 
 // ═══ CHAINS ═══
-function renderChains() { /* eliminado */ return;
+function renderChains() {
   const list = document.getElementById('chains-list');
   if(!list) return;
   if(!chains.length) {
@@ -6345,8 +6455,8 @@ function acceptChain(chainId) {
   }, 3000);
 }
 
-function closeChainModal() { /* eliminado */ }
-function closeChainModalBg(e) { /* eliminado */ }
+function closeChainModal() { document.getElementById('chain-modal-overlay').classList.remove('open'); }
+function closeChainModalBg(e) { if(e.target===document.getElementById('chain-modal-overlay')) closeChainModal(); }
 
 // ═══ CONFIRMATIONS ═══
 async function renderConfirmations() {
@@ -6748,8 +6858,8 @@ async function reportIssue(cfId) {
   showToast('🚨 Incidencia registrada · Te contactaremos pronto');
 }
 
-function closeConfirmModal() { /* eliminado */ }
-function closeConfirmModalBg(e) { /* eliminado */ }
+function closeConfirmModal() { document.getElementById('confirm-modal-overlay').classList.remove('open'); }
+function closeConfirmModalBg(e) { if(e.target===document.getElementById('confirm-modal-overlay')) closeConfirmModal(); }
 
 // Descartar trueque completado de la lista de confirmaciones (sin valorar)
 async function dismissCompletedTrade(convId, btn) {
@@ -7333,7 +7443,7 @@ async function openConv(convId) {
   // Recargar lista para marcar activo
   loadConversations();
 
-  // Canal Realtime — solo INSERT (DELETE no funciona con filter en Supabase sin replica identity)
+  // Canal Realtime para nuevos mensajes en esta conversación (sustituye el setInterval de 5s)
   if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
   msgPollingInterval = db
     .channel('chat-msgs-' + convId)
@@ -7342,10 +7452,13 @@ async function openConv(convId) {
       schema: 'public',
       table: 'messages',
       filter: `conversation_id=eq.${convId}`,
-    }, (payload) => {
-      // Solo añadir el mensaje nuevo al DOM, sin recargar todo
-      if (activeConvId === convId) appendMessage(payload.new);
-    })
+    }, () => { if (activeConvId === convId) loadMessages(convId); })
+    .on('postgres_changes', {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'messages',
+      filter: `conversation_id=eq.${convId}`,
+    }, () => { if (activeConvId === convId) loadMessages(convId); })
     .subscribe((status, err) => {
       if (status === 'SUBSCRIBED') console.log(`[Realtime] ✅ chat-msgs:${convId} → SUBSCRIBED`);
       else if (status === 'CHANNEL_ERROR') console.warn(`[Realtime] ❌ chat-msgs:${convId} error:`, err);
@@ -7386,60 +7499,7 @@ async function cancelTrade(convId) {
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
 }
 
-// Set de IDs de mensajes eliminados para no rerenderizarlos si se recarga
-const _deletedMsgIds = new Set();
-
-// Añade UN mensaje nuevo al DOM sin recargar todo el chat
-function appendMessage(m) {
-  const el = document.getElementById('chat-msgs');
-  if (!el || !currentUser) return;
-  // Si ya existe en el DOM, no duplicar
-  if (document.getElementById('msg-' + m.id)) return;
-
-  const conv = activeConvData;
-  const isUser1 = conv && conv.user1_id === currentUser.id;
-  const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
-  const otherUserId = conv ? (isUser1 ? conv.user2_id : conv.user1_id) : null;
-  const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
-  const otherAvatarChat = otherUserId ? (items.find(i => i.user_id === otherUserId)?.userAvatar || null) : null;
-
-  const isOut = m.sender_id === currentUser.id;
-  const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
-  const msgAvatarHtml = otherAvatarChat
-    ? `<img src="${otherAvatarChat}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
-    : `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>`;
-
-  const div = document.createElement('div');
-  div.className = `msg ${isOut ? 'msg-out' : 'msg-in'}`;
-  div.id = 'msg-' + m.id;
-  div.innerHTML = `
-    ${!isOut ? msgAvatarHtml : ''}
-    <div>
-      ${isOut ? `<div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
-        <button onclick="deleteMessage('${m.id}')" class="msg-delete-btn" title="Eliminar">🗑</button>
-        <div class="bubble bubble-out">${m.text}</div>
-      </div>` : `<div class="bubble bubble-in">${m.text}</div>`}
-      <div class="msg-time" style="text-align:${isOut?'right':'left'}">${time}</div>
-    </div>`;
-  el.appendChild(div);
-  scrollMsgs();
-}
-
-async function deleteMessage(msgId) {
-  if (!currentUser) { showToast('⚠️ No hay sesión'); return; }
-  // 1. Quitar del DOM inmediatamente
-  const el = document.getElementById('msg-' + msgId);
-  if (el) el.remove();
-  // 2. Guardar en el set local para que loadMessages no lo vuelva a pintar
-  _deletedMsgIds.add(msgId);
-  // 3. Borrar en Supabase (fire & forget — si falla mostramos error pero no revertimos)
-  const { error } = await db.from('messages').delete().eq('id', msgId).eq('sender_id', currentUser.id);
-  if (error) {
-    showToast('⚠️ No se pudo borrar en el servidor: ' + error.message);
-  } else {
-    showToast('🗑 Mensaje eliminado');
-  }
-}
+async function loadMessages(convId) {
   const { data, error } = await db
     .from('messages')
     .select('id,conversation_id,sender_id,text,created_at')
@@ -7467,15 +7527,12 @@ async function deleteMessage(msgId) {
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${conv ? conv.item1_title + ' ↔ ' + conv.item2_title : ''}</div>
     </div>`;
 
-  // Filtrar mensajes eliminados localmente
-  const visibleData = (data || []).filter(m => !_deletedMsgIds.has(m.id));
-
-  if (!visibleData.length) {
+  if (!data || !data.length) {
     el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
     return;
   }
 
-  el.innerHTML = systemMsg + visibleData.map(m => {
+  el.innerHTML = systemMsg + data.map(m => {
     const isOut = m.sender_id === currentUser.id;
     const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
     const msgAvatarHtml = otherAvatarChat
@@ -7494,6 +7551,17 @@ async function deleteMessage(msgId) {
   }).join('');
 
   scrollMsgs();
+}
+
+async function deleteMessage(msgId) {
+  if (!currentUser) { showToast('⚠️ No hay sesión'); return; }
+  console.log('Eliminando mensaje:', msgId);
+  const { error } = await db.from('messages').delete().eq('id', msgId).eq('sender_id', currentUser.id);
+  console.log('Resultado delete:', error);
+  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+  const el = document.getElementById('msg-' + msgId);
+  if (el) el.remove();
+  showToast('🗑 Mensaje eliminado');
 }
 
 // Pulsación larga en móvil para mostrar botón eliminar
@@ -7524,17 +7592,14 @@ async function sendMessage() {
 
   const senderName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
 
-  const { data: inserted, error } = await db.from('messages').insert([{
+  const { error } = await db.from('messages').insert([{
     conversation_id: activeConvId,
     sender_id: currentUser.id,
     sender_name: senderName,
     text,
-  }]).select().single();
+  }]);
 
-  if (error) { showToast('⚠️ Error al enviar'); input.value = text; return; }
-
-  // Añadir al DOM de inmediato (el Realtime no llega al propio remitente)
-  if (inserted) appendMessage(inserted);
+  if (error) { showToast('⚠️ Error al enviar'); return; }
 
   // Actualizar last_message e incrementar unread del otro usuario
   const conv = await db.from('conversations')
@@ -7551,6 +7616,7 @@ async function sendMessage() {
     }).eq('id', activeConvId);
   }
 
+  loadMessages(activeConvId);
   loadConversations();
 }
 
@@ -10721,7 +10787,7 @@ document.addEventListener('mouseup', e => {
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
-    <button class="bnav-btn" id="bnav-demand" onclick="navTo('demand')"><span>💡</span><span class="bnav-label">Comunidad</span></button>
+    <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
     <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
       <span class="bnav-publish-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
