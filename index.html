@@ -144,9 +144,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 }
 .bottom-nav-inner{display:flex;}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;background:none;border:none;cursor:pointer;}
-.bnav-btn span:first-child{font-size:19px;transition:all .15s;}
+.bnav-btn span:first-child{font-size:17px;transition:all .15s;}
 .bnav-btn:not(.active) span:first-child{filter:grayscale(1);opacity:.4;}
-.bnav-label{font-size:9px;font-weight:600;letter-spacing:.02em;color:var(--muted2);}
+.bnav-label{font-size:8.5px;font-weight:600;letter-spacing:.01em;color:var(--muted2);}
 .bnav-btn.active .bnav-label{color:var(--accent);}
 
 /* ── LAYOUT ── */
@@ -1853,6 +1853,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="ntab-explore" onclick="navTo('explore')">Explorar</button>
+      <button class="nav-tab" id="ntab-demand" onclick="navTo('demand')">💡 Comunidad</button>
       <button class="nav-tab" id="ntab-activity" onclick="navTo('activity')">
         <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
         <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent)">6</span>
@@ -2641,22 +2642,54 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <!-- MATCHES (legacy alias) -->
 <div class="view" id="view-matches" style="display:none"></div>
 
-<!-- DEMANDA PÚBLICA -->
+<!-- COMUNIDAD (ex-DEMANDA PÚBLICA) -->
 <div class="view" id="view-demand">
   <div class="wrap page-pad">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem">💡 Lo que busca la comunidad</div>
-    </div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">Si tienes algo de lo que buscan, ¡publícalo y genera un match!</div>
-    <div id="demand-search-bar" style="margin-bottom:16px">
-      <div class="search-bar" style="background:var(--white)">
-        <span style="color:var(--muted);font-size:14px">🔍</span>
-        <input placeholder="Buscar en la demanda..." oninput="filterDemand(this.value)" id="demand-search-input">
+
+    <!-- Hero banner -->
+    <div style="background:linear-gradient(135deg,#0f1f33 0%,#1a3050 100%);border-radius:var(--r-lg);padding:28px 28px 24px;margin-bottom:24px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:5rem;opacity:.07;pointer-events:none">💡</div>
+      <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem;color:#fff;margin-bottom:6px;letter-spacing:-.02em">Lo que busca la comunidad</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:18px;max-width:420px">Si tienes algo de lo que buscan, publícalo y genera un match automático. La demanda en tiempo real.</div>
+      <!-- Stats en vivo -->
+      <div style="display:flex;gap:20px;flex-wrap:wrap">
+        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;color:#fff" id="demand-stat-wishes">—</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:1px">deseos activos</div></div>
+        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;color:#fff" id="demand-stat-users">—</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:1px">usuarios buscando</div></div>
+        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;color:#fff" id="demand-stat-cats">—</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:1px">categorías</div></div>
       </div>
     </div>
-    <div id="demand-list" style="display:flex;flex-direction:column;gap:10px">
-      <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>
+
+    <!-- Buscador -->
+    <div style="margin-bottom:16px">
+      <div class="search-bar" style="background:var(--white)">
+        <span style="color:var(--muted);font-size:14px">🔍</span>
+        <input placeholder="Buscar en la comunidad..." oninput="filterDemand(this.value)" id="demand-search-input" style="background:none;border:none;color:var(--text);font-size:14px;outline:none;width:100%">
+      </div>
     </div>
+
+    <!-- Tabs: Más buscado / Por categoría -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px">
+      <button class="match-tab active" id="dtab-trending" onclick="switchDemandTab('trending')">🔥 Más buscado</button>
+      <button class="match-tab" id="dtab-cats" onclick="switchDemandTab('cats')">📂 Por categoría</button>
+      <button class="match-tab" id="dtab-recent" onclick="switchDemandTab('recent')">🕒 Reciente</button>
+    </div>
+
+    <!-- Lista principal -->
+    <div id="demand-list" style="display:flex;flex-direction:column;gap:10px">
+      <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando comunidad...</div>
+    </div>
+
+    <!-- CTA al fondo -->
+    <div style="margin-top:28px;background:var(--accent-l);border:1.5px solid rgba(78,143,186,.2);border-radius:var(--r-lg);padding:20px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.92rem;margin-bottom:3px">¿Tienes algo que busca la comunidad?</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">Publícalo ahora y recibe propuestas de intercambio al momento.</div>
+      </div>
+      <button class="btn btn-primary btn-md" onclick="navTo('publish')">+ Publicar objeto</button>
+    </div>
+
   </div>
 </div>
 
@@ -5636,6 +5669,7 @@ async function loadPublicDemand() {
     .sort((a, b) => b.users.length - a.users.length);
 
   _renderDemandList(_demandData);
+  _updateDemandHeroStats();
 }
 
 function _renderDemandList(list) {
@@ -5761,6 +5795,44 @@ function filterDemand(q) {
   const ql = q.toLowerCase();
   const filtered = _demandData.filter(d => d.label.toLowerCase().includes(ql));
   _renderDemandList(filtered);
+}
+
+// ── Tabs de Comunidad ──
+let _demandTab = 'trending';
+function switchDemandTab(tab) {
+  _demandTab = tab;
+  // Actualizar estilos de tabs
+  ['trending','cats','recent'].forEach(t => {
+    const btn = document.getElementById('dtab-' + t);
+    if (btn) {
+      btn.classList.toggle('active', t === tab);
+    }
+  });
+  // Ordenar/filtrar según tab
+  let sorted = [..._demandData];
+  if (tab === 'trending') {
+    sorted.sort((a, b) => b.users.length - a.users.length);
+  } else if (tab === 'cats') {
+    sorted.sort((a, b) => a.label.localeCompare(b.label));
+  } else if (tab === 'recent') {
+    // "reciente" — invertir el orden (los últimos añadidos primero)
+    sorted.reverse();
+  }
+  _renderDemandList(sorted);
+}
+
+// ── Actualizar estadísticas del hero de Comunidad ──
+function _updateDemandHeroStats() {
+  if (!_demandData.length) return;
+  const totalWishes = _demandData.reduce((s, d) => s + d.users.length, 0);
+  const uniqueUsers = new Set(_demandData.flatMap(d => d.users.map(u => u.user_id))).size;
+  const uniqueCats = new Set(_demandData.flatMap(d => d.users.flatMap(u => u.items.map(i => i.item_cat)))).size;
+  const ws = document.getElementById('demand-stat-wishes');
+  const us = document.getElementById('demand-stat-users');
+  const cs = document.getElementById('demand-stat-cats');
+  if (ws) ws.textContent = totalWishes > 999 ? '+' + Math.floor(totalWishes/1000) + 'k' : totalWishes;
+  if (us) us.textContent = uniqueUsers;
+  if (cs) cs.textContent = uniqueCats;
 }
 // ═══ FIN DEMANDA PÚBLICA ═══
 
@@ -10787,7 +10859,7 @@ document.addEventListener('mouseup', e => {
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
-    <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
+    <button class="bnav-btn" id="bnav-demand" onclick="navTo('demand')"><span>💡</span><span class="bnav-label">Comunidad</span></button>
     <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
       <span class="bnav-publish-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
