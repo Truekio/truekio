@@ -2646,18 +2646,18 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <div class="view" id="view-demand">
   <div class="wrap page-pad">
 
-    <!-- Hero banner -->
-    <div style="background:linear-gradient(135deg,#0f1f33 0%,#1a3050 100%);border-radius:var(--r-lg);padding:28px 28px 24px;margin-bottom:24px;position:relative;overflow:hidden">
-      <div style="position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:5rem;opacity:.07;pointer-events:none">💡</div>
-      <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.4rem;color:#fff;margin-bottom:6px;letter-spacing:-.02em">Lo que busca la comunidad</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:18px;max-width:420px">Si tienes algo de lo que buscan, publícalo y genera un match automático. La demanda en tiempo real.</div>
+    <!-- Hero banner — colores del design system -->
+    <div style="background:var(--accent-l);border:1.5px solid rgba(78,143,186,.18);border-radius:var(--r-lg);padding:24px 26px 20px;margin-bottom:22px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:4.5rem;opacity:.08;pointer-events:none">💡</div>
+      <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.25rem;color:var(--text);margin-bottom:5px;letter-spacing:-.02em">Lo que busca la comunidad</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;max-width:420px">Si tienes algo de lo que buscan, publícalo y genera un match automático.</div>
       <!-- Stats en vivo -->
       <div style="display:flex;gap:20px;flex-wrap:wrap">
-        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;color:#fff" id="demand-stat-wishes">—</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:1px">deseos activos</div></div>
-        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
-        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;color:#fff" id="demand-stat-users">—</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:1px">usuarios buscando</div></div>
-        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
-        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;color:#fff" id="demand-stat-cats">—</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:1px">categorías</div></div>
+        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;color:var(--accent)" id="demand-stat-wishes">—</div><div style="font-size:11px;color:var(--muted);margin-top:1px">deseos activos</div></div>
+        <div style="width:1px;background:var(--border)"></div>
+        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;color:var(--accent)" id="demand-stat-users">—</div><div style="font-size:11px;color:var(--muted);margin-top:1px">usuarios buscando</div></div>
+        <div style="width:1px;background:var(--border)"></div>
+        <div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.25rem;color:var(--accent)" id="demand-stat-cats">—</div><div style="font-size:11px;color:var(--muted);margin-top:1px">categorías</div></div>
       </div>
     </div>
 
@@ -2669,11 +2669,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
 
-    <!-- Tabs: Más buscado / Por categoría -->
+    <!-- Tabs: Más buscado / Por categoría (sin Reciente) -->
     <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px">
       <button class="match-tab active" id="dtab-trending" onclick="switchDemandTab('trending')">🔥 Más buscado</button>
       <button class="match-tab" id="dtab-cats" onclick="switchDemandTab('cats')">📂 Por categoría</button>
-      <button class="match-tab" id="dtab-recent" onclick="switchDemandTab('recent')">🕒 Reciente</button>
     </div>
 
     <!-- Lista principal -->
@@ -5802,21 +5801,21 @@ let _demandTab = 'trending';
 function switchDemandTab(tab) {
   _demandTab = tab;
   // Actualizar estilos de tabs
-  ['trending','cats','recent'].forEach(t => {
+  ['trending','cats'].forEach(t => {
     const btn = document.getElementById('dtab-' + t);
-    if (btn) {
-      btn.classList.toggle('active', t === tab);
+    if (!btn) return;
+    if (t === tab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
     }
   });
-  // Ordenar/filtrar según tab
+  // Ordenar según tab
   let sorted = [..._demandData];
   if (tab === 'trending') {
     sorted.sort((a, b) => b.users.length - a.users.length);
   } else if (tab === 'cats') {
-    sorted.sort((a, b) => a.label.localeCompare(b.label));
-  } else if (tab === 'recent') {
-    // "reciente" — invertir el orden (los últimos añadidos primero)
-    sorted.reverse();
+    sorted.sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }
   _renderDemandList(sorted);
 }
