@@ -7333,7 +7333,7 @@ async function openConv(convId) {
   // Recargar lista para marcar activo
   loadConversations();
 
-  // Canal Realtime para nuevos mensajes en esta conversación (sustituye el setInterval de 5s)
+  // Canal Realtime — solo INSERT (DELETE no funciona con filter en Supabase sin replica identity)
   if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
   msgPollingInterval = db
     .channel('chat-msgs-' + convId)
@@ -7342,13 +7342,10 @@ async function openConv(convId) {
       schema: 'public',
       table: 'messages',
       filter: `conversation_id=eq.${convId}`,
-    }, () => { if (activeConvId === convId) loadMessages(convId); })
-    .on('postgres_changes', {
-      event: 'DELETE',
-      schema: 'public',
-      table: 'messages',
-      filter: `conversation_id=eq.${convId}`,
-    }, () => { if (activeConvId === convId) loadMessages(convId); })
+    }, (payload) => {
+      // Solo añadir el mensaje nuevo al DOM, sin recargar todo
+      if (activeConvId === convId) appendMessage(payload.new);
+    })
     .subscribe((status, err) => {
       if (status === 'SUBSCRIBED') console.log(`[Realtime] ✅ chat-msgs:${convId} → SUBSCRIBED`);
       else if (status === 'CHANNEL_ERROR') console.warn(`[Realtime] ❌ chat-msgs:${convId} error:`, err);
@@ -7389,10 +7386,60 @@ async function cancelTrade(convId) {
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
 }
 
-// Set de IDs de mensajes eliminados localmente para no rerenderizarlos
+// Set de IDs de mensajes eliminados para no rerenderizarlos si se recarga
 const _deletedMsgIds = new Set();
 
-async function loadMessages(convId) {
+// Añade UN mensaje nuevo al DOM sin recargar todo el chat
+function appendMessage(m) {
+  const el = document.getElementById('chat-msgs');
+  if (!el || !currentUser) return;
+  // Si ya existe en el DOM, no duplicar
+  if (document.getElementById('msg-' + m.id)) return;
+
+  const conv = activeConvData;
+  const isUser1 = conv && conv.user1_id === currentUser.id;
+  const otherName = conv ? (isUser1 ? conv.user2_name : conv.user1_name) : 'Usuario';
+  const otherUserId = conv ? (isUser1 ? conv.user2_id : conv.user1_id) : null;
+  const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
+  const otherAvatarChat = otherUserId ? (items.find(i => i.user_id === otherUserId)?.userAvatar || null) : null;
+
+  const isOut = m.sender_id === currentUser.id;
+  const time = new Date(m.created_at).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+  const msgAvatarHtml = otherAvatarChat
+    ? `<img src="${otherAvatarChat}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+    : `<div class="msg-avatar-sm" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>`;
+
+  const div = document.createElement('div');
+  div.className = `msg ${isOut ? 'msg-out' : 'msg-in'}`;
+  div.id = 'msg-' + m.id;
+  div.innerHTML = `
+    ${!isOut ? msgAvatarHtml : ''}
+    <div>
+      ${isOut ? `<div style="display:flex;align-items:flex-end;justify-content:flex-end;gap:4px">
+        <button onclick="deleteMessage('${m.id}')" class="msg-delete-btn" title="Eliminar">🗑</button>
+        <div class="bubble bubble-out">${m.text}</div>
+      </div>` : `<div class="bubble bubble-in">${m.text}</div>`}
+      <div class="msg-time" style="text-align:${isOut?'right':'left'}">${time}</div>
+    </div>`;
+  el.appendChild(div);
+  scrollMsgs();
+}
+
+async function deleteMessage(msgId) {
+  if (!currentUser) { showToast('⚠️ No hay sesión'); return; }
+  // 1. Quitar del DOM inmediatamente
+  const el = document.getElementById('msg-' + msgId);
+  if (el) el.remove();
+  // 2. Guardar en el set local para que loadMessages no lo vuelva a pintar
+  _deletedMsgIds.add(msgId);
+  // 3. Borrar en Supabase (fire & forget — si falla mostramos error pero no revertimos)
+  const { error } = await db.from('messages').delete().eq('id', msgId).eq('sender_id', currentUser.id);
+  if (error) {
+    showToast('⚠️ No se pudo borrar en el servidor: ' + error.message);
+  } else {
+    showToast('🗑 Mensaje eliminado');
+  }
+}
   const { data, error } = await db
     .from('messages')
     .select('id,conversation_id,sender_id,text,created_at')
@@ -7449,25 +7496,6 @@ async function loadMessages(convId) {
   scrollMsgs();
 }
 
-async function deleteMessage(msgId) {
-  if (!currentUser) { showToast('⚠️ No hay sesión'); return; }
-  // Marcar como eliminado localmente ANTES de llamar a Supabase
-  _deletedMsgIds.add(msgId);
-  // Quitar del DOM inmediatamente
-  const el = document.getElementById('msg-' + msgId);
-  if (el) el.remove();
-  // Eliminar en Supabase
-  const { error } = await db.from('messages').delete().eq('id', msgId).eq('sender_id', currentUser.id);
-  if (error) {
-    // Si falla, revertir
-    _deletedMsgIds.delete(msgId);
-    showToast('⚠️ Error al eliminar: ' + error.message);
-    loadMessages(activeConvId);
-    return;
-  }
-  showToast('🗑 Mensaje eliminado');
-}
-
 // Pulsación larga en móvil para mostrar botón eliminar
 let _longPressTimer = null;
 document.addEventListener('touchstart', e => {
@@ -7496,14 +7524,17 @@ async function sendMessage() {
 
   const senderName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
 
-  const { error } = await db.from('messages').insert([{
+  const { data: inserted, error } = await db.from('messages').insert([{
     conversation_id: activeConvId,
     sender_id: currentUser.id,
     sender_name: senderName,
     text,
-  }]);
+  }]).select().single();
 
-  if (error) { showToast('⚠️ Error al enviar'); return; }
+  if (error) { showToast('⚠️ Error al enviar'); input.value = text; return; }
+
+  // Añadir al DOM de inmediato (el Realtime no llega al propio remitente)
+  if (inserted) appendMessage(inserted);
 
   // Actualizar last_message e incrementar unread del otro usuario
   const conv = await db.from('conversations')
@@ -7520,7 +7551,6 @@ async function sendMessage() {
     }).eq('id', activeConvId);
   }
 
-  loadMessages(activeConvId);
   loadConversations();
 }
 
