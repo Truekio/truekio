@@ -4906,41 +4906,37 @@ async function loadProposals() {
   }
   el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
 
-  const { data, error } = await db
-    .from('proposals')
-    .select('id,item_id,item_title,item_emoji,offered_item_id,offered_item_title,offered_item_emoji,owner_id,offerer_id,offerer_name,status,counter_by,counter_offer,created_at,note')
-    .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
-    .in('status', ['pending', 'countered'])
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await db
+      .from('proposals')
+      .select('id,item_id,item_title,item_emoji,offered_item_id,offered_item_title,offered_item_emoji,owner_id,offerer_id,offerer_name,status,counter_by,counter_offer,created_at,note')
+      .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
+      .in('status', ['pending', 'countered'])
+      .order('created_at', { ascending: false });
 
-  if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
+    if (error) throw new Error(error.message);
 
-  // Cargar fotos de todos los items involucrados
-  const allItemIds = [...new Set(data.flatMap(p => [p.item_id, p.offered_item_id]).filter(Boolean))];
-  let itemPhotos = {}; // id → first photo url
-  if (allItemIds.length) {
-    const { data: itemData } = await db.from('items')
-      .select('id, photos, photo_urls')
-      .in('id', allItemIds);
-    if (itemData) itemData.forEach(i => {
-      itemPhotos[i.id] = (i.photo_urls && i.photo_urls[0]) || i.photos || '';
-    });
-  }
+    // Badge con pendientes
+    const pending = (data||[]).filter(p => p.owner_id === currentUser.id && p.status === 'pending');
+    const myTurnCountered = (data||[]).filter(p => p.status === 'countered' && p.counter_by !== currentUser.id);
+    const totalPending = pending.length + myTurnCountered.length;
+    const badge = document.getElementById('mtab-proposals-count');
+    if (badge) { badge.textContent = totalPending; badge.style.display = totalPending ? '' : 'none'; }
+    window._pendingProposalCount = totalPending;
+    if (typeof updateActivityBadge === 'function') updateActivityBadge();
 
-  // Badge con pendientes recibidas (pending + countered donde me toca responder)
-  const pending = data.filter(p => p.owner_id === currentUser.id && p.status === 'pending');
-  const myTurnCountered = data.filter(p => p.status === 'countered' && p.counter_by !== currentUser.id);
-  const totalPending = pending.length + myTurnCountered.length;
-  const badge = document.getElementById('mtab-proposals-count');
-  if (badge) { badge.textContent = totalPending; badge.style.display = totalPending ? '' : 'none'; }
-  // Guardar para el badge global de actividad
-  window._pendingProposalCount = totalPending;
-  if (typeof updateActivityBadge === 'function') updateActivityBadge();
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes propuestas.<br><span style="font-size:12px">Cuando alguien proponga un trueque contigo aparecerá aquí.</span></div>';
+      return;
+    }
 
-  if (!data.length) {
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes propuestas.<br><span style="font-size:12px">Cuando alguien proponga un trueque contigo aparecerá aquí.</span></div>';
-    return;
-  }
+    // Cargar fotos
+    const allItemIds = [...new Set(data.flatMap(p => [p.item_id, p.offered_item_id]).filter(Boolean))];
+    let itemPhotos = {};
+    if (allItemIds.length) {
+      const { data: itemData } = await db.from('items').select('id, photos, photo_urls').in('id', allItemIds);
+      if (itemData) itemData.forEach(i => { itemPhotos[i.id] = (i.photo_urls && i.photo_urls[0]) || i.photos || ''; });
+    }
 
   el.innerHTML = data.map(p => {
     const isOwner = p.owner_id === currentUser.id;
@@ -5020,6 +5016,9 @@ async function loadProposals() {
       </div>
     </div>`;
   }).join('');
+  } catch(e) {
+    if (el) el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⚠️ Error: ${e.message}</div>`;
+  }
 }
 
 async function deleteProposal(proposalId) {
@@ -5415,39 +5414,27 @@ let _demandData = [];
 async function loadPublicDemand() {
   const el = document.getElementById('demand-list');
   if (!el) return;
-  el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
+  el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando comunidad...</div>';
 
   try {
-    // Query única — items disponibles con todo lo necesario
     let query = db.from('items')
       .select('id, title, emoji, photo_urls, user_id, user_name, wants, category')
-      .eq('status', 'available')
-      .not('wants', 'is', null)
-      .neq('wants', '');
-
+      .eq('status', 'available');
     if (currentUser?.id) query = query.neq('user_id', currentUser.id);
 
     const { data: allItems, error } = await query;
-
     if (error) throw new Error(error.message);
 
     if (!allItems || !allItems.length) {
-      el.innerHTML = `<div style="padding:60px 20px;text-align:center">
-        <div style="font-size:3rem;margin-bottom:12px">🔍</div>
-        <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Aún no hay demanda</div>
-        <div style="font-size:13px;color:var(--muted)">Sé el primero en publicar un objeto.</div>
-      </div>`;
+      el.innerHTML = '<div style="padding:60px 20px;text-align:center"><div style="font-size:3rem;margin-bottom:12px">🔍</div><div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Aún no hay objetos publicados</div><div style="font-size:13px;color:var(--muted)">Sé el primero en publicar un objeto.</div></div>';
       return;
     }
 
-    // Agrupar por want
+    // Agrupar por lo que buscan a cambio (campo wants)
     const groups = {};
     allItems.forEach(item => {
-      if (!item.wants) return;
-      const wantList = typeof item.wants === 'string'
-        ? item.wants.split(',').map(w => w.trim()).filter(w => w.length > 1)
-        : [];
-
+      if (!item.wants || item.wants.trim().length < 2) return;
+      const wantList = item.wants.split(',').map(w => w.trim()).filter(w => w.length > 1);
       wantList.forEach(w => {
         const key = w.toLowerCase().trim();
         if (!groups[key]) groups[key] = { label: w, cat: item.category, users: new Set(), items: [] };
@@ -5459,17 +5446,17 @@ async function loadPublicDemand() {
     _demandData = Object.values(groups)
       .filter(g => g.users.size > 0)
       .sort((a, b) => b.users.size - a.users.size)
-      .map(g => ({
-        label: g.label,
-        cat: g.cat,
-        userCount: g.users.size,
-        items: g.items.slice(0, 5)
-      }));
+      .map(g => ({ label: g.label, cat: g.cat, userCount: g.users.size, items: g.items.slice(0, 5) }));
+
+    if (!_demandData.length) {
+      el.innerHTML = '<div style="padding:60px 20px;text-align:center"><div style="font-size:3rem;margin-bottom:12px">📦</div><div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">'+allItems.length+' objetos publicados</div><div style="font-size:13px;color:var(--muted)">Ninguno ha especificado qué quiere a cambio todavía.</div><button class="btn btn-primary btn-md" style="margin-top:16px" onclick="navTo(\'publish\')">+ Publicar objeto</button></div>';
+      return;
+    }
 
     _renderDemandList(_demandData);
 
   } catch(e) {
-    el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⚠️ Error: ${e.message}</div>`;
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⚠️ Error al cargar: ' + e.message + '</div>';
   }
 }
 
