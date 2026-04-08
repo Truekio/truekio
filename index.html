@@ -1854,10 +1854,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="nav-tabs">
       <button class="nav-tab active" id="ntab-explore" onclick="navTo('explore')">Explorar</button>
       <button class="nav-tab" id="ntab-demand" onclick="navTo('demand')">💡 Comunidad</button>
-      <button class="nav-tab" id="ntab-activity" onclick="navTo('activity')">
-        <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
-        <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent)">6</span>
-      </button>
       <button class="nav-tab" id="ntab-messages" onclick="navTo('messages')">Mensajes <span class="nav-badge green" id="msg-badge-nav" style="display:none">3</span></button>
     </div>
     <div class="nav-right">
@@ -2599,49 +2595,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </div>
 
-<!-- ACTIVITY HUB -->
-<div class="view" id="view-activity">
-  <!-- Barra de tabs sticky -->
-  <div class="activity-sticky">
-    <div class="wrap">
-      <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
-        <div style="display:flex;gap:0;min-width:max-content">
-          <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
-          <button class="match-tab" id="mtab-chain" onclick="switchMatchTab('chain')">🔗 Cadenas <span class="nav-badge" style="background:var(--purple)" id="mtab-chain-count">2</span></button>
-          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Contenido -->
-  <div class="wrap page-pad" style="padding-top:24px">
-    <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
-    <div id="matches-proposals" class="match-tab-content active">
-      <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
-    </div>
-    <div id="matches-chain" class="match-tab-content" style="display:none">
-      <div style="background:var(--purple-l);border:1px solid rgba(99,68,168,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
-        <div style="font-size:1.6rem;flex-shrink:0">🔗</div>
-        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--purple)">Cadenas de trueque</div><div style="font-size:12px;color:var(--purple);opacity:.8;line-height:1.6">A da a B → B da a C → C da a A. Todos consiguen lo que quieren sin match directo.</div></div>
-      </div>
-      <div id="chains-list"></div>
-    </div>
-    <div id="matches-confirm" class="match-tab-content" style="display:none">
-      <div style="background:var(--green-l);border:1px solid rgba(45,158,95,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
-        <div style="font-size:1.6rem;flex-shrink:0">🛡️</div>
-        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--green)">Confirmación de recepción</div><div style="font-size:12px;color:var(--green);opacity:.8;line-height:1.6">El trueque no se cierra hasta que ambas partes confirman la recepción.</div></div>
-      </div>
-      <div id="confirmations-list"></div>
-    </div>
-    <div id="matches-wishlist-act" class="match-tab-content" style="display:none">
-      <div id="activity-wishlist-content"></div>
-    </div>
-  </div><!-- end contenido -->
-</div><!-- end view-activity -->
-
-<!-- MATCHES (legacy alias) -->
-<div class="view" id="view-matches" style="display:none"></div>
-
 <!-- COMUNIDAD (ex-DEMANDA PÚBLICA) -->
 <div class="view" id="view-demand">
   <div class="wrap page-pad">
@@ -2689,28 +2642,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <button class="btn btn-primary btn-md" onclick="navTo('publish')">+ Publicar objeto</button>
     </div>
 
-  </div>
-</div>
-
-<!-- CONFIRMATION MODAL -->
-<div class="modal-overlay" id="confirm-modal-overlay" onclick="closeConfirmModalBg(event)">
-  <div class="modal-box" style="max-width:500px">
-    <div class="modal-head">
-      <div><div class="modal-title" id="confirm-modal-title">Confirmar recepción</div><div class="modal-sub" id="confirm-modal-sub">¿Has recibido el objeto en buen estado?</div></div>
-      <button class="modal-close" onclick="closeConfirmModal()">×</button>
-    </div>
-    <div class="modal-body" id="confirm-modal-body"></div>
-  </div>
-</div>
-
-<!-- CHAIN DETAIL MODAL -->
-<div class="modal-overlay" id="chain-modal-overlay" onclick="closeChainModalBg(event)">
-  <div class="modal-box" style="max-width:560px">
-    <div class="modal-head">
-      <div><div class="modal-title">🔗 Cadena de trueque</div><div class="modal-sub">Todos los participantes deben aceptar para activar la cadena</div></div>
-      <button class="modal-close" onclick="closeChainModal()">×</button>
-    </div>
-    <div class="modal-body" id="chain-modal-body"></div>
   </div>
 </div>
 
@@ -4216,10 +4147,12 @@ function requireAuth(intendedView) {
 }
 
 function navTo(v) {
-  // Redirect home/matches/wishlist
+  // Redirects legacy
   if(v === 'home') v = 'explore';
-  if(v === 'matches') { navToActivity('proposals'); return; }
-  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
+  if(v === 'matches') { navTo('messages'); return; }
+  if(v === 'activity') { navTo('messages'); return; }
+  if(v === 'wishlist-act') { navTo('wishlist'); return; }
+
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('view-'+v);
   if(el) el.classList.add('active');
@@ -4231,23 +4164,18 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
+
+  const authRequired = ['publish','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) { requireAuth(v); return; }
 
   if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
+    pubCurrentScreen = 1; pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -4256,40 +4184,8 @@ function navTo(v) {
 }
 
 function navToActivity(tab) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-activity').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  const nt = document.getElementById('ntab-activity');
-  if(nt) nt.classList.add('active');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-activity');
-  if(bn) bn.classList.add('active');
-  switchMatchTab(tab || 'proposals');
-  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
-  closeNotif();
-  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
+  // Actividad eliminada — redirigir a Mensajes
+  navTo('messages');
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -4472,10 +4368,12 @@ function renderHomeItems() {
 
 
 function navTo(v) {
-  // Redirect home/matches/wishlist
+  // Redirects legacy
   if(v === 'home') v = 'explore';
-  if(v === 'matches') { navToActivity('proposals'); return; }
-  if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
+  if(v === 'matches') { navTo('messages'); return; }
+  if(v === 'activity') { navTo('messages'); return; }
+  if(v === 'wishlist-act') { navTo('wishlist'); return; }
+
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('view-'+v);
   if(el) el.classList.add('active');
@@ -4487,23 +4385,18 @@ function navTo(v) {
   if(bn) bn.classList.add('active');
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
+
+  const authRequired = ['publish','messages','profile','favorites'];
+  if (authRequired.includes(v) && !currentUser) { requireAuth(v); return; }
 
   if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
+    pubCurrentScreen = 1; pubGoTo(1);
     const _bn = document.querySelector('.bottom-nav');
     if (_bn) _bn.style.display = 'none';
   } else {
     const _bn = document.querySelector('.bottom-nav');
     if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
   }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
   if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
   if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
   if(v === 'favorites') renderFavorites();
@@ -4512,40 +4405,8 @@ function navTo(v) {
 }
 
 function navToActivity(tab) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-activity').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  const nt = document.getElementById('ntab-activity');
-  if(nt) nt.classList.add('active');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-activity');
-  if(bn) bn.classList.add('active');
-  switchMatchTab(tab || 'proposals');
-  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
-  closeNotif();
-  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
+  // Actividad eliminada — redirigir a Mensajes
+  navTo('messages');
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -5010,7 +4871,7 @@ function renderExplore(list) {
       icon:'🔍', title:'Sin resultados',
       body:'Prueba con otro término, categoría o ajusta los filtros. También puedes publicar lo que buscas en tu lista de deseos.',
       cta:'Limpiar filtros', ctaAction:"clearAllFilters()",
-      ctaSecondary:'Añadir a lista de deseos', ctaSecondaryAction:"navTo('activity');switchMatchTab('wishlist-act')",
+      ctaSecondary:'Añadir a lista de deseos', ctaSecondaryAction:"navTo('wishlist')",
     }) + `</div>`;
     return;
   }
@@ -5257,7 +5118,7 @@ async function respondProposal(proposalId, status) {
   loadProposals();
 }
 
-function switchMatchTab(tab) {
+function switchMatchTab(tab) { /* eliminado */ return;
   document.querySelectorAll('.match-tab').forEach(b=>b.classList.remove('active'));
   const tabBtn = document.getElementById('mtab-'+tab);
   if(tabBtn) tabBtn.classList.add('active');
@@ -6240,9 +6101,9 @@ function renderMatches() {
   const wishBadge = document.getElementById('wish-badge-nav');
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
 
-function updateActivityBadge() {
-  const actBadge = document.getElementById('activity-badge-nav');
-  const actDot = document.getElementById('activity-dot');
+function updateActivityBadge() { /* eliminado */ return;
+  const actBadge = null;
+  const actDot = null;
   if (!actBadge) return;
   // Calcular total pendiente: propuestas recibidas pending + countered + confirmaciones pendientes
   const pendingProposals = (window._pendingProposalCount || 0);
@@ -6368,7 +6229,7 @@ async function proposeFromMatch(theirItemId, matchId) {
 
 
 // ═══ CHAINS ═══
-function renderChains() {
+function renderChains() { /* eliminado */ return;
   const list = document.getElementById('chains-list');
   if(!list) return;
   if(!chains.length) {
@@ -6526,8 +6387,8 @@ function acceptChain(chainId) {
   }, 3000);
 }
 
-function closeChainModal() { document.getElementById('chain-modal-overlay').classList.remove('open'); }
-function closeChainModalBg(e) { if(e.target===document.getElementById('chain-modal-overlay')) closeChainModal(); }
+function closeChainModal() { /* eliminado */ }
+function closeChainModalBg(e) { /* eliminado */ }
 
 // ═══ CONFIRMATIONS ═══
 async function renderConfirmations() {
@@ -6929,8 +6790,8 @@ async function reportIssue(cfId) {
   showToast('🚨 Incidencia registrada · Te contactaremos pronto');
 }
 
-function closeConfirmModal() { document.getElementById('confirm-modal-overlay').classList.remove('open'); }
-function closeConfirmModalBg(e) { if(e.target===document.getElementById('confirm-modal-overlay')) closeConfirmModal(); }
+function closeConfirmModal() { /* eliminado */ }
+function closeConfirmModalBg(e) { /* eliminado */ }
 
 // Descartar trueque completado de la lista de confirmaciones (sin valorar)
 async function dismissCompletedTrade(convId, btn) {
