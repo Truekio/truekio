@@ -7349,12 +7349,15 @@ async function deleteConversation(convId) {
 
   if (!confirmed) return;
 
+  // Pausar Realtime temporalmente para evitar que recargue la conversación borrada
+  stopConvPolling();
+
   // Eliminar mensajes primero
   await db.from('messages').delete().eq('conversation_id', convId);
   // Eliminar conversación
   const { error } = await db.from('conversations').delete().eq('id', convId);
 
-  if (error) { showToast('⚠️ Error al eliminar: ' + error.message); return; }
+  if (error) { showToast('⚠️ Error al eliminar: ' + error.message); startConvPolling(); return; }
 
   // Si era la activa, limpiar el chat
   if (activeConvId === convId) {
@@ -7378,6 +7381,9 @@ async function deleteConversation(convId) {
   if (el) el.remove();
 
   showToast('🗑 Conversación eliminada');
+
+  // Reanudar Realtime después de un momento
+  setTimeout(() => startConvPolling(), 1500);
 }
 
 function closeMobileChat() {
