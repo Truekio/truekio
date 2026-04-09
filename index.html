@@ -6517,26 +6517,7 @@ async function renderConfirmations() {
     return [];
   };
 
-  const pendingMe = convs.filter(c => {
-    // Excluir canceladas
-    if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
-    // Excluir ocultas
-    const dismissed = (() => { try { return JSON.parse(localStorage.getItem('truquo_dismissed_trades') || '[]'); } catch(e) { return []; } })();
-    if (dismissed.includes(c.id)) return false;
-    const hidden = (() => { try { return JSON.parse(localStorage.getItem(`truquo_hidden_convs_${currentUser.id}`) || '[]'); } catch(e) { return []; } })();
-    if (hidden.includes(c.id)) return false;
-    const confirmed = getConfirmed(c);
-    return !confirmed.includes(currentUser.id);
-  });
 
-  // Actualizar badge
-  const confCount = document.getElementById('mtab-confirm-count');
-  if (confCount) {
-    if (pendingMe.length > 0) { confCount.style.display = ''; confCount.textContent = pendingMe.length; }
-    else confCount.style.display = 'none';
-  }
-  // Actualizar badge global de actividad
-  if (typeof updateActivityBadge === 'function') updateActivityBadge();
 
   // Cargar IDs de conversaciones que el usuario ya valoró
   const { data: myReviews } = await db
@@ -6555,6 +6536,23 @@ async function renderConfirmations() {
 
   // Filtrar: mostrar solo las pendientes de confirmar O de valorar (excluyendo descartadas)
   const dismissed = (() => { try { return JSON.parse(localStorage.getItem('truquo_dismissed_trades') || '[]'); } catch(e) { return []; } })();
+  const hiddenConvs = (() => { try { return JSON.parse(localStorage.getItem(`truquo_hidden_convs_${currentUser.id}`) || '[]'); } catch(e) { return []; } })();
+
+  // Calcular badge: solo conversaciones pendientes de confirmar por el usuario actual
+  const pendingMe = convs.filter(c => {
+    if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
+    if (dismissed.includes(c.id)) return false;
+    if (hiddenConvs.includes(c.id)) return false;
+    const confirmed = getConfirmed(c);
+    return !confirmed.includes(currentUser.id);
+  });
+  const confCount = document.getElementById('mtab-confirm-count');
+  if (confCount) {
+    if (pendingMe.length > 0) { confCount.style.display = ''; confCount.textContent = pendingMe.length; }
+    else confCount.style.display = 'none';
+  }
+  if (typeof updateActivityBadge === 'function') updateActivityBadge();
+
   const visibleConvs = convs.filter(c => {
     // Excluir trueques cancelados
     if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
