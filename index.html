@@ -2790,10 +2790,11 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <!-- TRUST PASSPORT compacto -->
     <div class="trust-passport" id="trust-passport">
       <div class="trust-passport-top">
-        <!-- Avatar -->
-        <div class="trust-avatar-wrap">
+        <!-- Avatar clickable para cambiar foto -->
+        <div class="trust-avatar-wrap" style="cursor:pointer" onclick="openEditProfileDrawer()" title="Editar perfil">
           <div class="trust-avatar" id="trust-avatar-emoji" style="overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:var(--accent);background:var(--accent-l)">?</div>
           <div class="trust-level-badge trust-level-nuevo" id="trust-level-badge">NUEVO</div>
+          <div style="position:absolute;bottom:12px;right:-4px;width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--white);font-size:11px">✏️</div>
         </div>
         <!-- Info -->
         <div class="trust-info">
@@ -2813,7 +2814,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           </div>
         </div>
         <!-- Botón editar -->
-        <button class="btn btn-ghost btn-sm" style="flex-shrink:0;align-self:flex-start" onclick="switchPTab('config')">✏️ Editar</button>
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0;align-self:flex-start" onclick="openEditProfileDrawer()">✏️ Editar</button>
       </div>
 
       <!-- Métricas compactas -->
@@ -2825,13 +2826,12 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
 
-    <!-- PROFILE TABS -->
+    <!-- PROFILE TABS — sin Configuración -->
     <div class="card profile-header-card" style="padding:0 28px 0;margin-bottom:20px">
       <div class="ptabs" style="border-top:none;padding-top:0;margin-top:0">
         <button class="ptab active" id="ptab-btn-items" onclick="switchPTab('items')">Mis objetos</button>
         <button class="ptab" id="ptab-btn-favs" onclick="switchPTab('favs')">❤️ Favoritos</button>
         <button class="ptab" id="ptab-btn-done" onclick="switchPTab('done')">🤝 Historial</button>
-        <button class="ptab" id="ptab-btn-config" onclick="switchPTab('config')">Configuración</button>
       </div>
     </div>
 
@@ -2844,70 +2844,72 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="ptab-content" id="ptab-done">
       <div id="done-grid"></div>
     </div>
-    <div class="ptab-content" id="ptab-config">
-      <div class="card" style="padding:28px;margin-bottom:16px">
-        <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;margin-bottom:20px">Datos del perfil</div>
+    <!-- Mantenemos ptab-config oculto para compatibilidad con funciones existentes -->
+    <div id="ptab-config" style="display:none"></div>
 
-        <!-- FOTO DE PERFIL -->
-        <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-          <div style="position:relative;flex-shrink:0">
-            <div id="profile-photo-preview" style="width:80px;height:80px;border-radius:50%;background:var(--accent-l);border:2.5px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--accent)">?</div>
-            <label for="profile-photo-input" style="position:absolute;bottom:0;right:0;width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--white);font-size:13px" title="Cambiar foto">✏️</label>
-            <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="handlePhotoChange(event)">
-          </div>
-          <div>
-            <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">Foto de perfil</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5">JPG, PNG o WebP · Máx. 2 MB<br>Se muestra en tu perfil y en los chats</div>
-            <div id="photo-upload-status" style="font-size:12px;margin-top:4px;display:none"></div>
-          </div>
-        </div>
+  </div>
+</div>
 
-        <div class="form-row">
-          <div class="field"><label>Nombre</label><input id="edit-name" value=""></div>
-          <div class="field">
-            <label>Ciudad</label>
-            <div class="city-autocomplete">
-              <input id="edit-city" placeholder="Escribe tu ciudad..." autocomplete="off"
-                oninput="profileCityAutocomplete(this.value)"
-                onkeydown="profileCityAutocompleteKey(event)"
-                onfocus="profileCityAutocomplete(this.value)"
-                onblur="setTimeout(()=>document.getElementById('profile-city-suggestions').classList.remove('open'),180)">
-              <div class="city-suggestions" id="profile-city-suggestions"></div>
-            </div>
-            <input type="hidden" id="edit-lat" value="">
-            <input type="hidden" id="edit-lng" value="">
-            <div style="margin-top:6px">
-              <button type="button" onclick="requestProfileGeoLocation()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;cursor:pointer;font-family:inherit">📍 Detectar automáticamente</button>
-            </div>
-          </div>
+<!-- EDIT PROFILE DRAWER -->
+<div id="edit-profile-overlay" onclick="if(event.target===this)closeEditProfileDrawer()" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.4);backdrop-filter:blur(2px)">
+  <div id="edit-profile-drawer" style="position:absolute;right:0;top:0;bottom:0;width:min(420px,100%);background:var(--white);overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,.15);display:flex;flex-direction:column">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--white);z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem">Editar perfil</div>
+      <button onclick="closeEditProfileDrawer()" style="background:var(--bg2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--muted)">×</button>
+    </div>
+
+    <!-- Foto de perfil -->
+    <div style="padding:24px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:20px">
+        <div style="position:relative;flex-shrink:0">
+          <div id="profile-photo-preview" style="width:80px;height:80px;border-radius:50%;background:var(--accent-l);border:2.5px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:var(--accent)">?</div>
+          <label for="profile-photo-input" style="position:absolute;bottom:0;right:0;width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--white);font-size:13px" title="Cambiar foto">📷</label>
+          <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="handlePhotoChange(event)">
         </div>
-        <div class="field"><label>Sobre mí</label><textarea id="edit-bio" rows="3" placeholder="Cuéntale a la comunidad quién eres y qué tipo de trueques te interesan..."></textarea></div>
-        <div class="field"><label>Email</label><input type="email" id="edit-email" value="" disabled style="opacity:.6;cursor:not-allowed"></div>
-        <button class="btn btn-primary btn-md" onclick="saveProfile()">Guardar cambios</button>
-        <button class="btn btn-danger btn-md" onclick="handleLogout()" style="margin-top:10px">Cerrar sesión</button>
-      </div>
-      <div class="card" style="padding:28px">
-        <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;margin-bottom:6px">Verificación de identidad</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6">Cada verificación aumenta tu puntuación de confianza y mejora tu visibilidad en matches.</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--green-l);border:1.5px solid #86efac;border-radius:var(--r)">
-            <div style="display:flex;gap:12px;align-items:center"><span style="font-size:1.2rem">📧</span><div><div style="font-weight:700;font-size:13px">Email</div><div style="font-size:11px;color:var(--muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="20414c455860454d41494c0e434f4d">[email&#160;protected]</a></div></div></div>
-            <span style="font-size:11px;font-weight:800;color:var(--green);background:var(--green-l);padding:3px 10px;border-radius:99px;border:1px solid #86efac">✓ Verificado</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--green-l);border:1.5px solid #86efac;border-radius:var(--r)">
-            <div style="display:flex;gap:12px;align-items:center"><span style="font-size:1.2rem">📱</span><div><div style="font-weight:700;font-size:13px">Teléfono</div><div style="font-size:11px;color:var(--muted)">+34 6XX XXX XXX</div></div></div>
-            <span style="font-size:11px;font-weight:800;color:var(--green);background:var(--green-l);padding:3px 10px;border-radius:99px;border:1px solid #86efac">✓ Verificado</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r)">
-            <div style="display:flex;gap:12px;align-items:center"><span style="font-size:1.2rem">🪪</span><div><div style="font-weight:700;font-size:13px">DNI / NIE</div><div style="font-size:11px;color:var(--muted)">+15 puntos de confianza</div></div></div>
-            <button class="btn btn-primary btn-sm" onclick="verifyDNI()">Verificar →</button>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r)">
-            <div style="display:flex;gap:12px;align-items:center"><span style="font-size:1.2rem">📲</span><div><div style="font-weight:700;font-size:13px">Redes sociales</div><div style="font-size:11px;color:var(--muted)">+8 puntos de confianza</div></div></div>
-            <button class="btn btn-secondary btn-sm" onclick="linkSocial()">Vincular →</button>
-          </div>
+        <div>
+          <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">Foto de perfil</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5">JPG, PNG o WebP · Máx. 2 MB</div>
+          <div id="photo-upload-status" style="font-size:12px;margin-top:4px;display:none"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Campos -->
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px;flex:1">
+      <div class="field" style="margin-bottom:0">
+        <label>Nombre</label>
+        <input id="edit-name" placeholder="Tu nombre">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Ciudad</label>
+        <div class="city-autocomplete">
+          <input id="edit-city" placeholder="Escribe tu ciudad..." autocomplete="off"
+            oninput="profileCityAutocomplete(this.value)"
+            onkeydown="profileCityAutocompleteKey(event)"
+            onfocus="profileCityAutocomplete(this.value)"
+            onblur="setTimeout(()=>document.getElementById('profile-city-suggestions').classList.remove('open'),180)">
+          <div class="city-suggestions" id="profile-city-suggestions"></div>
+        </div>
+        <input type="hidden" id="edit-lat" value="">
+        <input type="hidden" id="edit-lng" value="">
+        <button type="button" onclick="requestProfileGeoLocation()" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;cursor:pointer;font-family:inherit">📍 Detectar automáticamente</button>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Sobre mí</label>
+        <textarea id="edit-bio" rows="3" placeholder="Cuéntale a la comunidad quién eres y qué tipo de trueques te interesan..."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Email</label>
+        <input type="email" id="edit-email" value="" disabled style="opacity:.6;cursor:not-allowed">
+        <div style="font-size:11px;color:var(--green);margin-top:4px;font-weight:600">✓ Email verificado</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:20px 24px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;position:sticky;bottom:0;background:var(--white)">
+      <button class="btn btn-primary btn-md" onclick="saveProfile()">Guardar cambios</button>
+      <button class="btn btn-ghost btn-md" onclick="handleLogout()" style="color:#ef4444">Cerrar sesión</button>
     </div>
   </div>
 </div>
@@ -8783,20 +8785,47 @@ async function deleteItem(itemId, btnEl) {
 }
 
 function switchPTab(tab) {
-  ['items','favs','done','config'].forEach(t => {
+  // config ahora es el drawer — abrirlo directamente
+  if (tab === 'config') { openEditProfileDrawer(); return; }
+  ['items','favs','done'].forEach(t => {
     const btn = document.getElementById('ptab-btn-'+t);
     const content = document.getElementById('ptab-'+t);
     if(btn) btn.classList.toggle('active', t===tab);
     if(content) content.classList.toggle('active', t===tab);
   });
+  if (tab === 'items') renderMyItems();
   if (tab === 'favs') renderFavorites();
   if (tab === 'done') renderDoneTrades();
-  if (tab === 'config') {
-    setTimeout(() => {
-      const el = document.getElementById('ptab-config');
-      if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
-    }, 50);
+}
+
+function openEditProfileDrawer() {
+  const nameEl  = document.getElementById('edit-name');
+  const cityEl  = document.getElementById('edit-city');
+  const bioEl   = document.getElementById('edit-bio');
+  const emailEl = document.getElementById('edit-email');
+  if (nameEl  && currentUser) nameEl.value  = currentUser.user_metadata?.name || '';
+  if (cityEl  && currentUser) cityEl.value  = currentUser.user_metadata?.city || '';
+  if (bioEl   && currentUser) bioEl.value   = currentUser.user_metadata?.bio  || '';
+  if (emailEl && currentUser) emailEl.value = currentUser.email || '';
+
+  const photoUrl = currentUser?.user_metadata?.avatar_url || '';
+  const preview = document.getElementById('profile-photo-preview');
+  if (preview) {
+    if (photoUrl) {
+      preview.innerHTML = `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    } else {
+      const initial = (currentUser?.user_metadata?.name || currentUser?.email || '?')[0].toUpperCase();
+      preview.textContent = initial;
+    }
   }
+
+  const overlay = document.getElementById('edit-profile-overlay');
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function closeEditProfileDrawer() {
+  const overlay = document.getElementById('edit-profile-overlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
 // Renderiza estrellas — siempre 5, rellenas según nota
