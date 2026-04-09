@@ -1856,7 +1856,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <button class="nav-tab active" id="ntab-explore" onclick="navTo('explore')">Explorar</button>
       <button class="nav-tab" id="ntab-activity" onclick="navTo('activity')">
         <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
-        <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent)">6</span>
+        <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent);display:none"></span>
       </button>
       <button class="nav-tab" id="ntab-demand" onclick="navTo('demand')">💡 Demanda</button>
     </div>
@@ -6185,10 +6185,10 @@ function updateActivityBadge() {
   const actBadge = document.getElementById('activity-badge-nav');
   const actDot = document.getElementById('activity-dot');
   if (!actBadge) return;
-  // Calcular total pendiente: propuestas recibidas pending + countered + confirmaciones pendientes
   const pendingProposals = (window._pendingProposalCount || 0);
   const pendingConf = confirmations.filter(c => c.status !== 'done').length;
-  const total = pendingProposals + pendingConf;
+  const unreadMsgs = Object.values(lastMsgCount).reduce((a, b) => a + b, 0);
+  const total = pendingProposals + pendingConf + unreadMsgs;
   if (total > 0) {
     actBadge.textContent = total > 9 ? '9+' : total;
     actBadge.style.display = 'inline-flex';
@@ -7030,6 +7030,8 @@ function updateMsgBadge(count) {
     b.style.display = count > 0 ? 'inline-flex' : 'none';
     b.textContent = count > 9 ? '9+' : count;
   });
+  // Actualizar el badge de actividad que ahora incluye mensajes
+  if (typeof updateActivityBadge === 'function') updateActivityBadge();
 }
 
 // ── Indicador visual de estado Realtime (solo aparece si hay error) ──
