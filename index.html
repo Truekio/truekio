@@ -7546,7 +7546,17 @@ async function cancelTrade(convId) {
 
   // Recargar items y confirmaciones
   await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
+
+  // Ocultar la conversación para ambos usuarios (localStorage) — ya no tiene sentido verla
+  try {
+    const key = `truquo_hidden_convs_${currentUser.id}`;
+    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!hidden.includes(convId)) hidden.push(convId);
+    localStorage.setItem(key, JSON.stringify(hidden));
+  } catch(e) {}
+
   renderConfirmations();
+  loadConversations();
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
 }
 
