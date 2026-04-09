@@ -6518,6 +6518,13 @@ async function renderConfirmations() {
   };
 
   const pendingMe = convs.filter(c => {
+    // Excluir canceladas
+    if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
+    // Excluir ocultas
+    const dismissed = (() => { try { return JSON.parse(localStorage.getItem('truquo_dismissed_trades') || '[]'); } catch(e) { return []; } })();
+    if (dismissed.includes(c.id)) return false;
+    const hidden = (() => { try { return JSON.parse(localStorage.getItem(`truquo_hidden_convs_${currentUser.id}`) || '[]'); } catch(e) { return []; } })();
+    if (hidden.includes(c.id)) return false;
     const confirmed = getConfirmed(c);
     return !confirmed.includes(currentUser.id);
   });
@@ -6528,6 +6535,8 @@ async function renderConfirmations() {
     if (pendingMe.length > 0) { confCount.style.display = ''; confCount.textContent = pendingMe.length; }
     else confCount.style.display = 'none';
   }
+  // Actualizar badge global de actividad
+  if (typeof updateActivityBadge === 'function') updateActivityBadge();
 
   // Cargar IDs de conversaciones que el usuario ya valoró
   const { data: myReviews } = await db
