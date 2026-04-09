@@ -2527,9 +2527,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
           ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
         </button>
-        <button onclick="navTo('demand')" title="Ver qué busca la comunidad"
-          style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--white);font-size:16px;cursor:pointer;flex-shrink:0;transition:all .14s"
-          onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='var(--white)'">💡</button>
         <div style="font-size:11px;color:var(--muted);white-space:nowrap" id="items-count" class="items-count-desktop">0 objetos</div>
       </div>
       <!-- Active filter chips -->
@@ -2608,6 +2605,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <div style="display:flex;gap:0;min-width:max-content">
           <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
           <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
+          <button class="match-tab" id="mtab-messages" onclick="switchMatchTab('messages')">💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="mtab-messages-count"></span></button>
         </div>
       </div>
     </div>
@@ -2627,6 +2625,23 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     <div id="matches-wishlist-act" class="match-tab-content" style="display:none">
       <div id="activity-wishlist-content"></div>
+    </div>
+    <div id="matches-messages" class="match-tab-content" style="display:none;padding:0;margin:-24px">
+      <div class="messages-layout" style="height:calc(100vh - 180px)">
+        <div class="conv-list" id="activity-conv-list">
+          <div class="conv-head">
+            <div class="conv-search"><span style="color:var(--muted)">🔍</span><input placeholder="Buscar conversación..." oninput="filterConvList(this.value)"></div>
+          </div>
+          <div id="conv-list-items"></div>
+        </div>
+        <div class="chat-main" id="chat-main">
+          <div class="chat-empty">
+            <div class="ce-icon">💬</div>
+            <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div>
+            <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div><!-- end contenido -->
 </div><!-- end view-activity -->
@@ -2761,27 +2776,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 </div>
 
-<!-- MESSAGES -->
-<div class="view" id="view-messages">
-  <div class="wrap" style="padding-top:28px;padding-bottom:max(120px,calc(90px + env(safe-area-inset-bottom)))">
-    <div class="messages-layout">
-      <div class="card conv-list">
-        <div class="conv-head">
-          <div class="conv-search"><span style="color:var(--muted)">🔍</span><input placeholder="Buscar conversación..."></div>
-        </div>
-        <div id="conv-list-items"></div>
-      </div>
-      <div class="card chat-main" id="chat-main">
-        <div class="chat-empty">
-  <div class="ce-icon">💬</div>
-  <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div>
-  <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación o propone un trueque desde Explorar para empezar</p>
-  <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="navTo('explore')">Explorar objetos →</button>
-</div>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- MESSAGES — mantenido como vista para compatibilidad, el contenido real está en el tab de actividad -->
+<div class="view" id="view-messages" style="display:none"></div>
 
 <!-- PROFILE -->
 <div class="view" id="view-profile">
@@ -4187,6 +4183,7 @@ function navTo(v) {
   // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
   if(v === 'matches') { navToActivity('proposals'); return; }
+  if(v === 'messages') { navToActivity('messages'); return; }
   if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('view-'+v);
@@ -4446,6 +4443,7 @@ function navTo(v) {
   // Redirect home/matches/wishlist
   if(v === 'home') v = 'explore';
   if(v === 'matches') { navToActivity('proposals'); return; }
+  if(v === 'messages') { navToActivity('messages'); return; }
   if(v === 'wishlist-act') { navToActivity('wishlist-act'); return; }
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('view-'+v);
@@ -5244,7 +5242,14 @@ function switchMatchTab(tab) {
   if(tabContent) tabContent.style.display='block';
   if(tab === 'wishlist-act') { renderActivityWishlist(); loadWishAlerts(); }
   if(tab === 'confirm') renderConfirmations();
-  if(tab === 'direct') { loadMatches(); return; } // matches se ven en explorador
+  if(tab === 'direct') { loadMatches(); return; }
+  if(tab === 'messages') {
+    updateMsgBadge(0);
+    loadConversations();
+    startConvPolling();
+  } else {
+    stopConvPolling();
+  }
 }
 
 function renderActivityWishlist() {
@@ -10868,7 +10873,7 @@ document.addEventListener('mouseup', e => {
       </span>
       <span class="bnav-label" style="color:var(--accent)">Publicar</span>
     </button>
-    <button class="bnav-btn" id="bnav-messages" onclick="navTo('messages')" style="position:relative"><span>💬</span><span class="bnav-label">Mensajes</span><span class="nav-badge bnav-badge-msg" style="position:absolute;top:4px;right:12px;display:none;font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px;background:#e53e3e;color:#fff;border-radius:99px;text-align:center"></span></button>
+    <button class="bnav-btn" id="bnav-demand" onclick="navTo('demand')"><span>💡</span><span class="bnav-label">Demanda</span></button>
     <button class="bnav-btn" id="bnav-profile" onclick="navTo('profile')"><span>👤</span><span class="bnav-label">Perfil</span></button>
   </div>
 </div>
