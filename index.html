@@ -7184,10 +7184,10 @@ async function startBgPolling() {
 
       lastKnownCancelledProposals.add(p.id);
 
-      // Actualizar items en memoria
-      const cancelledIds = new Set([p.item_id, p.offered_item_id].filter(Boolean));
-      items = items.map(i => cancelledIds.has(i.id) ? {...i, status:'available'} : i);
-      applyFilter('', currentFilter);
+      // Recargar items desde Supabase para asegurar estados correctos en todos los dispositivos
+      loadItemsFromSupabase().then(data => {
+        if (data) { items = data; applyFilter('', currentFilter); }
+      });
 
       const confirmTab = document.getElementById('matches-confirm');
       if (confirmTab && confirmTab.style.display !== 'none') renderConfirmations();
