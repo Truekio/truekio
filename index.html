@@ -2604,7 +2604,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
         <div style="display:flex;gap:0;min-width:max-content">
           <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
-          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green)" id="mtab-confirm-count">1</span></button>
+          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green);display:none" id="mtab-confirm-count"></span></button>
           <button class="match-tab" id="mtab-messages" onclick="switchMatchTab('messages')">💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="mtab-messages-count"></span></button>
         </div>
       </div>
@@ -6176,8 +6176,6 @@ function renderMatches() {
   updateActivityBadge();
   const directCount = document.getElementById('mtab-direct-count');
   if(directCount) directCount.textContent = matches.length;
-  const confCount = document.getElementById('mtab-confirm-count');
-  if(confCount) confCount.textContent = confirmations.filter(c=>c.status!=='done').length;
   const wishBadge = document.getElementById('wish-badge-nav');
   if(wishBadge) { const u = wishAlerts?.filter(a=>a.unread)?.length||0; wishBadge.textContent=u; wishBadge.style.display=u>0?'inline':'none'; }
 
@@ -6186,14 +6184,13 @@ function updateActivityBadge() {
   const actDot = document.getElementById('activity-dot');
   if (!actBadge) return;
 
-  // Leer los badges ya calculados en el DOM
   const proposalsBadge = document.getElementById('mtab-proposals-count');
-  const confirmBadge = document.getElementById('mtab-confirm-count');
-  const msgsBadge = document.getElementById('mtab-messages-count');
+  const confirmBadge   = document.getElementById('mtab-confirm-count');
+  const msgsBadge      = document.getElementById('mtab-messages-count');
 
-  const pendingProposals = parseInt(proposalsBadge?.textContent || '0') || 0;
-  const pendingConf = (confirmBadge?.style.display !== 'none') ? (parseInt(confirmBadge?.textContent || '0') || 0) : 0;
-  const unreadMsgs = parseInt(msgsBadge?.textContent || '0') || 0;
+  const pendingProposals = (proposalsBadge?.style.display !== 'none') ? (parseInt(proposalsBadge?.textContent || '0') || 0) : 0;
+  const pendingConf      = (confirmBadge?.style.display  !== 'none') ? (parseInt(confirmBadge?.textContent  || '0') || 0) : 0;
+  const unreadMsgs       = (msgsBadge?.style.display     !== 'none') ? (parseInt(msgsBadge?.textContent     || '0') || 0) : 0;
 
   const total = pendingProposals + pendingConf + unreadMsgs;
   if (total > 0) {
