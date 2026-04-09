@@ -6185,9 +6185,16 @@ function updateActivityBadge() {
   const actBadge = document.getElementById('activity-badge-nav');
   const actDot = document.getElementById('activity-dot');
   if (!actBadge) return;
-  const pendingProposals = (window._pendingProposalCount || 0);
-  const pendingConf = confirmations.filter(c => c.status !== 'done').length;
-  const unreadMsgs = Object.values(lastMsgCount).reduce((a, b) => a + b, 0);
+
+  // Leer los badges ya calculados en el DOM
+  const proposalsBadge = document.getElementById('mtab-proposals-count');
+  const confirmBadge = document.getElementById('mtab-confirm-count');
+  const msgsBadge = document.getElementById('mtab-messages-count');
+
+  const pendingProposals = parseInt(proposalsBadge?.textContent || '0') || 0;
+  const pendingConf = (confirmBadge?.style.display !== 'none') ? (parseInt(confirmBadge?.textContent || '0') || 0) : 0;
+  const unreadMsgs = parseInt(msgsBadge?.textContent || '0') || 0;
+
   const total = pendingProposals + pendingConf + unreadMsgs;
   if (total > 0) {
     actBadge.textContent = total > 9 ? '9+' : total;
@@ -7030,7 +7037,13 @@ function updateMsgBadge(count) {
     b.style.display = count > 0 ? 'inline-flex' : 'none';
     b.textContent = count > 9 ? '9+' : count;
   });
-  // Actualizar el badge de actividad que ahora incluye mensajes
+  // Actualizar badge del tab mensajes en actividad
+  const mtabMsg = document.getElementById('mtab-messages-count');
+  if (mtabMsg) {
+    mtabMsg.style.display = count > 0 ? 'inline-flex' : 'none';
+    mtabMsg.textContent = count > 9 ? '9+' : count;
+  }
+  // Actualizar el badge global de actividad
   if (typeof updateActivityBadge === 'function') updateActivityBadge();
 }
 
