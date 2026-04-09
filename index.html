@@ -7283,10 +7283,21 @@ function renderConvList(data) {
     return;
   }
 
+  // Filtrar conversaciones ocultas por este usuario
+  const hiddenKey = `truquo_hidden_convs_${currentUser?.id}`;
+  const hidden = (() => { try { return JSON.parse(localStorage.getItem(hiddenKey) || '[]'); } catch(e) { return []; } })();
+  const visibleData = data.filter(c => !hidden.includes(c.id));
+
   // Calcular total de no leídos para el badge del nav
   let totalUnread = 0;
 
-  list.innerHTML = data.map(c => {
+  if (!visibleData.length) {
+    list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando se acepte un trueque.</span></div>';
+    updateMsgBadge(0);
+    return;
+  }
+
+  list.innerHTML = visibleData.map(c => {
     const isUser1 = c.user1_id === currentUser.id;
     const otherUserId = isUser1 ? c.user2_id : c.user1_id;
     const otherName = isUser1 ? c.user2_name : c.user1_name;
@@ -7329,17 +7340,16 @@ function renderConvList(data) {
 async function deleteConversation(convId) {
   if (!currentUser) return;
 
-  // Usar modal propio en lugar de confirm() nativo que puede bloquearse en móvil
   const confirmed = await new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.innerHTML = `
       <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-        <div style="font-weight:700;font-size:1rem;margin-bottom:8px">¿Eliminar conversación?</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:20px">Se borrarán todos los mensajes. Esta acción no se puede deshacer.</div>
+        <div style="font-weight:700;font-size:1rem;margin-bottom:8px">¿Ocultar conversación?</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px">La conversación dejará de aparecer en tu lista. El historial de trueques y valoraciones se mantiene.</div>
         <div style="display:flex;gap:10px">
           <button id="_del_cancel" class="btn btn-secondary btn-md" style="flex:1">Cancelar</button>
-          <button id="_del_confirm" class="btn btn-danger btn-md" style="flex:1">Eliminar</button>
+          <button id="_del_confirm" class="btn btn-danger btn-md" style="flex:1">Ocultar</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -7349,15 +7359,13 @@ async function deleteConversation(convId) {
 
   if (!confirmed) return;
 
-  // Pausar Realtime temporalmente para evitar que recargue la conversación borrada
-  stopConvPolling();
-
-  // Eliminar mensajes primero
-  await db.from('messages').delete().eq('conversation_id', convId);
-  // Eliminar conversación
-  const { error } = await db.from('conversations').delete().eq('id', convId);
-
-  if (error) { showToast('⚠️ Error al eliminar: ' + error.message); startConvPolling(); return; }
+  // Guardar en localStorage — solo oculto para este usuario, no se borra nada
+  try {
+    const key = `truquo_hidden_convs_${currentUser.id}`;
+    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!hidden.includes(convId)) hidden.push(convId);
+    localStorage.setItem(key, JSON.stringify(hidden));
+  } catch(e) {}
 
   // Si era la activa, limpiar el chat
   if (activeConvId === convId) {
@@ -7376,14 +7384,12 @@ async function deleteConversation(convId) {
     if (convList) convList.classList.remove('mobile-hidden');
   }
 
-  // Quitar del DOM
+  // Quitar del DOM inmediatamente
   const el = document.getElementById('conv-item-' + convId);
   if (el) el.remove();
 
-  showToast('🗑 Conversación eliminada');
-
-  // Reanudar Realtime después de un momento
-  setTimeout(() => startConvPolling(), 1500);
+  showToast('✓ Conversación ocultada');
+}
 }
 
 function closeMobileChat() {
