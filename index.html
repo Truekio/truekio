@@ -7870,7 +7870,7 @@ async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
   // Cargar datos en paralelo
   const queries = [
     db.from('reviews').select('stars,comment,reviewer_name,created_at').eq('reviewed_user_id', userId || null).not('reviewer_id', 'eq', userId).order('created_at', { ascending: false }).limit(10),
-    db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls,status').eq('user_id', userId || null).in('status', ['available','reserved']).limit(8),
+    db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls,status').eq('user_id', userId || null).eq('status','available').order('created_at', { ascending: false }).limit(20),
   ];
 
   // Fallback por nombre si no hay userId
