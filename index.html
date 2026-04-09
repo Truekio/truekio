@@ -2821,7 +2821,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="trust-metrics">
         <div class="trust-metric"><div class="trust-metric-n" id="tm-completados">0</div><div class="trust-metric-l">Completados</div></div>
         <div class="trust-metric"><div class="trust-metric-n" id="tm-publicados">0</div><div class="trust-metric-l">Publicados</div></div>
-        <div class="trust-metric"><div class="trust-metric-n" id="tm-ratio">—</div><div class="trust-metric-l">Ratio</div></div>
+        <div class="trust-metric"><div class="trust-metric-n" id="tm-ratio">—</div><div class="trust-metric-l">Valoración</div></div>
         <div class="trust-metric"><div class="trust-metric-n" id="tm-tiempo">—</div><div class="trust-metric-l">Resp. media</div></div>
       </div>
     </div>
@@ -8353,7 +8353,15 @@ function renderProfile() {
   const tmPublicados = document.getElementById('tm-publicados');
   if(tmPublicados) tmPublicados.textContent = myItems.length;
   const tmRatio = document.getElementById('tm-ratio');
-  if(tmRatio) tmRatio.textContent = '100%';
+  if (tmRatio) {
+    const realReviewsForRatio = REVIEWS_DATA.filter(r => r.fromSupabase);
+    if (realReviewsForRatio.length > 0) {
+      const avg = (realReviewsForRatio.reduce((s,r) => s + r.stars, 0) / realReviewsForRatio.length).toFixed(1);
+      tmRatio.textContent = '⭐ ' + avg;
+    } else {
+      tmRatio.textContent = '—';
+    }
+  }
   // savings-amount eliminado
   const profStatItems = document.getElementById('prof-stat-items');
   if(profStatItems) profStatItems.textContent = myItems.length;
