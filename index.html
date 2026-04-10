@@ -287,7 +287,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .how-card p{color:var(--muted);font-size:13px;line-height:1.7;}
 
 /* ── FILTERS ── */
-.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px;}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
 .filter-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:var(--white);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .18s;white-space:nowrap;}
 .filter-btn.active{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(78,143,186,.2);}
 .filter-btn:hover:not(.active){border-color:var(--border2);background:var(--bg2);}
@@ -2715,7 +2715,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   </div>
 
   <!-- Grid scrollable -->
-  <div class="wrap" id="explore-grid-wrap" style="padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)))">
+  <div class="wrap" id="explore-grid-wrap" style="padding-top:12px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)))">
     <div class="items-grid" id="explore-grid"></div>
   </div>
 </div>
