@@ -6843,6 +6843,10 @@ async function confirmReceipt(cfId) {
       setTimeout(() => openReviewModal(cfId), 500);
     }
     _confirmingInProgress = false;
+    // Volver al explorador tras completar
+    activeConvId = null;
+    if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
+    setTimeout(() => navTo('explore'), 1200);
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
     await loadMyItems();
@@ -6865,6 +6869,10 @@ async function confirmReceipt(cfId) {
       item2: conv.item2_title,
     });
     _confirmingInProgress = false;
+    // Volver al explorador mientras espera confirmación del otro
+    activeConvId = null;
+    if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
+    setTimeout(() => navTo('explore'), 1200);
   }
 }
 
@@ -7566,18 +7574,10 @@ async function cancelTrade(convId) {
   loadConversations();
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
 
-  // Cerrar el chat y volver a la lista de conversaciones
-  if (activeConvId === convId) {
-    activeConvId = null;
-    if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
-    const chatMain = document.getElementById('chat-main');
-    if (chatMain) {
-      chatMain.classList.remove('mobile-open');
-      chatMain.innerHTML = `<div class="chat-empty"><div class="ce-icon">💬</div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div><p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p></div>`;
-    }
-    const convList = document.querySelector('.conv-list');
-    if (convList) convList.classList.remove('mobile-hidden');
-  }
+  // Salir del chat y volver al explorador
+  activeConvId = null;
+  if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
+  setTimeout(() => navTo('explore'), 800);
 }
 
 async function renderTradeStatus(conv, otherName, otherUserId) {
