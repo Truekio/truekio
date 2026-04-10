@@ -4788,9 +4788,11 @@ function adjustGridPadding() {
   const sticky = document.querySelector('.explore-sticky');
   const wrap = document.getElementById('explore-grid-wrap');
   if (!sticky || !wrap) return;
-  // Solo en desktop donde el nav superior existe
   if (window.innerWidth > 640) {
-    wrap.style.paddingTop = sticky.offsetHeight + 12 + 'px';
+    // Usar la altura real de la sticky pero sin el espacio de las píldoras
+    const searchRow = document.querySelector('.explore-search-row');
+    const h = searchRow ? searchRow.offsetHeight + 8 : sticky.offsetHeight + 8;
+    wrap.style.paddingTop = h + 'px';
   } else {
     wrap.style.paddingTop = '';
   }
