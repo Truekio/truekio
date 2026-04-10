@@ -7572,14 +7572,20 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
   const el = document.getElementById('chat-trade-status');
   if (!el || !conv) return;
 
+  // Recargar datos frescos de Supabase
+  const { data: freshConv } = await db.from('conversations')
+    .select('id,confirmed_by,proposal_id')
+    .eq('id', conv.id).single();
+  if (!freshConv) return;
+
   // Obtener estado de la propuesta
   let proposalStatus = null;
-  if (conv.proposal_id) {
-    const { data: prop } = await db.from('proposals').select('status').eq('id', conv.proposal_id).single();
+  if (freshConv.proposal_id) {
+    const { data: prop } = await db.from('proposals').select('status').eq('id', freshConv.proposal_id).single();
     proposalStatus = prop?.status;
   }
 
-  // Obtener estado de confirmación
+  // Parsear confirmed_by
   const getConfirmed = (c) => {
     let v = c.confirmed_by;
     if (!v) return [];
@@ -7589,14 +7595,14 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
     }
     return [];
   };
-  const confirmed = getConfirmed(conv);
-  const myConfirmed = confirmed.includes(currentUser.id);
+  const confirmed = getConfirmed(freshConv);
+  const myConfirmed    = confirmed.includes(currentUser.id);
   const otherConfirmed = confirmed.includes(otherUserId);
-  const bothConfirmed = myConfirmed && otherConfirmed;
+  const bothConfirmed  = myConfirmed && otherConfirmed;
 
-  // Obtener si ya valoré
+  // ¿Ya valoré este trueque?
   const { data: myReview } = await db.from('reviews').select('id').eq('conversation_id', conv.id).eq('reviewer_id', currentUser.id).limit(1);
-  const alreadyReviewed = myReview?.length > 0;
+  const alreadyReviewed = (myReview?.length || 0) > 0;
 
   // Renderizar según estado
   let html = '';
