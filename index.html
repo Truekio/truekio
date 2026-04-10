@@ -6843,10 +6843,6 @@ async function confirmReceipt(cfId) {
       setTimeout(() => openReviewModal(cfId), 500);
     }
     _confirmingInProgress = false;
-    // Volver al explorador tras completar
-    activeConvId = null;
-    if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
-    setTimeout(() => navTo('explore'), 1200);
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
     await loadMyItems();
@@ -6869,10 +6865,6 @@ async function confirmReceipt(cfId) {
       item2: conv.item2_title,
     });
     _confirmingInProgress = false;
-    // Volver al explorador mientras espera confirmación del otro
-    activeConvId = null;
-    if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
-    setTimeout(() => navTo('explore'), 1200);
   }
 }
 
@@ -7573,11 +7565,6 @@ async function cancelTrade(convId) {
   renderConfirmations();
   loadConversations();
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
-
-  // Salir del chat y volver al explorador
-  activeConvId = null;
-  if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
-  setTimeout(() => navTo('explore'), 800);
 }
 
 async function renderTradeStatus(conv, otherName, otherUserId) {
