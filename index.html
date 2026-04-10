@@ -1917,6 +1917,15 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 <body>
 
 <!-- NAV -->
+<!-- NAV INVITADO — visible cuando explora sin cuenta -->
+<nav id="guest-nav" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;height:58px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <div onclick="navToLanding()" style="cursor:pointer;font-family:'Playfair Display',serif;font-weight:800;font-size:1.2rem;color:var(--accent);letter-spacing:-.02em">truquo</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button onclick="navToLanding();setTimeout(showAuthScreen,300)" style="background:none;border:1.5px solid var(--border);color:var(--text);font-size:13px;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;font-family:inherit">Iniciar sesión</button>
+    <button onclick="navToLanding();setTimeout(showAuthScreen,300)" style="background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:700;padding:6px 16px;border-radius:99px;cursor:pointer;font-family:inherit">Registrarse gratis</button>
+  </div>
+</nav>
+
 <nav id="main-nav" style="display:none;">
   <div class="nav-inner">
     <div class="logo" onclick="navTo('explore')">
@@ -2201,7 +2210,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
 
         <div style="text-align:center;margin-top:16px">
-          <button onclick="navTo('explore')" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:underline">
+          <button onclick="navToGuest()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:underline">
             Explorar sin cuenta
           </button>
         </div>
@@ -3740,6 +3749,8 @@ window._enterApp = function() {
   document.getElementById('view-auth').style.display = 'none';
   document.getElementById('view-auth').classList.remove('active');
   document.getElementById('main-nav').style.display = '';
+  const guestNav = document.getElementById('guest-nav');
+  if (guestNav) guestNav.style.display = 'none';
   const bn = document.querySelector('.bottom-nav');
   if (bn) bn.style.display = '';
 
@@ -4322,6 +4333,19 @@ function requireAuth(intendedView) {
   };
   showToast(messages[intendedView] || '✦ Inicia sesión para continuar');
   setTimeout(() => showAuthScreen(), 600);
+}
+
+function navToGuest() {
+  document.getElementById('guest-nav').style.display = 'flex';
+  navTo('explore');
+}
+
+function navToLanding() {
+  document.getElementById('guest-nav').style.display = 'none';
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-landing').style.display = '';
+  document.getElementById('view-landing').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function navTo(v) {
