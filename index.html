@@ -7678,7 +7678,9 @@ async function loadMessages(convId) {
     </div>`;
 
   if (!data || !data.length) {
-    el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
+    el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>' +
+      `<div id="chat-trade-status" style="padding:8px 16px 16px"></div>`;
+    scrollMsgs();
     return;
   }
 
