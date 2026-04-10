@@ -3887,12 +3887,19 @@ window._handleLogout = async function() {
   if (msgPollingInterval) { try { db.removeChannel(msgPollingInterval); } catch(e){} msgPollingInterval = null; }
   await db.auth.signOut();
   currentUser = null;
+
+  // Cerrar drawer de edición si está abierto
+  closeEditProfileDrawer?.();
+
   document.getElementById('main-nav').style.display = 'none';
   const bn = document.querySelector('.bottom-nav');
   if (bn) bn.style.display = 'none';
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById('view-landing').style.display = '';
   document.getElementById('view-landing').classList.add('active');
+
+  // Scroll al top de la landing
+  window.scrollTo({ top: 0, behavior: 'instant' });
   showToast('Sesión cerrada');
 }
 
