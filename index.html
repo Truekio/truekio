@@ -4110,18 +4110,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Botón "Subir" — aparece tras 200px de scroll ──
   const _scrollTopBtn = document.getElementById('scroll-top-btn');
   let _scrollTicking = false;
-  window.addEventListener('scroll', () => {
+  const _handleScroll = () => {
     if (_scrollTicking) return;
     _scrollTicking = true;
     requestAnimationFrame(() => {
-      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      const yWin = window.scrollY || document.documentElement.scrollTop || 0;
+      const yApp = document.getElementById('app-scroll')?.scrollTop || 0;
+      const y = Math.max(yWin, yApp);
       if (_scrollTopBtn) {
         if (y > 200) _scrollTopBtn.classList.add('visible');
         else _scrollTopBtn.classList.remove('visible');
       }
       _scrollTicking = false;
     });
-  }, { passive: true });
+  };
+  window.addEventListener('scroll', _handleScroll, { passive: true });
+  document.getElementById('app-scroll')?.addEventListener('scroll', _handleScroll, { passive: true });
   window.addEventListener('resize', adjustGridPadding);
 
   // ── Forzar padding inferior en todas las vistas para cubrir la bottom nav ──
@@ -10940,7 +10944,7 @@ document.addEventListener('mouseup', e => {
 </script>
 
 <!-- Botón subir -->
-<button class="scroll-top-btn" id="scroll-top-btn" onclick="document.getElementById('app-scroll').scrollTo({top:0,behavior:'instant'})" aria-label="Subir">
+<button class="scroll-top-btn" id="scroll-top-btn" onclick="const el=document.getElementById('app-scroll');if(el)el.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});" aria-label="Subir">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
   <span>Subir</span>
 </button>
