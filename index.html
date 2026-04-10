@@ -7626,11 +7626,25 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       </div>`;
     }
   } else if (myConfirmed && !otherConfirmed) {
-    html = `<div style="text-align:center">
-      <div style="display:inline-block;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--r-lg)">
-        ⏳ Esperando confirmación de ${otherName}
-      </div>
-    </div>`;
+    // Calcular días esperando desde el último mensaje
+    const lastMsgDate = conv.last_message_at ? new Date(conv.last_message_at) : null;
+    const daysSince = lastMsgDate ? Math.floor((Date.now() - lastMsgDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+    const isLate = daysSince >= 3;
+
+    if (isLate) {
+      html = `<div style="margin:8px 16px;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
+        ${itemsPreview}
+        <div style="font-size:13px;font-weight:700;color:#c2410c;margin-bottom:4px">⏳ Llevas ${daysSince} días esperando</div>
+        <div style="font-size:12px;color:#9a3412;margin-bottom:10px">${otherName} aún no ha confirmado la recepción.</div>
+        <button onclick="cancelTrade('${conv.id}')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:6px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✕ Cancelar trueque y recuperar mi objeto</button>
+      </div>`;
+    } else {
+      html = `<div style="margin:8px 16px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
+        ${itemsPreview}
+        <div style="font-size:13px;font-weight:700;color:#92400e">⏳ Esperando confirmación de ${otherName}</div>
+        <div style="font-size:11px;color:#a16207;margin-top:4px">Si no confirma en ${3 - daysSince} días más, podrás cancelar el trueque.</div>
+      </div>`;
+    }
   } else if (!myConfirmed && proposalStatus === 'accepted') {
     const myItemTitle    = conv.user1_id === currentUser.id ? conv.item1_title : conv.item2_title;
     const theirItemTitle = conv.user1_id === currentUser.id ? conv.item2_title : conv.item1_title;
