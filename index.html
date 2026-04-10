@@ -287,7 +287,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .how-card p{color:var(--muted);font-size:13px;line-height:1.7;}
 
 /* ── FILTERS ── */
-.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
 .filter-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:var(--white);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .18s;white-space:nowrap;}
 .filter-btn.active{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(78,143,186,.2);}
 .filter-btn:hover:not(.active){border-color:var(--border2);background:var(--bg2);}
@@ -301,10 +301,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
 .explore-sticky{position:sticky;top:58px;z-index:90;background:#f5f8fb;border-bottom:1px solid rgba(0,0,0,.06);box-shadow:0 2px 12px rgba(0,0,0,.04);}
 .activity-sticky{position:sticky;top:58px;z-index:90;background:#f5f8fb;border-bottom:1px solid var(--border);padding-top:8px;}
-.explore-search-row{display:flex;align-items:center;gap:8px;padding:8px 0 6px;}
+.explore-search-row{display:flex;align-items:center;gap:8px;padding:5px 0 3px;}
 .explore-search-input{flex:1;min-width:0;}
 .items-count-desktop{display:block;}
-.filter-row{transition:max-height .28s cubic-bezier(.4,0,.2,1), opacity .28s ease, padding .28s ease;overflow:hidden;padding-bottom:8px;}
+.filter-row{transition:max-height .28s cubic-bezier(.4,0,.2,1), opacity .28s ease, padding .28s ease;overflow:hidden;padding-bottom:4px;}
 .filter-row.hidden-pills{max-height:0!important;opacity:0;padding:0!important;}@media(max-width:640px){
   .explore-sticky{top:0;background:#f5f8fb;}
   .activity-sticky{top:0;background:#f5f8fb;}
