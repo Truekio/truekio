@@ -7629,11 +7629,13 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       <span>⏳</span><span style="font-weight:600">Esperando confirmación de ${otherName}</span>
     </div>`;
   } else if (!myConfirmed && proposalStatus === 'accepted') {
+    const myItemTitle   = conv.user1_id === currentUser.id ? conv.item1_title : conv.item2_title;
+    const theirItemTitle = conv.user1_id === currentUser.id ? conv.item2_title : conv.item1_title;
     html = `<div style="padding:10px 16px;background:#eff6ff;border-bottom:1px solid #bfdbfe;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#1d4ed8">
         <span>📦</span><span style="font-weight:600">Pendiente de confirmar recepción</span>
       </div>
-      <button onclick="navToActivity('confirm')" style="background:#1d4ed8;color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Confirmar →</button>
+      <button onclick="openConfirmModal('${conv.id}','ok','${otherName}','${myItemTitle}','${theirItemTitle}')" style="background:#1d4ed8;color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Confirmar →</button>
     </div>`;
   } else if (proposalStatus === 'accepted') {
     html = `<div style="padding:10px 16px;background:#f0fdf4;border-bottom:1px solid #86efac;display:flex;align-items:center;gap:8px;font-size:12px;color:#16a34a">
