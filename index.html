@@ -1674,18 +1674,62 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
   background: #fff;
   border: 1.5px solid #f0f0f0;
   border-radius: 14px;
-  padding: 18px 8px;
+  padding: 0;
   text-align: center;
   cursor: pointer;
   transition: all .2s;
+  overflow: hidden;
+  position: relative;
 }
-.lp-cat:hover { border-color: #4e8fba; background: #eef4fb; transform: translateY(-3px); }
-.lp-cat span { display: block; font-size: 1.8rem; margin-bottom: 6px; }
-.lp-cat div { font-size: 11px; font-weight: 700; color: #374151; }
+.lp-cat:hover { border-color: #4e8fba; transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.lp-cat-img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  display: block;
+}
+.lp-cat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  padding: 8px 4px;
+  background: #fff;
+}
+.lp-cat span { display: block; font-size: 1.8rem; margin-bottom: 6px; padding-top: 18px; }
+.lp-cat div { font-size: 11px; font-weight: 700; color: #374151; padding-bottom: 14px; }
 .lp-cat-more { background: #1a1a2e; border-color: #1a1a2e; }
 .lp-cat-more:hover { background: #2d2d4e; border-color: #2d2d4e; }
 .lp-cat-more div { color: #fff; }
 .lp-cat-more span { filter: none; }
+
+/* TESTIMONIALS */
+.lp-testimonials { background: #f8faff; }
+.lp-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+@media(max-width:900px) { .lp-testimonials-grid { grid-template-columns: 1fr; } }
+.lp-testimonial-card {
+  background: #fff;
+  border-radius: var(--r-lg, 16px);
+  padding: 28px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lp-testimonial-stars { color: #f59e0b; font-size: 14px; letter-spacing: 2px; }
+.lp-testimonial-text { font-size: 15px; color: #374151; line-height: 1.7; font-style: italic; flex: 1; }
+.lp-testimonial-author { display: flex; align-items: center; gap: 12px; }
+.lp-testimonial-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+  background: #e5e7eb;
+}
+.lp-testimonial-name { font-weight: 700; font-size: 13px; color: #1a1a2e; }
+.lp-testimonial-meta { font-size: 11px; color: #9ca3af; margin-top: 2px; }
 
 /* CTA final */
 .lp-cta {
@@ -2247,19 +2291,83 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
   </section>
 
+  <!-- TESTIMONIALS -->
+  <section class="lp-section lp-testimonials">
+    <div class="lp-section-inner">
+      <div class="lp-section-tag">Testimonios</div>
+      <h2 class="lp-section-title">Lo que dicen nuestros usuarios</h2>
+      <div class="lp-testimonials-grid">
+        <div class="lp-testimonial-card">
+          <div class="lp-testimonial-stars">★★★★★</div>
+          <p class="lp-testimonial-text">"Intercambié mi PS4 por una cámara que llevaba meses buscando. El proceso fue súper sencillo y la otra persona fue muy maja. Sin dinero de por medio, tal cual."</p>
+          <div class="lp-testimonial-author">
+            <div class="lp-testimonial-avatar" style="background:linear-gradient(135deg,#4e8fba,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:1.1rem">A</div>
+            <div>
+              <div class="lp-testimonial-name">Alejandro M.</div>
+              <div class="lp-testimonial-meta">Madrid · Electrónica</div>
+            </div>
+          </div>
+        </div>
+        <div class="lp-testimonial-card">
+          <div class="lp-testimonial-stars">★★★★★</div>
+          <p class="lp-testimonial-text">"Tenía cajas de libros acumulados en casa. En una semana conseguí intercambiar 12 libros por ropa y juegos de mesa. Ahora uso Truquo cada mes."</p>
+          <div class="lp-testimonial-author">
+            <div class="lp-testimonial-avatar" style="background:linear-gradient(135deg,#c9a870,#d97706);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:1.1rem">S</div>
+            <div>
+              <div class="lp-testimonial-name">Sara R.</div>
+              <div class="lp-testimonial-meta">Barcelona · Libros</div>
+            </div>
+          </div>
+        </div>
+        <div class="lp-testimonial-card">
+          <div class="lp-testimonial-stars">★★★★★</div>
+          <p class="lp-testimonial-text">"Lo que más me gusta es la seguridad. Ambas partes confirmamos la recepción antes de cerrar el trueque. Me da mucha más confianza que otros métodos."</p>
+          <div class="lp-testimonial-author">
+            <div class="lp-testimonial-avatar" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:1.1rem">C</div>
+            <div>
+              <div class="lp-testimonial-name">Carlos L.</div>
+              <div class="lp-testimonial-meta">Valencia · Deporte</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- CATEGORIES -->
   <section class="lp-section lp-how" id="lp-cats">
     <div class="lp-section-inner">
       <div class="lp-section-tag">Categorías</div>
       <h2 class="lp-section-title">¿Qué puedes intercambiar?</h2>
       <div class="lp-cats-grid">
-        <div class="lp-cat" onclick="showAuthScreen()"><span>📱</span><div>Electrónica</div></div>
-        <div class="lp-cat" onclick="showAuthScreen()"><span>📚</span><div>Libros</div></div>
-        <div class="lp-cat" onclick="showAuthScreen()"><span>⚽</span><div>Deporte</div></div>
-        <div class="lp-cat" onclick="showAuthScreen()"><span>👗</span><div>Ropa</div></div>
-        <div class="lp-cat" onclick="showAuthScreen()"><span>🏠</span><div>Hogar</div></div>
-        <div class="lp-cat" onclick="showAuthScreen()"><span>🃏</span><div>Cartas</div></div>
-        <div class="lp-cat" onclick="showAuthScreen()"><span>🎲</span><div>Juegos</div></div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1498049794561-7780e7231661?w=300&q=80" alt="Electrónica" loading="lazy">
+          <div class="lp-cat-label">Electrónica</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=300&q=80" alt="Libros" loading="lazy">
+          <div class="lp-cat-label">Libros</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=300&q=80" alt="Deporte" loading="lazy">
+          <div class="lp-cat-label">Deporte</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=300&q=80" alt="Ropa" loading="lazy">
+          <div class="lp-cat-label">Ropa</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&q=80" alt="Hogar" loading="lazy">
+          <div class="lp-cat-label">Hogar</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=300&q=80" alt="Cartas" loading="lazy">
+          <div class="lp-cat-label">Cartas</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=300&q=80" alt="Juegos" loading="lazy">
+          <div class="lp-cat-label">Juegos de mesa</div>
+        </div>
         <div class="lp-cat lp-cat-more" onclick="showAuthScreen()"><span>✦</span><div>Ver todo</div></div>
       </div>
     </div>
