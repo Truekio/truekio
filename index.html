@@ -1702,6 +1702,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .lp-cat-more div { color: #fff; }
 .lp-cat-more span { filter: none; }
 
+/* WHY TRUQUO */
+.lp-why-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+}
+@media(max-width:900px) { .lp-why-grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:500px) { .lp-why-grid { grid-template-columns: 1fr 1fr; gap:16px; } }
+.lp-why-item { text-align: center; }
+.lp-why-icon {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  margin: 0 auto 14px;
+}
+.lp-why-title { font-weight: 800; font-size: .95rem; color: #1a1a2e; margin-bottom: 6px; }
+.lp-why-desc { font-size: 13px; color: #6b7280; line-height: 1.6; }
+
 /* TESTIMONIALS */
 .lp-testimonials { background: #f8faff; }
 .lp-testimonials-grid {
@@ -2286,6 +2306,36 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <div class="lp-feat-icon" style="background:#fff8ec;color:#d97706">☕</div>
           <h3>¡Te lo doy por un café!</h3>
           <p>¿Quieres regalar algo? Publícalo con el precio de un café simbólico.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY TRUQUO -->
+  <section class="lp-section" style="background:#1a1a2e">
+    <div class="lp-section-inner">
+      <div class="lp-section-tag" style="background:rgba(78,143,186,.2);color:#7ec8f0">Por qué Truquo</div>
+      <h2 class="lp-section-title" style="color:#fff">Una forma mejor<br>de dar vida a tus objetos</h2>
+      <div class="lp-why-grid">
+        <div class="lp-why-item">
+          <div class="lp-why-icon" style="background:rgba(78,143,186,.15)">💸</div>
+          <div class="lp-why-title" style="color:#fff">Sin dinero</div>
+          <div class="lp-why-desc" style="color:rgba(255,255,255,.55)">El valor está en el intercambio, no en el precio. Cero transacciones monetarias.</div>
+        </div>
+        <div class="lp-why-item">
+          <div class="lp-why-icon" style="background:rgba(78,143,186,.15)">🌱</div>
+          <div class="lp-why-title" style="color:#fff">Sostenible</div>
+          <div class="lp-why-desc" style="color:rgba(255,255,255,.55)">Cada trueque es un objeto menos en la basura. Consumo responsable de verdad.</div>
+        </div>
+        <div class="lp-why-item">
+          <div class="lp-why-icon" style="background:rgba(78,143,186,.15)">🛡️</div>
+          <div class="lp-why-title" style="color:#fff">Seguro</div>
+          <div class="lp-why-desc" style="color:rgba(255,255,255,.55)">Sistema de confirmación doble, valoraciones y perfil de confianza en cada intercambio.</div>
+        </div>
+        <div class="lp-why-item">
+          <div class="lp-why-icon" style="background:rgba(201,168,112,.15)">🤝</div>
+          <div class="lp-why-title" style="color:#fff">Comunidad</div>
+          <div class="lp-why-desc" style="color:rgba(255,255,255,.55)">Personas reales intercambiando objetos reales. Sin empresas intermediarias.</div>
         </div>
       </div>
     </div>
