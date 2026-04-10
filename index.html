@@ -7636,13 +7636,15 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
     const theirItemTitle = conv.user1_id === currentUser.id ? conv.item2_title : conv.item1_title;
     html = `<div style="margin:8px 16px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
       <div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:8px">📦 ¿Has recibido el objeto en buen estado?</div>
-      <button onclick="openConfirmModal('${conv.id}','ok','${otherName}','${myItemTitle}','${theirItemTitle}')" style="background:#1d4ed8;color:#fff;border:none;padding:7px 18px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✅ Confirmar recepción</button>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button onclick="openConfirmModal('${conv.id}','ok','${otherName}','${myItemTitle}','${theirItemTitle}')" style="background:#1d4ed8;color:#fff;border:none;padding:7px 18px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✅ Confirmar recepción</button>
+        <button onclick="cancelTrade('${conv.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:7px 14px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✕ Cancelar trueque</button>
+      </div>
     </div>`;
   } else if (proposalStatus === 'accepted') {
-    html = `<div style="text-align:center">
-      <div style="display:inline-block;background:var(--green-l);border:1px solid #86efac;color:var(--green);font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--r-lg)">
-        🤝 Trueque en curso — coordinad el intercambio
-      </div>
+    html = `<div style="margin:8px 16px;background:var(--green-l);border:1.5px solid #86efac;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">🤝 Trueque en curso — coordinad el intercambio</div>
+      <button onclick="cancelTrade('${conv.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:5px 14px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✕ Cancelar trueque</button>
     </div>`;
   }
 
