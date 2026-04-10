@@ -1385,68 +1385,64 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  background: rgba(255,255,255,0.95);
+  background: rgba(10,20,40,0.3);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(255,255,255,.1);
   padding: 0 24px;
   height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: background .3s;
 }
 .lp-nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
-.lp-nav-wordmark { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.3rem; color: #1a1a2e; letter-spacing: -.02em; }
+.lp-nav-wordmark { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.3rem; color: #ffffff; letter-spacing: -.02em; }
 .lp-nav-actions { display: flex; align-items: center; gap: 10px; }
-.lp-nav-link { font-size: 13px; font-weight: 600; color: #555; text-decoration: none; padding: 6px 14px; border-radius: 99px; transition: all .15s; }
-.lp-nav-link:hover { background: #f5f5f5; color: #1a1a2e; }
+.lp-nav-link { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.8); text-decoration: none; padding: 6px 14px; border-radius: 99px; transition: all .15s; }
+.lp-nav-link:hover { background: rgba(255,255,255,.1); color: #fff; }
 .lp-nav-cta { font-size: 13px; font-weight: 700; color: #fff; background: #4e8fba; padding: 8px 18px; border-radius: 99px; text-decoration: none; border: none; cursor: pointer; font-family: inherit; transition: all .15s; }
 .lp-nav-cta:hover { background: #3a7aa8; transform: translateY(-1px); }
 
 /* ── HERO ── */
 .lp-hero {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8faff 0%, #eef4fb 50%, #f5f0ff 100%);
+  min-height: 92vh;
+  background: url('/hero.jpg') center center / cover no-repeat;
   display: flex;
   align-items: center;
   padding: 80px 24px 60px;
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 .lp-hero::before {
   content: '';
   position: absolute;
-  top: -200px; right: -200px;
-  width: 700px; height: 700px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(78,143,186,.12) 0%, transparent 70%);
+  inset: 0;
+  background: linear-gradient(135deg, rgba(10,20,40,.72) 0%, rgba(10,20,40,.55) 60%, rgba(10,20,40,.4) 100%);
   pointer-events: none;
+  z-index: 0;
 }
 .lp-hero::after {
-  content: '';
-  position: absolute;
-  bottom: -150px; left: -150px;
-  width: 500px; height: 500px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(201,168,112,.08) 0%, transparent 70%);
-  pointer-events: none;
+  display: none;
 }
 .lp-hero-inner {
-  max-width: 1100px;
+  max-width: 700px;
   margin: 0 auto;
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
   position: relative;
   z-index: 1;
+  gap: 0;
 }
 .lp-hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: rgba(78,143,186,.1);
-  color: #4e8fba;
+  color: rgba(255,255,255,.9);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -1454,7 +1450,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
   padding: 5px 14px;
   border-radius: 99px;
   margin-bottom: 20px;
-  border: 1px solid rgba(78,143,186,.2);
+  border: 1px solid rgba(255,255,255,.3);
+  background: rgba(255,255,255,.15);
 }
 .lp-hero h1 {
   font-family: 'Playfair Display', serif;
@@ -1463,24 +1460,25 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
   line-height: 1.06;
   letter-spacing: -.03em;
   margin-bottom: 20px;
-  color: #1a1a2e;
+  color: #ffffff;
 }
 .lp-hero h1 em {
-  color: #4e8fba;
+  color: #7ec8f0;
   font-style: italic;
 }
 .lp-hero-sub {
-  color: #6b7280;
+  color: rgba(255,255,255,.8);
   line-height: 1.75;
   font-size: 1.05rem;
   margin-bottom: 32px;
-  max-width: 460px;
+  max-width: 560px;
 }
 .lp-hero-btns {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 44px;
+  justify-content: center;
 }
 .lp-btn-primary {
   background: #4e8fba;
@@ -1497,9 +1495,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 }
 .lp-btn-primary:hover { background: #3a7aa8; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(78,143,186,.4); }
 .lp-btn-ghost {
-  background: transparent;
-  color: #1a1a2e;
-  border: 2px solid #e5e7eb;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  border: 2px solid rgba(255,255,255,.4);
   padding: 12px 24px;
   border-radius: 99px;
   font-size: 15px;
@@ -1507,17 +1505,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
   cursor: pointer;
   font-family: inherit;
   transition: all .2s;
+  backdrop-filter: blur(4px);
 }
-.lp-btn-ghost:hover { border-color: #4e8fba; color: #4e8fba; }
+.lp-btn-ghost:hover { border-color: #fff; background: rgba(255,255,255,.25); }
 .lp-hero-stats {
   display: flex;
   gap: 32px;
   flex-wrap: wrap;
+  justify-content: center;
 }
-.lp-stat { display: flex; flex-direction: column; gap: 2px; }
-.lp-stat-n { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; font-family: 'Playfair Display', serif; }
-.lp-stat-l { font-size: 12px; color: #9ca3af; font-weight: 600; }
-.lp-stat-sep { width: 1px; background: #e5e7eb; align-self: stretch; }
+.lp-stat { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.lp-stat-n { font-size: 1.5rem; font-weight: 800; color: #ffffff; font-family: 'Playfair Display', serif; }
+.lp-stat-l { font-size: 12px; color: rgba(255,255,255,.6); font-weight: 600; }
+.lp-stat-sep { width: 1px; background: rgba(255,255,255,.2); align-self: stretch; }
 
 /* ── HERO VISUAL ── */
 .lp-hero-visual {
@@ -2166,42 +2166,11 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <button class="lp-btn-ghost" onclick="scrollToHow()">¿Cómo funciona?</button>
         </div>
         <div class="lp-hero-stats">
-          <div class="lp-stat"><span class="lp-stat-n">+2.400</span><span class="lp-stat-l">usuarios activos</span></div>
+          <div class="lp-stat"><span class="lp-stat-n">Beta</span><span class="lp-stat-l">Lanzamiento 2026</span></div>
           <div class="lp-stat-sep"></div>
-          <div class="lp-stat"><span class="lp-stat-n">+8.700</span><span class="lp-stat-l">objetos publicados</span></div>
+          <div class="lp-stat"><span class="lp-stat-n">0€</span><span class="lp-stat-l">Sin comisiones</span></div>
           <div class="lp-stat-sep"></div>
-          <div class="lp-stat"><span class="lp-stat-n">4.9 ★</span><span class="lp-stat-l">valoración media</span></div>
-        </div>
-      </div>
-      <div class="lp-hero-visual">
-        <div class="lp-float-card lp-fc1">
-          <span class="lp-fc-emoji">🎸</span>
-          <div class="lp-fc-info"><div class="lp-fc-name">Guitarra Fender</div><div class="lp-fc-meta">Madrid · hace 5 min</div></div>
-          <span class="lp-fc-badge">Match!</span>
-        </div>
-        <div class="lp-float-card lp-fc2">
-          <span class="lp-fc-emoji">📷</span>
-          <div class="lp-fc-info"><div class="lp-fc-name">Cámara Canon R50</div><div class="lp-fc-meta">Barcelona · hace 12 min</div></div>
-        </div>
-        <div class="lp-float-card lp-fc3">
-          <span class="lp-fc-emoji">💻</span>
-          <div class="lp-fc-info"><div class="lp-fc-name">MacBook Air M2</div><div class="lp-fc-meta">Sevilla · hace 18 min</div></div>
-          <span class="lp-fc-badge">Match!</span>
-        </div>
-        <div class="lp-float-card lp-fc4">
-          <span class="lp-fc-emoji">🚲</span>
-          <div class="lp-fc-info"><div class="lp-fc-name">Bici eléctrica</div><div class="lp-fc-meta">Valencia · hace 24 min</div></div>
-        </div>
-        <div class="lp-float-card lp-fc5">
-          <span class="lp-fc-emoji">🎮</span>
-          <div class="lp-fc-info"><div class="lp-fc-name">PS5 + 3 juegos</div><div class="lp-fc-meta">Bilbao · hace 31 min</div></div>
-        </div>
-        <div class="lp-exchange-anim">
-          <div class="lp-ex-item"><span>🎹</span>Teclado Roland</div>
-          <div class="lp-ex-arrows">
-            <svg width="50" height="22" viewBox="0 0 50 22" fill="none"><path d="M4 7L46 7M40 3L46 7L40 11" stroke="#4e8fba" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 15L4 15M10 11L4 15L10 19" stroke="#c9a870" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="lp-ex-item"><span>🎧</span>Auriculares Sony</div>
+          <div class="lp-stat"><span class="lp-stat-n">100%</span><span class="lp-stat-l">Trueque real</span></div>
         </div>
       </div>
     </div>
@@ -7626,25 +7595,11 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       </div>`;
     }
   } else if (myConfirmed && !otherConfirmed) {
-    // Calcular días esperando desde el último mensaje
-    const lastMsgDate = conv.last_message_at ? new Date(conv.last_message_at) : null;
-    const daysSince = lastMsgDate ? Math.floor((Date.now() - lastMsgDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    const isLate = daysSince >= 3;
-
-    if (isLate) {
-      html = `<div style="margin:8px 16px;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
-        ${itemsPreview}
-        <div style="font-size:13px;font-weight:700;color:#c2410c;margin-bottom:4px">⏳ Llevas ${daysSince} días esperando</div>
-        <div style="font-size:12px;color:#9a3412;margin-bottom:10px">${otherName} aún no ha confirmado la recepción.</div>
-        <button onclick="cancelTrade('${conv.id}')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:6px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✕ Cancelar trueque y recuperar mi objeto</button>
-      </div>`;
-    } else {
-      html = `<div style="margin:8px 16px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
-        ${itemsPreview}
-        <div style="font-size:13px;font-weight:700;color:#92400e">⏳ Esperando confirmación de ${otherName}</div>
-        <div style="font-size:11px;color:#a16207;margin-top:4px">Si no confirma en ${3 - daysSince} días más, podrás cancelar el trueque.</div>
-      </div>`;
-    }
+    html = `<div style="text-align:center">
+      <div style="display:inline-block;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--r-lg)">
+        ⏳ Esperando confirmación de ${otherName}
+      </div>
+    </div>`;
   } else if (!myConfirmed && proposalStatus === 'accepted') {
     const myItemTitle    = conv.user1_id === currentUser.id ? conv.item1_title : conv.item2_title;
     const theirItemTitle = conv.user1_id === currentUser.id ? conv.item2_title : conv.item1_title;
