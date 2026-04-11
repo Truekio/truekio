@@ -10127,24 +10127,28 @@ function updateSubcat() {
   const sub = document.getElementById('wants-subcat');
   const btn = document.getElementById('btn-add-cat');
   const isLibros = cat === 'Libros';
+  const hasSubcats = cat && PUB_SUBCATS[cat] && PUB_SUBCATS[cat].length > 0;
 
-  // Para libros: mostrar idioma (obligatorio) y género (opcional)
+  // Idioma solo para libros
   if (langField) langField.style.display = isLibros ? '' : 'none';
-  if (subcatField) subcatField.style.display = isLibros ? '' : 'none';
+  // Subcategoría para cualquier categoría que tenga subcats
+  if (subcatField) subcatField.style.display = hasSubcats ? '' : 'none';
 
-  if (!cat || !isLibros) {
+  if (!cat || !hasSubcats) {
     if (sub) { sub.innerHTML = '<option value="">— Selecciona categoría primero —</option>'; sub.disabled = true; }
-    if (btn) btn.style.display = 'none';
-    return;
+    if (!cat) { if (btn) btn.style.display = 'none'; return; }
   }
 
-  // Géneros para libros
-  const opts = PUB_SUBCATS[cat] || [];
-  if (sub) {
-    sub.innerHTML = '<option value="">— Cualquier género —</option>' + opts.map(o => `<option>${o}</option>`).join('');
-    sub.disabled = false;
+  if (hasSubcats) {
+    const opts = PUB_SUBCATS[cat] || [];
+    const placeholder = isLibros ? '— Cualquier género —' : '— Cualquier subcategoría —';
+    if (sub) {
+      sub.innerHTML = `<option value="">${placeholder}</option>` + opts.map(o => `<option>${o}</option>`).join('');
+      sub.disabled = false;
+    }
   }
-  if (btn) btn.style.display = 'inline-flex';
+
+  if (btn) btn.style.display = cat ? 'inline-flex' : 'none';
 }
 
 // Subcategorías para formulario publicar
