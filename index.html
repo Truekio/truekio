@@ -3175,80 +3175,106 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
       <!-- PANTALLA 2: Qué aceptas -->
       <div class="pub-screen" id="pub-screen-2" style="display:none">
-        <div class="pub-screen-title">¿Qué aceptas?</div>
-        <div class="pub-screen-sub">El sistema buscará matches automáticamente.</div>
 
-        <!-- Pregunta explícita de apertura -->
-        <div id="wants-open-question" style="margin-bottom:20px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">¿Qué nivel de flexibilidad tienes?</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <button id="wants-open-no" onclick="setWantsOpen(false)"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
-              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🎯 Tengo preferencias concretas</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.4">Quiero especificar qué categorías o artículos me interesan.</div>
+        <!-- SUB-PASO 2a: Elegir tipo -->
+        <div id="pub-wants-step-a">
+          <div class="pub-screen-title">¿Qué aceptas?</div>
+          <div class="pub-screen-sub">Elige qué tipo de intercambio buscas.</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <button onclick="selectWantsType('cafe')" class="pub-wants-type-btn" id="wtype-cafe"
+              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
+              <span style="font-size:1.8rem">☕</span>
+              <div>
+                <div style="font-weight:700;font-size:14px;color:var(--text)">Solo un café</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">Regalo este objeto a cambio de un café simbólico.</div>
+              </div>
             </button>
-            <button id="wants-open-yes" onclick="setWantsOpen(true)"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
-              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🔓 Soy flexible con la categoría</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.4">Acepto varias categorías pero quiero especificar cuáles.</div>
+            <button onclick="selectWantsType('surprise')" class="pub-wants-type-btn" id="wtype-surprise"
+              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
+              <span style="font-size:1.8rem">🎲</span>
+              <div>
+                <div style="font-weight:700;font-size:14px;color:var(--text)">¡Sorpréndeme!</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">Acepto cualquier propuesta. ¡Que sea una sorpresa!</div>
+              </div>
             </button>
-            <button id="wants-open-surprise" onclick="setWantsOpen('surprise')"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
-              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🎲 ¡Sorpréndeme!</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.4">Me da igual qué me ofrecen. Acepto cualquier propuesta, ¡que sea una sorpresa!</div>
+            <button onclick="selectWantsType('flexible')" class="pub-wants-type-btn" id="wtype-flexible"
+              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
+              <span style="font-size:1.8rem">🔓</span>
+              <div>
+                <div style="font-weight:700;font-size:14px;color:var(--text)">Soy flexible</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">Acepto varias categorías. Selecciono cuáles me interesan.</div>
+              </div>
             </button>
-            <button id="wants-open-cafe" onclick="setWantsOpen('cafe')"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s">
-              <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">☕ Solo un café</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.4">Quiero regalar este objeto a cambio de un café simbólico.</div>
+            <button onclick="selectWantsType('concrete')" class="pub-wants-type-btn" id="wtype-concrete"
+              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
+              <span style="font-size:1.8rem">🎯</span>
+              <div>
+                <div style="font-weight:700;font-size:14px;color:var(--text)">Tengo algo concreto en mente</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">Especifico exactamente qué objeto o categoría busco.</div>
+              </div>
             </button>
           </div>
         </div>
 
-        <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
-
-        <!-- Selector de categorías para opción flexible -->
-        <div id="wants-open-cats" style="display:none;margin-bottom:16px">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">¿Qué categorías aceptas? <span style="color:#e53e3e">*</span></div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px" id="wants-open-cat-chips"></div>
+        <!-- SUB-PASO 2b: Flexible — elegir categorías -->
+        <div id="pub-wants-step-b-flexible" style="display:none">
+          <div class="pub-screen-title">¿Qué categorías aceptas?</div>
+          <div class="pub-screen-sub">Selecciona una o varias categorías que te interesan.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px" id="wants-open-cat-chips"></div>
+          <div id="wants-flex-empty" style="font-size:12px;color:#e53e3e;display:none;margin-top:-12px;margin-bottom:12px">⚠️ Selecciona al menos una categoría</div>
         </div>
-        <div id="wants-add-form" style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg);display:none">
-          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">➕ Añadir opción</div>
-          <div class="form-row" style="margin-bottom:10px">
-            <div class="field" style="margin-bottom:0">
-              <label>Categoría</label>
-              <select id="wants-cat" onchange="updateSubcat()">
-                <option value="">— Cualquier categoría —</option>
-                <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
-                <option>Libros</option><option>Juguetes</option><option>Deporte</option>
-                <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
+
+        <!-- SUB-PASO 2b: Concreto — añadir objetos -->
+        <div id="pub-wants-step-b-concrete" style="display:none">
+          <div class="pub-screen-title">¿Qué buscas?</div>
+          <div class="pub-screen-sub">Añade uno o varios objetos o categorías que aceptarías.</div>
+
+          <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+
+          <div style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg)">
+            <div class="form-row" style="margin-bottom:10px">
+              <div class="field" style="margin-bottom:0">
+                <label>Categoría</label>
+                <select id="wants-cat" onchange="updateSubcat()">
+                  <option value="">— Cualquier categoría —</option>
+                  <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
+                  <option>Libros</option><option>Juguetes</option><option>Deporte</option>
+                  <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
+                </select>
+              </div>
+            </div>
+            <div class="field" id="wants-lang-field" style="display:none;margin-bottom:10px">
+              <label>Idioma <span style="color:#e53e3e">*</span></label>
+              <select id="wants-lang">
+                <option value="">— Selecciona idioma —</option>
+                <option>Español</option><option>Inglés</option><option>Catalán</option>
+                <option>Francés</option><option>Alemán</option><option>Italiano</option>
+                <option>Portugués</option><option>Otro idioma</option>
               </select>
             </div>
+            <div class="field" id="wants-subcat-field" style="display:none;margin-bottom:10px">
+              <label>Subcategoría (opcional)</label>
+              <select id="wants-subcat"><option value="">— Cualquier subcategoría —</option></select>
+            </div>
+            <div class="wants-input-row" style="margin-bottom:10px">
+              <input id="wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D, opcional)">
+            </div>
+            <div style="display:flex;justify-content:flex-end">
+              <button class="btn btn-primary btn-sm" onclick="addExchangeOption()">+ Añadir</button>
+            </div>
           </div>
-          <!-- Idioma — solo libros, obligatorio, va primero -->
-          <div class="field" id="wants-lang-field" style="display:none;margin-bottom:10px">
-            <label>Idioma <span style="color:#e53e3e">*</span></label>
-            <select id="wants-lang">
-              <option value="">— Selecciona idioma —</option>
-              <option>Español</option><option>Inglés</option><option>Catalán</option>
-              <option>Francés</option><option>Alemán</option><option>Italiano</option>
-              <option>Portugués</option><option>Otro idioma</option>
-            </select>
-          </div>
-          <!-- Género — solo libros, opcional -->
-          <div class="field" id="wants-subcat-field" style="display:none;margin-bottom:10px">
-            <label>Género (opcional)</label>
-            <select id="wants-subcat"><option value="">— Cualquier género —</option></select>
-          </div>
-          <div class="wants-input-row" style="margin-bottom:10px">
-            <input id="wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D)">
-          </div>
-          <div style="display:flex;justify-content:flex-end">
-            <button class="btn btn-primary btn-sm" onclick="addExchangeOption()">+ Añadir</button>
-          </div>
+          <div id="wants-concrete-empty" style="font-size:12px;color:#e53e3e;display:none;margin-top:10px">⚠️ Añade al menos una opción</div>
         </div>
-        <div id="btn-add-cat" style="display:none"></div>
-        <div id="wants-chips" style="display:none"></div>
+
+        <!-- Elementos ocultos para compatibilidad con funciones existentes -->
+        <div style="display:none">
+          <div id="wants-open-question"></div>
+          <div id="wants-open-cats"></div>
+          <div id="wants-add-form"></div>
+          <div id="btn-add-cat"></div>
+          <div id="wants-chips"></div>
+        </div>
+
       </div>
 
     </div>
@@ -9706,46 +9732,93 @@ const PUB_OPTIONAL = { 1: false, 2: false };
 let pubWantsOpen = null; // null = sin respuesta, true = flexible, false = concreto, 'cafe' = café simbólico
 let pubOpenCats = []; // categorías seleccionadas cuando wants_open=true
 
-function setWantsOpen(open) {
-  pubWantsOpen = open;
-  const yesBtn      = document.getElementById('wants-open-yes');
-  const noBtn       = document.getElementById('wants-open-no');
-  const cafeBtn     = document.getElementById('wants-open-cafe');
-  const surpriseBtn = document.getElementById('wants-open-surprise');
+let pubWantsType = null; // 'cafe' | 'surprise' | 'flexible' | 'concrete'
 
-  // Reset estilos
-  [yesBtn, noBtn, cafeBtn, surpriseBtn].forEach(b => {
-    if (b) { b.style.borderColor = 'var(--border)'; b.style.background = 'var(--bg)'; }
+function selectWantsType(type) {
+  pubWantsType = type;
+
+  // Reset estilos botones
+  ['cafe','surprise','flexible','concrete'].forEach(t => {
+    const btn = document.getElementById('wtype-' + t);
+    if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)'; }
   });
 
-  // Activar el seleccionado
-  if (open === true      && yesBtn)      { yesBtn.style.borderColor      = 'var(--accent)'; yesBtn.style.background      = 'var(--accent-l)'; }
-  if (open === false     && noBtn)       { noBtn.style.borderColor       = 'var(--accent)'; noBtn.style.background       = 'var(--accent-l)'; }
-  if (open === 'cafe'    && cafeBtn)     { cafeBtn.style.borderColor     = '#92400e';       cafeBtn.style.background     = '#fef3c7'; }
-  if (open === 'surprise'&& surpriseBtn) { surpriseBtn.style.borderColor = '#6344a8';       surpriseBtn.style.background = '#f2eefb'; }
+  // Activar seleccionado
+  const colors = { cafe:'#92400e', surprise:'#6344a8', flexible:'var(--accent)', concrete:'var(--accent)' };
+  const bgs    = { cafe:'#fef3c7', surprise:'#f2eefb', flexible:'var(--accent-l)', concrete:'var(--accent-l)' };
+  const btn = document.getElementById('wtype-' + type);
+  if (btn) { btn.style.borderColor = colors[type]; btn.style.background = bgs[type]; }
 
-  const openCats = document.getElementById('wants-open-cats');
-  const form     = document.getElementById('wants-add-form');
-  if (openCats) openCats.style.display = open === true ? 'block' : 'none';
-  if (form)     form.style.display     = open === false ? 'block' : 'none';
-
-  // Café o Sorpréndeme: limpiar opciones
-  if (open === 'cafe' || open === 'surprise') {
+  // Si café o sorpréndeme → ir directamente al siguiente paso principal
+  if (type === 'cafe' || type === 'surprise') {
+    pubWantsOpen = type;
     exchangeOptions = [];
     pubOpenCats = [];
-    renderExchangeOptions();
+    pubGoTo(3);
+    return;
   }
 
-  // Inicializar chips si aún no se han generado
-  if (open === true) {
+  // Flexible → mostrar selector de categorías
+  if (type === 'flexible') {
+    pubWantsOpen = true;
+    document.getElementById('pub-wants-step-a').style.display = 'none';
+    document.getElementById('pub-wants-step-b-flexible').style.display = '';
+    document.getElementById('pub-wants-step-b-concrete').style.display = 'none';
+    // Inicializar chips si no existen
     const chipsEl = document.getElementById('wants-open-cat-chips');
     if (chipsEl && !chipsEl.children.length) {
       const cats = ['Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'];
       chipsEl.innerHTML = cats.map(c =>
-        `<button onclick="toggleOpenCat(this,'${c}')" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all .14s">${c}</button>`
+        `<button onclick="toggleOpenCat(this,'${c}')" style="padding:7px 16px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all .14s">${c}</button>`
       ).join('');
     }
+    document.getElementById('pub-next-btn').textContent = 'Continuar →';
+    document.getElementById('pub-next-btn').onclick = () => pubNextWants();
+    return;
   }
+
+  // Concreto → mostrar formulario
+  if (type === 'concrete') {
+    pubWantsOpen = false;
+    document.getElementById('pub-wants-step-a').style.display = 'none';
+    document.getElementById('pub-wants-step-b-flexible').style.display = 'none';
+    document.getElementById('pub-wants-step-b-concrete').style.display = '';
+    document.getElementById('pub-next-btn').textContent = 'Continuar →';
+    document.getElementById('pub-next-btn').onclick = () => pubNextWants();
+  }
+}
+
+function pubNextWants() {
+  if (pubWantsType === 'flexible') {
+    if (pubOpenCats.length === 0) {
+      document.getElementById('wants-flex-empty').style.display = '';
+      return;
+    }
+    document.getElementById('wants-flex-empty').style.display = 'none';
+  }
+  if (pubWantsType === 'concrete') {
+    if (!exchangeOptions.length) {
+      document.getElementById('wants-concrete-empty').style.display = '';
+      return;
+    }
+    document.getElementById('wants-concrete-empty').style.display = 'none';
+  }
+  pubGoTo(3);
+}
+
+function pubBackToWantsA() {
+  // Volver al sub-paso a desde b
+  document.getElementById('pub-wants-step-a').style.display = '';
+  document.getElementById('pub-wants-step-b-flexible').style.display = 'none';
+  document.getElementById('pub-wants-step-b-concrete').style.display = 'none';
+  pubWantsType = null;
+  document.getElementById('pub-next-btn').textContent = 'Continuar →';
+  document.getElementById('pub-next-btn').onclick = () => pubNext(false);
+}
+
+function setWantsOpen(open) {
+  // Compatibilidad con código existente
+  pubWantsOpen = open;
 }
 
 function toggleOpenCat(btn, cat) {
@@ -9769,6 +9842,23 @@ function pubGoTo(n) {
     if (el) el.style.display = i === n ? '' : 'none';
   }
   pubCurrentScreen = n;
+
+  // Al entrar en pantalla 2, mostrar siempre el sub-paso A
+  if (n === 2) {
+    const stepA = document.getElementById('pub-wants-step-a');
+    const stepBF = document.getElementById('pub-wants-step-b-flexible');
+    const stepBC = document.getElementById('pub-wants-step-b-concrete');
+    if (stepA) stepA.style.display = '';
+    if (stepBF) stepBF.style.display = 'none';
+    if (stepBC) stepBC.style.display = 'none';
+    pubWantsType = null;
+    pubWantsOpen = null;
+    // Reset estilos botones
+    ['cafe','surprise','flexible','concrete'].forEach(t => {
+      const btn = document.getElementById('wtype-' + t);
+      if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)'; }
+    });
+  }
 
   // Progress bar
   const fill = document.getElementById('pub-flow-fill');
@@ -9817,10 +9907,8 @@ function pubNext(skip = false) {
       }
     }
     if (pubCurrentScreen === 2) {
-      if (pubWantsOpen === null) { showToast('⚠️ Indica tu nivel de flexibilidad'); return; }
-      if (pubWantsOpen === true && pubOpenCats.length === 0) { showToast('⚠️ Selecciona al menos una categoría'); return; }
-      if (pubWantsOpen === false && !exchangeOptions.length) { showToast('⚠️ Añade al menos una opción de cambio'); return; }
-      // 'cafe' no necesita validación extra
+      // Si no ha seleccionado tipo todavía
+      if (!pubWantsType) { showToast('⚠️ Indica qué aceptas a cambio'); return; }
     }
   }
   if (pubCurrentScreen < PUB_SCREENS) pubGoTo(pubCurrentScreen + 1);
@@ -9828,6 +9916,15 @@ function pubNext(skip = false) {
 }
 
 function pubBack() {
+  // Si estamos en sub-paso B (flexible o concreto), volver a sub-paso A
+  const stepBFlex = document.getElementById('pub-wants-step-b-flexible');
+  const stepBConc = document.getElementById('pub-wants-step-b-concrete');
+  if (pubCurrentScreen === 2 &&
+      ((stepBFlex && stepBFlex.style.display !== 'none') ||
+       (stepBConc && stepBConc.style.display !== 'none'))) {
+    pubBackToWantsA();
+    return;
+  }
   if (pubCurrentScreen > 1) pubGoTo(pubCurrentScreen - 1);
 }
 
