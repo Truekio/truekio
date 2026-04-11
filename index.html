@@ -2989,6 +2989,27 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <!-- Mantenemos ptab-config oculto para compatibilidad con funciones existentes -->
     <div id="ptab-config" style="display:none"></div>
 
+    <!-- Botón sugerencias — visible para todos -->
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px">¿Tienes alguna idea para mejorar Truquo?</div>
+      <button onclick="openSuggestionModal()" style="background:none;border:1.5px solid var(--border);color:var(--accent);font-size:13px;font-weight:700;padding:8px 20px;border-radius:99px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-l)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='none'">
+        💡 Sugerir mejora
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- SUGGESTION MODAL -->
+<div id="suggestion-overlay" onclick="if(event.target===this)closeSuggestionModal()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:var(--r-lg);padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.15rem;margin-bottom:6px">💡 Sugerir una mejora</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">Tu opinión nos ayuda a mejorar Truquo. Cuéntanos qué echas de menos o qué cambiarías.</div>
+    <textarea id="suggestion-text" rows="5" placeholder="Escribe tu sugerencia aquí..." style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:14px;font-family:inherit;resize:vertical;outline:none;color:var(--text)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="closeSuggestionModal()" class="btn btn-secondary btn-md" style="flex:1">Cancelar</button>
+      <button onclick="submitSuggestion()" class="btn btn-primary btn-md" style="flex:2" id="suggestion-submit-btn">Enviar sugerencia →</button>
+    </div>
   </div>
 </div>
 
@@ -9176,6 +9197,42 @@ function openEditProfileDrawer() {
 function closeEditProfileDrawer() {
   const overlay = document.getElementById('edit-profile-overlay');
   if (overlay) overlay.style.display = 'none';
+}
+
+// ── Sugerencias ──
+function openSuggestionModal() {
+  const overlay = document.getElementById('suggestion-overlay');
+  if (overlay) { overlay.style.display = 'flex'; }
+  const txt = document.getElementById('suggestion-text');
+  if (txt) txt.value = '';
+}
+
+function closeSuggestionModal() {
+  const overlay = document.getElementById('suggestion-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function submitSuggestion() {
+  if (!currentUser) { showToast('⚠️ Debes iniciar sesión'); return; }
+  const text = document.getElementById('suggestion-text')?.value?.trim();
+  if (!text) { showToast('⚠️ Escribe tu sugerencia'); return; }
+
+  const btn = document.getElementById('suggestion-submit-btn');
+  if (btn) { btn.textContent = 'Enviando...'; btn.disabled = true; }
+
+  const { error } = await db.from('suggestions').insert([{
+    user_id:    currentUser.id,
+    user_name:  currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Usuario',
+    user_email: currentUser.email,
+    text,
+  }]);
+
+  if (btn) { btn.textContent = 'Enviar sugerencia →'; btn.disabled = false; }
+
+  if (error) { showToast('⚠️ Error al enviar: ' + error.message); return; }
+
+  closeSuggestionModal();
+  showToast('✦ ¡Gracias por tu sugerencia!');
 }
 
 // Renderiza estrellas — siempre 5, rellenas según nota
