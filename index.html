@@ -9386,6 +9386,10 @@ async function saveProfile() {
   if (avatarNav && !currentUser.user_metadata?.avatar_url) avatarNav.textContent = (name || '?').charAt(0).toUpperCase();
 
   showToast('✦ Perfil actualizado correctamente');
+
+  // Cerrar drawer y volver al perfil
+  closeEditProfileDrawer();
+  navTo('profile');
 }
 
 function verifyDNI() {
