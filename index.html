@@ -1992,8 +1992,11 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
     <!-- Botón fijo al fondo -->
-    <div style="padding:16px 24px;border-top:1px solid var(--border);background:var(--white)">
-      <button class="btn btn-primary btn-lg btn-full btn-r" onclick="proposeFromDetail()">🤝 Proponer trueque</button>
+    <div style="padding:16px 24px;border-top:1px solid var(--border);background:var(--white);display:flex;gap:10px">
+      <button class="btn btn-primary btn-lg btn-full btn-r" onclick="proposeFromDetail()" id="detail-propose-btn">🤝 Proponer trueque</button>
+      <button onclick="shareItem()" style="background:var(--bg2);border:none;width:48px;height:48px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0" title="Compartir">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
     </div>
   </div>
 </div>
@@ -3799,6 +3802,17 @@ window._enterApp = function() {
 
   navTo('explore');
   loadAllRatings(); // cargar ratings de todos los usuarios para ordenación bayesiana
+
+  // Detectar parámetro ?item= en la URL para abrir objeto compartido
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _sharedItemId = _urlParams.get('item');
+  if (_sharedItemId) {
+    setTimeout(() => {
+      openDetail(_sharedItemId);
+      // Limpiar el parámetro de la URL sin recargar
+      window.history.replaceState({}, '', window.location.pathname);
+    }, 800);
+  }
 
   // ── Geolocalización: usar coords guardadas al instante, actualizar en bg ──
   function applyGeoAndRender(coords) {
@@ -8083,6 +8097,31 @@ function openDetail(itemId) {
       footerBtn.style.cursor = '';
     }
   }
+}
+
+async function shareItem() {
+  if (!detailCurrentItem) return;
+  const url = `${window.location.origin}${window.location.pathname}?item=${detailCurrentItem.id}`;
+  const title = detailCurrentItem.name;
+  const text = `¡Mira este objeto en Truquo! ${detailCurrentItem.name} — ${detailCurrentItem.description || 'Intercambia sin dinero'}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+    } catch(e) {
+      if (e.name !== 'AbortError') copyToClipboard(url);
+    }
+  } else {
+    copyToClipboard(url);
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('🔗 Link copiado al portapapeles');
+  }).catch(() => {
+    showToast('🔗 Link: ' + text);
+  });
 }
 
 function closeDetail() {
