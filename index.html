@@ -9749,12 +9749,14 @@ function selectWantsType(type) {
   const btn = document.getElementById('wtype-' + type);
   if (btn) { btn.style.borderColor = colors[type]; btn.style.background = bgs[type]; }
 
-  // Si café o sorpréndeme → ir directamente al siguiente paso principal
+  // Si café o sorpréndeme → confirmar selección y habilitar publicar directamente
   if (type === 'cafe' || type === 'surprise') {
     pubWantsOpen = type;
     exchangeOptions = [];
     pubOpenCats = [];
-    pubGoTo(3);
+    // Mostrar confirmación inline y cambiar botón a Publicar
+    document.getElementById('pub-next-btn').textContent = '🚀 Publicar';
+    document.getElementById('pub-next-btn').onclick = () => publishItem();
     return;
   }
 
@@ -9772,7 +9774,7 @@ function selectWantsType(type) {
         `<button onclick="toggleOpenCat(this,'${c}')" style="padding:7px 16px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all .14s">${c}</button>`
       ).join('');
     }
-    document.getElementById('pub-next-btn').textContent = 'Continuar →';
+    document.getElementById('pub-next-btn').textContent = '🚀 Publicar';
     document.getElementById('pub-next-btn').onclick = () => pubNextWants();
     return;
   }
@@ -9783,7 +9785,7 @@ function selectWantsType(type) {
     document.getElementById('pub-wants-step-a').style.display = 'none';
     document.getElementById('pub-wants-step-b-flexible').style.display = 'none';
     document.getElementById('pub-wants-step-b-concrete').style.display = '';
-    document.getElementById('pub-next-btn').textContent = 'Continuar →';
+    document.getElementById('pub-next-btn').textContent = '🚀 Publicar';
     document.getElementById('pub-next-btn').onclick = () => pubNextWants();
   }
 }
@@ -9803,7 +9805,8 @@ function pubNextWants() {
     }
     document.getElementById('wants-concrete-empty').style.display = 'none';
   }
-  pubGoTo(3);
+  // Publicar directamente ya que solo hay 2 pantallas
+  publishItem();
 }
 
 function pubBackToWantsA() {
