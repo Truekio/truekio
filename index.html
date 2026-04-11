@@ -2968,29 +2968,54 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
 
-    <!-- PROFILE TABS — sin Configuración -->
-    <div class="card profile-header-card" style="padding:0 28px 0;margin-bottom:20px">
-      <div class="ptabs" style="border-top:none;padding-top:0;margin-top:0">
-        <button class="ptab active" id="ptab-btn-items" onclick="switchPTab('items')">Mis objetos</button>
-        <button class="ptab" id="ptab-btn-favs" onclick="switchPTab('favs')">❤️ Favoritos</button>
-        <button class="ptab" id="ptab-btn-done" onclick="switchPTab('done')">🤝 Historial</button>
+    <!-- PROFILE SECTIONS — desplegables -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+
+      <!-- Mis objetos -->
+      <div class="card" style="overflow:hidden">
+        <div onclick="toggleProfileSection('items')" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none">
+          <div style="font-weight:700;font-size:14px;color:var(--text)">📦 Mis objetos</div>
+          <svg id="arrow-items" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--muted);transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="section-items" style="display:none;padding:0 20px 16px">
+          <div class="my-items-grid" id="my-items-grid"></div>
+        </div>
       </div>
+
+      <!-- Favoritos -->
+      <div class="card" style="overflow:hidden">
+        <div onclick="toggleProfileSection('favs')" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none">
+          <div style="font-weight:700;font-size:14px;color:var(--text)">❤️ Favoritos</div>
+          <svg id="arrow-favs" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--muted);transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="section-favs" style="display:none;padding:0 20px 16px">
+          <div id="profile-favs-grid"></div>
+        </div>
+      </div>
+
+      <!-- Historial -->
+      <div class="card" style="overflow:hidden">
+        <div onclick="toggleProfileSection('done')" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none">
+          <div style="font-weight:700;font-size:14px;color:var(--text)">🤝 Historial de trueques</div>
+          <svg id="arrow-done" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--muted);transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="section-done" style="display:none;padding:0 20px 16px">
+          <div id="done-grid"></div>
+        </div>
+      </div>
+
     </div>
 
-    <div class="ptab-content active" id="ptab-items">
-      <div class="my-items-grid" id="my-items-grid"></div>
+    <!-- Compatibilidad con funciones existentes -->
+    <div style="display:none">
+      <div id="ptab-items"></div>
+      <div id="ptab-favs"></div>
+      <div id="ptab-done"></div>
+      <div id="ptab-config"></div>
     </div>
-    <div class="ptab-content" id="ptab-favs">
-      <div id="profile-favs-grid"></div>
-    </div>
-    <div class="ptab-content" id="ptab-done">
-      <div id="done-grid"></div>
-    </div>
-    <!-- Mantenemos ptab-config oculto para compatibilidad con funciones existentes -->
-    <div id="ptab-config" style="display:none"></div>
 
-    <!-- Botón sugerencias — visible para todos -->
-    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
+    <!-- Botón sugerencias — siempre visible -->
+    <div style="padding:24px 0;border-top:1px solid var(--border);text-align:center">
       <div style="font-size:13px;color:var(--muted);margin-bottom:10px">¿Tienes alguna idea para mejorar Truquo?</div>
       <button onclick="openSuggestionModal()" style="background:none;border:1.5px solid var(--border);color:var(--accent);font-size:13px;font-weight:700;padding:8px 20px;border-radius:99px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-l)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='none'">
         💡 Sugerir mejora
@@ -9179,6 +9204,21 @@ async function deleteItem(itemId, btnEl) {
   if (error) { showToast('⚠️ Error al eliminar'); btnEl.textContent = '🗑'; btnEl.disabled = false; return; }
   showToast('✓ Objeto eliminado');
   loadMyItems();
+}
+
+function toggleProfileSection(section) {
+  const content = document.getElementById('section-' + section);
+  const arrow   = document.getElementById('arrow-' + section);
+  if (!content) return;
+  const isOpen = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : '';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+  // Cargar contenido al abrir
+  if (!isOpen) {
+    if (section === 'items')  renderMyItems();
+    if (section === 'favs')   renderFavorites();
+    if (section === 'done')   renderDoneTrades();
+  }
 }
 
 function switchPTab(tab) {
