@@ -449,7 +449,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 
 /* ── CHAT ── */
 .messages-layout{display:grid;grid-template-columns:290px 1fr;gap:16px;min-height:560px;}
-.conv-list{display:flex;flex-direction:column;overflow-y:auto;}
+.conv-list{display:flex;flex-direction:column;overflow:hidden;}
 .conv-head{padding:16px;border-bottom:1px solid var(--border);}
 .conv-head h3{font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;margin-bottom:12px;}
 .conv-search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;}
@@ -11528,7 +11528,14 @@ if ('serviceWorker' in navigator) {
       });
 
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') reg.update();
+        if (document.visibilityState === 'visible') {
+          reg.update();
+          // Limpiar badge del icono cuando el usuario abre la app
+          if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage('CLEAR_BADGE');
+          }
+        }
       });
 
       console.log('[SW] ✅ Registrado correctamente:', reg.scope);
