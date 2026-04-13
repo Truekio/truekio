@@ -7726,6 +7726,10 @@ async function openConv(convId) {
   const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
   if (conv[unreadField] > 0) {
     await db.from('conversations').update({ [unreadField]: 0 }).eq('id', convId);
+    // Actualizar contador en memoria y badge
+    lastMsgCount[convId] = 0;
+    window._unreadMsgCount = Object.values(lastMsgCount).reduce((a, b) => a + b, 0);
+    updateMsgBadge(window._unreadMsgCount);
   }
   const otherName = isUser1 ? conv.user2_name : conv.user1_name;
   const otherUserId = isUser1 ? conv.user2_id : conv.user1_id;
