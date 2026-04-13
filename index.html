@@ -1992,7 +1992,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
     <!-- Botón fijo al fondo -->
-    <div style="padding:16px 24px;border-top:1px solid var(--border);background:var(--white);display:flex;gap:10px">
+    <div style="padding:16px 24px;padding-bottom:max(16px,calc(16px + env(safe-area-inset-bottom)));border-top:1px solid var(--border);background:var(--white);display:flex;gap:10px">
       <button class="btn btn-primary btn-lg btn-full btn-r" onclick="proposeFromDetail()" id="detail-propose-btn">🤝 Proponer trueque</button>
       <button onclick="shareItem()" style="background:var(--bg2);border:none;width:48px;height:48px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0" title="Compartir">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
