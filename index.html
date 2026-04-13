@@ -8147,6 +8147,9 @@ function openDetail(itemId) {
   // Mostrar con display:flex en vez de clase open
   const overlay = document.getElementById('detail-overlay');
   overlay.style.display = 'flex';
+  // Ocultar nav inferior en móvil para que el botón sea accesible
+  const bn = document.querySelector('.bottom-nav');
+  if (bn) bn.style.display = 'none';
 
   // Botón inferior — distinto si es tu propio objeto
   const isOwn = currentUser && (
@@ -8212,6 +8215,9 @@ function copyToClipboard(text) {
 function closeDetail() {
   document.getElementById('detail-overlay').style.display = 'none';
   detailCurrentItem = null;
+  // Restaurar nav inferior
+  const bn = document.querySelector('.bottom-nav');
+  if (bn && window.innerWidth < 641) bn.style.display = '';
 }
 
 function closeUserProfile() {
