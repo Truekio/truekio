@@ -7914,7 +7914,70 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
   // Renderizar según estado
   let html = '';
 
-  if (proposalStatus === 'cancelled') {
+  if (proposalStatus === 'pending') {
+    // Cargar datos completos de la propuesta
+    const { data: prop } = await db.from('proposals')
+      .select('id,item_id,item_title,offered_item_id,offered_item_title,offered_item_emoji,offerer_id,offerer_name,owner_id,message,created_at')
+      .eq('id', freshConv.proposal_id).single();
+
+    if (prop) {
+      const amIOwner = currentUser.id === prop.owner_id;
+      const date = new Date(prop.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+
+      // Fotos
+      const getPhoto = (id) => {
+        if (!id) return null;
+        const it = items.find(i => String(i.id) === String(id));
+        return it?.photos?.[0] || it?.photo_urls?.[0] || null;
+      };
+      const offeredPhoto = getPhoto(prop.offered_item_id);
+      const itemPhoto    = getPhoto(prop.item_id);
+
+      html = `<div style="margin:8px 16px;border:1.5px solid #f59e0b;border-radius:var(--r-lg);padding:16px;background:var(--white);box-shadow:0 0 0 3px rgba(245,158,11,.1)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--accent)">⏳ Propuesta pendiente</div>
+          <div style="font-size:11px;color:var(--muted)">${date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:100px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${amIOwner ? 'Te ofrecen' : 'Ofreces'}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div onclick="${prop.offered_item_id ? `openDetail(${prop.offered_item_id})` : ''}" style="cursor:${prop.offered_item_id ? 'pointer' : 'default'}">
+                ${offeredPhoto ? `<img src="${offeredPhoto}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0">` : `<div style="width:52px;height:52px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${prop.offered_item_emoji||'📦'}</div>`}
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:13px">${prop.offered_item_title}</div>
+                <div style="font-size:11px;color:var(--muted)">de ${amIOwner ? prop.offerer_name : 'ti'}</div>
+                ${prop.offered_item_id ? `<button onclick="openDetail(${prop.offered_item_id})" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit">Ver detalle →</button>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="font-size:1.2rem;color:var(--muted)">↔</div>
+          <div style="flex:1;min-width:100px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${amIOwner ? 'Por tu' : 'Por'}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div onclick="${prop.item_id ? `openDetail(${prop.item_id})` : ''}" style="cursor:${prop.item_id ? 'pointer' : 'default'}">
+                ${itemPhoto ? `<img src="${itemPhoto}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0">` : `<div style="width:52px;height:52px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📦</div>`}
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:13px">${prop.item_title}</div>
+                ${prop.item_id ? `<button onclick="openDetail(${prop.item_id})" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit">Ver detalle →</button>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+        ${prop.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${prop.message}"</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${amIOwner ? `
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondProposal('${prop.id}','accepted')">✅ Aceptar</button>
+            <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none" onclick="respondProposal('${prop.id}','rejected')">❌ Rechazar</button>
+          ` : `
+            <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="deleteProposal('${prop.id}')">🗑 Retirar propuesta</button>
+          `}
+        </div>
+      </div>`;
+    }
+  } else if (proposalStatus === 'cancelled') {
     html = `<div style="text-align:center">
       <div style="display:inline-block;background:#fef2f2;border:1px solid #fecaca;color:#ef4444;font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--r-lg)">
         ✕ Trueque cancelado
@@ -8580,13 +8643,42 @@ async function sendOffer() {
 
   if(error){ showToast('⚠️ Error al enviar: ' + error.message); return; }
 
-  closeModal();
-  showToast('✦ Propuesta enviada correctamente');
+  // Obtener la propuesta recién creada
+  const { data: newProp } = await db.from('proposals')
+    .select('id')
+    .eq('offerer_id', currentUser.id)
+    .eq('item_id', activeModalItem.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
 
-  // Quitar de matches el par con ese usuario/objeto (ya no tiene sentido mostrarlo)
+  // Crear conversación bloqueada
+  let newConvId = null;
+  if (newProp) {
+    const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    const ownerName = itemData?.user_name || 'Usuario';
+    const { data: newConv } = await db.from('conversations').insert([{
+      proposal_id: newProp.id,
+      user1_id: ownerId,
+      user1_name: ownerName,
+      user2_id: currentUser.id,
+      user2_name: myName,
+      item1_title: activeModalItem.name,
+      item2_title: offeredObj?.title || '☕ Sin objeto a cambio',
+      last_message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
+      last_message_at: new Date().toISOString(),
+      status: 'pending',
+    }]).select('id').single();
+    newConvId = newConv?.id;
+  }
+
+  closeModal();
+  showToast('✦ Propuesta enviada');
+
+  // Quitar de matches
   if (ownerId) {
     matches = matches.filter(m => m.userId !== ownerId || String(m.theirItem?.id) === String(activeModalItem.id));
-    // Si el objeto propuesto era un match específico, quitarlo también por id de objeto
     matches = matches.filter(m => String(m.theirItem?.id) !== String(activeModalItem.id));
     renderMatches();
   }
@@ -8595,12 +8687,20 @@ async function sendOffer() {
   const ownerEmail = await getUserEmail(ownerId);
   sendEmail('new_proposal', ownerEmail, {
     offererName: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
-    offeredItem: offeredObj.title,
+    offeredItem: offeredObj?.title || '☕',
     itemTitle: activeModalItem.name,
     message: msg || '',
   });
 
   loadProposals();
+
+  // Navegar a Mensajes y abrir la conversación
+  if (newConvId) {
+    navToActivity('messages');
+    setTimeout(() => openConv(newConvId), 400);
+  } else {
+    navToActivity('messages');
+  }
 }
 
 // ═══ TRUST SYSTEM ═══
