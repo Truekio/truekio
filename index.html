@@ -7496,7 +7496,7 @@ async function loadConversations() {
   if (!currentUser) return;
   const { data, error } = await db
     .from('conversations')
-    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,last_message,last_message_at,unread_user1,unread_user2,proposal_id,confirmed_by')
+    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,last_message,last_message_at,unread_user1,unread_user2,proposal_id,confirmed_by,status')
     .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
     .order('last_message_at', { ascending: false });
 
@@ -7706,7 +7706,7 @@ async function openConv(convId) {
 
   // Cargar datos de la conversación
   const { data: conv } = await db.from('conversations')
-    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,last_message,last_message_at,unread_user1,unread_user2,proposal_id,confirmed_by')
+    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,last_message,last_message_at,unread_user1,unread_user2,proposal_id,confirmed_by,status')
     .eq('id', convId).single();
   if (!conv) return;
   activeConvData = conv;
@@ -7743,7 +7743,15 @@ async function openConv(convId) {
     main.classList.add('mobile-open');
   }
 
-  const cancelBtn = '';
+  const isPending = conv.status === 'pending';
+  const chatInputHtml = isPending
+    ? `<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--bg);text-align:center;font-size:12px;color:var(--muted)">
+        🔒 El chat se activa cuando se acepte la propuesta
+       </div>`
+    : `<div class="chat-input-area">
+        <textarea class="chat-textarea" id="chat-input" placeholder="Escribe un mensaje..." onkeydown="chatKeyDown(event)"></textarea>
+        <button class="chat-send" onclick="sendMessage()">➤</button>
+       </div>`;
 
   main.innerHTML = `
     <div class="chat-head">
@@ -7758,10 +7766,7 @@ async function openConv(convId) {
     <div class="chat-messages" id="chat-msgs">
       <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando mensajes...</div>
     </div>
-    <div class="chat-input-area">
-      <textarea class="chat-textarea" id="chat-input" placeholder="Escribe un mensaje..." onkeydown="chatKeyDown(event)"></textarea>
-      <button class="chat-send" onclick="sendMessage()">➤</button>
-    </div>`;
+    ${chatInputHtml}`;
 
   await loadMessages(convId);
   renderTradeStatus(conv, otherName, otherUserId);
@@ -7835,6 +7840,56 @@ async function cancelTrade(convId) {
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
 }
 
+async function acceptProposalFromChat(proposalId, convId) {
+  // Reutilizar la función existente de aceptar propuesta
+  await respondProposal(proposalId, 'accepted');
+  // Actualizar conversación a activa
+  await db.from('conversations').update({ status: 'active' }).eq('id', convId);
+  // Reabrir el chat actualizado
+  const conv = activeConvData;
+  if (conv) openConv(convId);
+}
+
+async function rejectProposalFromChat(proposalId, convId) {
+  await respondProposal(proposalId, 'rejected');
+  await db.from('conversations').update({ status: 'rejected' }).eq('id', convId);
+  // Ocultar conversación
+  try {
+    const key = `truquo_hidden_convs_${currentUser.id}`;
+    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!hidden.includes(convId)) hidden.push(convId);
+    localStorage.setItem(key, JSON.stringify(hidden));
+  } catch(e) {}
+  loadConversations();
+  // Volver a lista
+  const main = document.getElementById('chat-main');
+  if (main) {
+    main.classList.remove('mobile-open');
+    main.innerHTML = `<div class="chat-empty"><div class="ce-icon">💬</div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div><p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p></div>`;
+  }
+  showToast('Propuesta rechazada');
+}
+
+async function withdrawProposalFromChat(proposalId, convId) {
+  const { error } = await db.from('proposals').delete().eq('id', proposalId).eq('offerer_id', currentUser.id);
+  if (error) { showToast('⚠️ Error: ' + error.message); return; }
+  await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
+  try {
+    const key = `truquo_hidden_convs_${currentUser.id}`;
+    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!hidden.includes(convId)) hidden.push(convId);
+    localStorage.setItem(key, JSON.stringify(hidden));
+  } catch(e) {}
+  loadConversations();
+  loadProposals();
+  const main = document.getElementById('chat-main');
+  if (main) {
+    main.classList.remove('mobile-open');
+    main.innerHTML = `<div class="chat-empty"><div class="ce-icon">💬</div><div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div><p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p></div>`;
+  }
+  showToast('🗑 Propuesta retirada');
+}
+
 async function renderTradeStatus(conv, otherName, otherUserId) {
   const el = document.getElementById('chat-trade-status');
   if (!el || !conv) return;
@@ -7873,8 +7928,30 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
 
   // Renderizar según estado
   let html = '';
+  const isOwner = freshConv.user1_id === currentUser.id; // user1 es el dueño del objeto
 
-  if (proposalStatus === 'cancelled') {
+  if (proposalStatus === 'pending') {
+    const myItemTitle    = isOwner ? conv.item1_title : conv.item2_title;
+    const theirItemTitle = isOwner ? conv.item2_title : conv.item1_title;
+    if (isOwner) {
+      // Soy el receptor — puedo Aceptar o Rechazar
+      html = `<div style="margin:8px 16px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:4px">🤝 Nueva propuesta de trueque</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${otherName} quiere intercambiar <strong>${theirItemTitle}</strong> por tu <strong>${myItemTitle}</strong></div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button onclick="acceptProposalFromChat('${freshConv.proposal_id}','${conv.id}')" style="background:#16a34a;color:#fff;border:none;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✅ Aceptar</button>
+          <button onclick="rejectProposalFromChat('${freshConv.proposal_id}','${conv.id}')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:8px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✕ Rechazar</button>
+        </div>
+      </div>`;
+    } else {
+      // Soy el que propuso — puedo Retirar
+      html = `<div style="margin:8px 16px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:4px">⏳ Propuesta enviada</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Esperando respuesta de ${otherName}</div>
+        <button onclick="withdrawProposalFromChat('${freshConv.proposal_id}','${conv.id}')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:6px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑 Retirar propuesta</button>
+      </div>`;
+    }
+  } else if (proposalStatus === 'cancelled') {
     html = `<div style="text-align:center">
       <div style="display:inline-block;background:#fef2f2;border:1px solid #fecaca;color:#ef4444;font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--r-lg)">
         ✕ Trueque cancelado
@@ -8541,8 +8618,36 @@ async function sendOffer() {
 
   if(error){ showToast('⚠️ Error al enviar: ' + error.message); return; }
 
+  // Obtener el id de la propuesta recién creada
+  const { data: newProp } = await db.from('proposals')
+    .select('id')
+    .eq('offerer_id', currentUser.id)
+    .eq('item_id', activeModalItem.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  // Crear conversación bloqueada (status = 'pending')
+  if (newProp) {
+    const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    const ownerName = itemData?.user_name || 'Usuario';
+    await db.from('conversations').insert([{
+      proposal_id: newProp.id,
+      user1_id: ownerId,
+      user1_name: ownerName,
+      user2_id: currentUser.id,
+      user2_name: myName,
+      item1_title: activeModalItem.name,
+      item2_title: offeredObj?.title || '☕ Sin objeto a cambio',
+      last_message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
+      last_message_at: new Date().toISOString(),
+      status: 'pending',
+    }]);
+  }
+
   closeModal();
-  showToast('✦ Propuesta enviada correctamente');
+  showToast('✦ Propuesta enviada — ve a Mensajes para seguir el estado');
 
   // Quitar de matches el par con ese usuario/objeto (ya no tiene sentido mostrarlo)
   if (ownerId) {
