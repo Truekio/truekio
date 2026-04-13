@@ -7572,7 +7572,7 @@ function renderConvList(data) {
   if (!list) return;
 
   if (!data || !data.length) {
-    list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando se acepte un trueque.</span></div>';
+    list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando propongas o aceptes un trueque.</span></div>';
     return;
   }
 
@@ -7585,7 +7585,7 @@ function renderConvList(data) {
   let totalUnread = 0;
 
   if (!visibleData.length) {
-    list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando se acepte un trueque.</span></div>';
+    list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando propongas o aceptes un trueque.</span></div>';
     updateMsgBadge(0);
     return;
   }
@@ -7618,7 +7618,9 @@ function renderConvList(data) {
             <span style="${isUnread ? 'font-weight:800;color:var(--text)' : ''}">${otherName||'Usuario'}</span>
             <span class="conv-time">${time}</span>
           </div>
-          <div class="conv-preview" style="${isUnread ? 'font-weight:600;color:var(--text2)' : ''}">${c.last_message || subject}</div>
+          <div class="conv-preview" style="${isUnread ? 'font-weight:600;color:var(--text2)' : ''}">
+            ${c.status === 'pending' ? `<span style="color:#92400e;font-weight:700;font-size:11px">⏳ Propuesta pendiente</span>` : c.last_message || subject}
+          </div>
         </div>
         ${isUnread ? `<div class="conv-unread">${unread}</div>` : ''}
       </div>
