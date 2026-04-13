@@ -6448,18 +6448,24 @@ function renderMatches() {
 
 function updateActivityBadge() {
   const actBadge = document.getElementById('activity-badge-nav');
-  const actDot = document.getElementById('activity-dot');
+  const actDot   = document.getElementById('activity-dot');
   if (!actBadge) return;
 
+  // Usar contadores directos del sistema Realtime
+  const pendingProposals = window._pendingProposalCount || 0;
+  const pendingConf      = window._pendingConfirmCount  || 0;
+  const unreadMsgs       = window._unreadMsgCount       || 0;
+
+  // Fallback: leer de los badges DOM si existen
   const proposalsBadge = document.getElementById('mtab-proposals-count');
   const confirmBadge   = document.getElementById('mtab-confirm-count');
   const msgsBadge      = document.getElementById('mtab-messages-count');
+  const domProposals = (proposalsBadge?.style.display !== 'none') ? (parseInt(proposalsBadge?.textContent || '0') || 0) : 0;
+  const domConf      = (confirmBadge?.style.display   !== 'none') ? (parseInt(confirmBadge?.textContent   || '0') || 0) : 0;
+  const domMsgs      = (msgsBadge?.style.display      !== 'none') ? (parseInt(msgsBadge?.textContent      || '0') || 0) : 0;
 
-  const pendingProposals = (proposalsBadge?.style.display !== 'none') ? (parseInt(proposalsBadge?.textContent || '0') || 0) : 0;
-  const pendingConf      = (confirmBadge?.style.display  !== 'none') ? (parseInt(confirmBadge?.textContent  || '0') || 0) : 0;
-  const unreadMsgs       = (msgsBadge?.style.display     !== 'none') ? (parseInt(msgsBadge?.textContent     || '0') || 0) : 0;
+  const total = Math.max(pendingProposals, domProposals) + Math.max(pendingConf, domConf) + Math.max(unreadMsgs, domMsgs);
 
-  const total = pendingProposals + pendingConf + unreadMsgs;
   if (total > 0) {
     actBadge.textContent = total > 9 ? '9+' : total;
     actBadge.style.display = 'inline-flex';
@@ -7302,6 +7308,7 @@ function playNotifSound() {
 
 // Actualizar badge rojo de mensajes en nav
 function updateMsgBadge(count) {
+  window._unreadMsgCount = count;
   const badges = document.querySelectorAll('#msg-badge-nav, .bnav-badge-msg');
   badges.forEach(b => {
     if (!b) return;
@@ -7374,6 +7381,9 @@ async function startBgPolling() {
       const unreadField = isUser1 ? 'unread_user1' : 'unread_user2';
       lastMsgCount[conv.id] = conv[unreadField] || 0;
     }
+    // Calcular total de mensajes no leídos
+    window._unreadMsgCount = Object.values(lastMsgCount).reduce((a, b) => a + b, 0);
+    updateActivityBadge();
   }
   // El canal bg-messages se elimina — las notificaciones de mensajes
   // las gestiona el canal conv-list que ya escucha UPDATE en conversations
