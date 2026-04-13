@@ -39,38 +39,17 @@ self.addEventListener('fetch', event => {
 
 // ── PUSH ──
 self.addEventListener('push', event => {
-  console.log('[SW] Push recibido:', event.data ? 'con datos' : 'sin datos');
-
-  let title = 'Truquo';
-  let body  = 'Tienes una novedad';
-  let url   = '/';
-  let tag   = 'truquo';
-
+  let title = 'Truquo', body = 'Tienes una novedad', url = '/', tag = 'truquo';
   if (event.data) {
     try {
-      const text = event.data.text();
-      console.log('[SW] Push data text:', text.substring(0, 100));
-      const data = JSON.parse(text);
-      title = data.title || title;
-      body  = data.body  || body;
-      url   = data.url   || url;
-      tag   = data.tag   || tag;
-    } catch(e) {
-      console.log('[SW] Push data no es JSON:', e.message);
-      body = event.data.text() || body;
-    }
+      const data = JSON.parse(event.data.text());
+      title = data.title || title; body = data.body || body;
+      url = data.url || url; tag = data.tag || tag;
+    } catch(e) { body = event.data.text() || body; }
   }
-
-  console.log('[SW] Mostrando notificación:', title, body);
-
   event.waitUntil(
     self.registration.showNotification(title, {
-      body,
-      icon:    '/icon.png',
-      badge:   '/icon.png',
-      tag,
-      data:    { url },
-      vibrate: [200, 100, 200],
+      body, icon: '/icon.png', badge: '/icon.png', tag, data: { url }, vibrate: [200, 100, 200],
     })
   );
 });
