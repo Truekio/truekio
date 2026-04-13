@@ -4870,6 +4870,31 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
+function showAppConfirm(title, body, onConfirm) {
+  let overlay = document.getElementById('app-confirm-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'app-confirm-overlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = `
+      <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+        <div id="app-confirm-title" style="font-weight:700;font-size:1rem;color:var(--text);margin-bottom:6px"></div>
+        <div id="app-confirm-body" style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5"></div>
+        <div style="display:flex;gap:10px">
+          <button id="app-confirm-cancel" class="btn btn-secondary btn-md" style="flex:1">Cancelar</button>
+          <button id="app-confirm-ok" class="btn btn-danger btn-md" style="flex:1">Confirmar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  document.getElementById('app-confirm-title').textContent = title;
+  document.getElementById('app-confirm-body').textContent = body;
+  overlay.style.display = 'flex';
+  const close = () => { overlay.style.display = 'none'; };
+  document.getElementById('app-confirm-cancel').onclick = close;
+  document.getElementById('app-confirm-ok').onclick = () => { close(); onConfirm(); };
+}
+
 // ═══ FILTERS ═══
 function buildFilters() {
   const row = document.getElementById('filter-row');
@@ -5390,11 +5415,12 @@ async function loadProposals() {
 
 async function deleteProposal(proposalId) {
   if (!currentUser) return;
-  if (!confirm('¿Retirar esta propuesta?')) return;
-  const { error } = await db.from('proposals').delete().eq('id', proposalId).eq('offerer_id', currentUser.id);
-  if (error) { showToast('⚠️ Error: ' + error.message); return; }
-  showToast('🗑 Propuesta retirada');
-  loadProposals();
+  showAppConfirm('¿Retirar esta propuesta?', 'El objeto volverá a estar disponible.', async () => {
+    const { error } = await db.from('proposals').delete().eq('id', proposalId).eq('offerer_id', currentUser.id);
+    if (error) { showToast('⚠️ Error: ' + error.message); return; }
+    showToast('🗑 Propuesta retirada');
+    loadProposals();
+  });
 }
 
 async function respondProposal(proposalId, status) {
@@ -6657,11 +6683,11 @@ function rejectChain(id) {
   const msg = ch?.myAccepted
     ? '¿Abandonar esta cadena? Los demás participantes serán notificados.'
     : '¿Rechazar esta cadena de trueques?';
-  if (!confirm(msg)) return;
-  chains = chains.filter(c => c.id !== id);
-  renderMatches();
-  showToast(ch?.myAccepted ? '🗑 Has abandonado la cadena' : '🗑 Cadena rechazada');
-}
+  showAppConfirm(msg, '', () => {
+    chains = chains.filter(c => c.id !== id);
+    renderMatches();
+    showToast(ch?.myAccepted ? '🗑 Has abandonado la cadena' : '🗑 Cadena rechazada');
+  });
 
 function openChainModal(chainId) {
   const ch = chains.find(c=>c.id===chainId);
@@ -7793,7 +7819,7 @@ async function openConv(convId) {
 }
 
 async function cancelTrade(convId) {
-  if (!confirm('¿Cancelar este trueque? Los objetos volverán a estar disponibles.')) return;
+  showAppConfirm('¿Cancelar este trueque?', 'Los objetos volverán a estar disponibles.', async () => {
 
   const { data: conv } = await db.from('conversations')
     .select('id,proposal_id')
@@ -7833,6 +7859,7 @@ async function cancelTrade(convId) {
   renderConfirmations();
   loadConversations();
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
+  }); // fin showAppConfirm
 }
 
 async function renderTradeStatus(conv, otherName, otherUserId) {
@@ -9198,12 +9225,13 @@ async function saveEditItem() {
 }
 
 async function deleteItem(itemId, btnEl) {
-  if (!confirm('¿Seguro que quieres eliminar este objeto? Esta acción no se puede deshacer.')) return;
-  btnEl.textContent = '⏳'; btnEl.disabled = true;
-  const { error } = await db.from('items').delete().eq('id', itemId).eq('user_id', currentUser.id);
-  if (error) { showToast('⚠️ Error al eliminar'); btnEl.textContent = '🗑'; btnEl.disabled = false; return; }
-  showToast('✓ Objeto eliminado');
-  loadMyItems();
+  showAppConfirm('¿Eliminar este objeto?', 'Esta acción no se puede deshacer.', async () => {
+    btnEl.textContent = '⏳'; btnEl.disabled = true;
+    const { error } = await db.from('items').delete().eq('id', itemId).eq('user_id', currentUser.id);
+    if (error) { showToast('⚠️ Error al eliminar'); btnEl.textContent = '🗑'; btnEl.disabled = false; return; }
+    showToast('✓ Objeto eliminado');
+    loadMyItems();
+  });
 }
 
 function toggleProfileSection(section) {
@@ -9974,7 +10002,12 @@ function pubBack() {
 function pubCancel() {
   const name = document.getElementById('pub-name')?.value?.trim();
   if (name) {
-    if (!confirm('¿Seguro que quieres cancelar? Perderás los datos introducidos.')) return;
+    showAppConfirm('¿Cancelar la publicación?', 'Perderás los datos introducidos.', () => {
+      pubWantsOpen = null;
+      pubOpenCats = [];
+      navTo('explore');
+    });
+    return;
   }
   pubWantsOpen = null;
   pubOpenCats = [];
