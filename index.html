@@ -5424,9 +5424,16 @@ async function respondProposal(proposalId, status) {
       if (offeredItemId) updates.push(db.from('items').update({ status: 'reserved' }).eq('id', offeredItemId));
       await Promise.all(updates);
 
-      // Crear conversación solo si no existe ya
+      // Actualizar conversación existente a active, o crear si no existe
       const { data: existing } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
-      if (!existing) {
+      if (existing) {
+        // Actualizar la conversación pending a active
+        await db.from('conversations').update({
+          status: 'active',
+          last_message: '🤝 Trueque aceptado — ¡coordinad el encuentro!',
+          last_message_at: new Date().toISOString(),
+        }).eq('id', existing.id);
+      } else {
         const ownerName = currentUser.id === p.owner_id
           ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0])
           : p.offerer_name;
@@ -5441,16 +5448,17 @@ async function respondProposal(proposalId, status) {
           item2_title: p.offered_item_title,
           last_message: '🤝 Trueque aceptado — ¡coordinad el encuentro!',
           last_message_at: new Date().toISOString(),
+          status: 'active',
         }]);
       }
     }
-    showToast('✅ Trueque aceptado — abriendo chat...');
+    showToast('✅ Trueque aceptado — ¡coordinad el encuentro!');
 
-    // Recargar items para reflejar el status reserved en el explorador
+    // Recargar items
     await loadItemsFromSupabase();
     applyFilter('', currentFilter);
 
-    // Email al que hizo la propuesta
+    // Email y push
     if (p) {
       const offererEmail = await getUserEmail(p.offerer_id);
       const ownerDisplayName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
@@ -5459,18 +5467,18 @@ async function respondProposal(proposalId, status) {
         itemTitle: p.item_title,
         offeredItem: p.offered_item_title,
       });
-      // Push al que hizo la propuesta
       sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`);
     }
-    setTimeout(async () => {
-      navTo('messages');
-      // Buscar la conversación recién creada y abrirla
-      const { data: convs } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
-      if (convs) setTimeout(() => openConv(convs.id), 400);
-    }, 600);
+
+    // Recargar el chat actual sin salir
+    const { data: convs } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
+    if (convs) {
+      loadConversations();
+      setTimeout(() => openConv(convs.id), 300);
+    }
   } else {
     showToast('❌ Propuesta rechazada');
-    // Recargar items para reflejar el status available en el explorador
+    // Recargar items
     await loadItemsFromSupabase();
     applyFilter('', currentFilter);
     // Liberar items — vuelven a estar disponibles
@@ -5484,6 +5492,13 @@ async function respondProposal(proposalId, status) {
       const updates = [db.from('items').update({ status: 'available' }).eq('id', pRej.item_id)];
       if (offeredIdRej) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredIdRej));
       await Promise.all(updates);
+    }
+    // Actualizar conversación a rechazada y recargar el chat
+    const { data: rejConv } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
+    if (rejConv) {
+      await db.from('conversations').update({ status: 'rejected' }).eq('id', rejConv.id);
+      loadConversations();
+      setTimeout(() => openConv(rejConv.id), 300);
     }
   }
 
@@ -7981,6 +7996,12 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
     html = `<div style="text-align:center">
       <div style="display:inline-block;background:#fef2f2;border:1px solid #fecaca;color:#ef4444;font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--r-lg)">
         ✕ Trueque cancelado
+      </div>
+    </div>`;
+  } else if (proposalStatus === 'rejected') {
+    html = `<div style="text-align:center">
+      <div style="display:inline-block;background:#fef2f2;border:1px solid #fecaca;color:#ef4444;font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--r-lg)">
+        ❌ Propuesta rechazada
       </div>
     </div>`;
   } else if (bothConfirmed) {
