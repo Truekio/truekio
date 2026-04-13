@@ -7933,24 +7933,62 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
   const isOwner = freshConv.user1_id === currentUser.id; // user1 es el dueño del objeto
 
   if (proposalStatus === 'pending') {
-    const myItemTitle    = isOwner ? conv.item1_title : conv.item2_title;
-    const theirItemTitle = isOwner ? conv.item2_title : conv.item1_title;
-    if (isOwner) {
-      // Soy el receptor — puedo Aceptar o Rechazar
-      html = `<div style="margin:8px 16px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
-        <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:4px">🤝 Nueva propuesta de trueque</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${otherName} quiere intercambiar <strong>${theirItemTitle}</strong> por tu <strong>${myItemTitle}</strong></div>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-          <button onclick="acceptProposalFromChat('${freshConv.proposal_id}','${conv.id}')" style="background:#16a34a;color:#fff;border:none;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✅ Aceptar</button>
-          <button onclick="rejectProposalFromChat('${freshConv.proposal_id}','${conv.id}')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:8px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✕ Rechazar</button>
+    // Cargar datos completos de la propuesta
+    const { data: prop } = await db.from('proposals')
+      .select('id,item_id,item_title,offered_item_id,offered_item_title,offered_item_emoji,offerer_id,offerer_name,owner_id,message,created_at,status')
+      .eq('id', freshConv.proposal_id).single();
+
+    if (prop) {
+      const isOwner = currentUser.id === prop.owner_id;
+      const date = new Date(prop.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+
+      // Fotos de los objetos
+      const { data: itemData } = await db.from('items').select('id,photos,photo_urls').in('id', [prop.item_id, prop.offered_item_id].filter(Boolean));
+      const getPhoto = (id) => {
+        const item = itemData?.find(i => String(i.id) === String(id));
+        return item?.photos?.[0] || item?.photo_urls?.[0] || null;
+      };
+      const offeredPhoto = getPhoto(prop.offered_item_id);
+      const itemPhoto    = getPhoto(prop.item_id);
+
+      html = `<div style="margin:8px 16px;border:1.5px solid #f59e0b;border-radius:var(--r-lg);padding:16px;background:var(--white);box-shadow:0 0 0 3px rgba(245,158,11,.1)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--accent)">⏳ Propuesta pendiente</div>
+          <div style="font-size:11px;color:var(--muted)">${date}</div>
         </div>
-      </div>`;
-    } else {
-      // Soy el que propuso — puedo Retirar
-      html = `<div style="margin:8px 16px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--r-lg);padding:14px 16px;text-align:center">
-        <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:4px">⏳ Propuesta enviada</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Esperando respuesta de ${otherName}</div>
-        <button onclick="withdrawProposalFromChat('${freshConv.proposal_id}','${conv.id}')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:6px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑 Retirar propuesta</button>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${isOwner ? 'Te ofrecen' : 'Ofreces'}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${offeredPhoto ? `<img src="${offeredPhoto}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer" onclick="openDetail(${prop.offered_item_id})">` : `<div style="width:52px;height:52px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">${prop.offered_item_emoji||'📦'}</div>`}
+              <div>
+                <div style="font-weight:700;font-size:13px">${prop.offered_item_title}</div>
+                <div style="font-size:11px;color:var(--muted)">de ${isOwner ? prop.offerer_name : 'ti'}</div>
+                ${prop.offered_item_id ? `<button onclick="openDetail(${prop.offered_item_id})" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;margin-top:2px">Ver detalle →</button>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="font-size:1.2rem;color:var(--muted)">↔</div>
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${isOwner ? 'Por tu' : 'Por'}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${itemPhoto ? `<img src="${itemPhoto}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer" onclick="openDetail(${prop.item_id})">` : `<div style="width:52px;height:52px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📦</div>`}
+              <div>
+                <div style="font-weight:700;font-size:13px">${prop.item_title}</div>
+                ${prop.offered_item_id ? `<button onclick="openDetail(${prop.item_id})" style="background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;margin-top:2px">Ver detalle →</button>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+        ${prop.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${prop.message}"</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${isOwner ? `
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="acceptProposalFromChat('${prop.id}','${conv.id}')">✅ Aceptar</button>
+            <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none" onclick="rejectProposalFromChat('${prop.id}','${conv.id}')">❌ Rechazar</button>
+          ` : `
+            <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="withdrawProposalFromChat('${prop.id}','${conv.id}')">🗑 Retirar propuesta</button>
+          `}
+        </div>
       </div>`;
     }
   } else if (proposalStatus === 'cancelled') {
