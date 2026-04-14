@@ -1939,7 +1939,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
         <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent);display:none"></span>
       </button>
-      <button class="nav-tab" id="ntab-demand" onclick="navTo('demand')">💡 Demanda</button>
     </div>
     <div class="nav-right">
       <button class="btn-pub" onclick="navTo('publish')">+ Publicar</button>
@@ -4735,6 +4734,15 @@ function navTo(v) {
   if(v === 'demand') { loadPublicDemand(); }
 }
 
+
+function navToMessages() {
+  const sticky = document.querySelector(".activity-sticky");
+  if (sticky) sticky.style.display = "";
+  navToActivity("messages");
+  if (sticky) sticky.style.display = "none";
+  const wrap = document.querySelector("#view-activity .wrap.page-pad");
+  if (wrap) wrap.style.paddingTop = "8px";
+}
 function navToActivity(tab) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById('view-activity').classList.add('active');
@@ -11580,7 +11588,7 @@ document.addEventListener('mouseup', e => {
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
-    <button class="bnav-btn" id="bnav-messages" onclick="navToActivity('messages')">
+    <button class="bnav-btn" id="bnav-messages" onclick="navToMessages()">
       <span style="position:relative">💬<span class="bnav-badge-msg nav-badge" style="background:#e53e3e;display:none;position:absolute;top:-6px;right:-8px;font-size:9px;min-width:16px;height:16px;padding:0 3px" id="bnav-msg-badge"></span></span>
       <span class="bnav-label">Mensajes</span>
     </button>
