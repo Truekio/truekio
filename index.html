@@ -6829,8 +6829,9 @@ async function renderConfirmations() {
   // Cargar conversaciones aceptadas (= trueques en curso)
   const { data: convs, error } = await db
     .from('conversations')
-    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,proposal_id,confirmed_by,created_at')
+    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,proposal_id,confirmed_by,created_at,status')
     .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
+    .not('status', 'in', '("cancelled","rejected","pending")')
     .order('created_at', { ascending: false });
 
   if (error || !convs || !convs.length) {
@@ -6898,10 +6899,13 @@ async function renderConfirmations() {
   if (typeof updateActivityBadge === 'function') updateActivityBadge();
 
   const visibleConvs = convs.filter(c => {
+    // Excluir conversaciones canceladas o rechazadas
+    if (c.status === 'cancelled' || c.status === 'rejected') return false;
     // Excluir trueques cancelados
     if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
     // Excluir descartados manualmente
     if (dismissed.includes(c.id)) return false;
+    if (hiddenConvs.includes(c.id)) return false;
     const confirmed = getConfirmed(c);
     const myConfirmed = confirmed.includes(currentUser.id);
     // Si el usuario no ha confirmado aún → mostrar
