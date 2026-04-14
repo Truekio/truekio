@@ -1935,7 +1935,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="ntab-explore" onclick="navTo('explore')">Explorar</button>
-      <button class="nav-tab" id="ntab-activity" onclick="navTo('activity')">
+      <button class="nav-tab" id="ntab-activity" onclick="navToActivity('proposals')">
         <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
         <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent);display:none"></span>
       </button>
@@ -2673,7 +2673,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <span style="color:var(--muted);font-size:14px">🔍</span>
           <input placeholder="Buscar en Truquo..." oninput="searchItems(this.value)" id="search-input">
         </div>
-        <button onclick="navTo('activity')" style="background:none;border:1.5px solid var(--border);border-radius:99px;padding:6px 10px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0" title="Actividad">
+        <button onclick="navToActivity('proposals')" style="background:none;border:1.5px solid var(--border);border-radius:99px;padding:6px 10px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0" title="Actividad">
           ⚡
           <span id="activity-dot-explore" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;background:#e53e3e;border-radius:50%;border:1.5px solid var(--white)"></span>
         </button>
@@ -4765,7 +4765,7 @@ function navToMessagesWeb() {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
     const webTab = document.getElementById('ntab-messages-web');
     if (webTab) webTab.classList.add('active');
-  }, 0);
+  }, 50);
 }
 function navToActivity(tab) {
   // Restaurar sticky siempre
