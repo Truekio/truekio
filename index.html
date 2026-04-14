@@ -1939,6 +1939,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
         <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent);display:none"></span>
       </button>
+      <button class="nav-tab" id="ntab-messages-web" onclick="navToActivity('messages')">
+        💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="ntab-messages-web-count"></span>
+      </button>
       <button class="nav-tab" id="ntab-demand" onclick="navTo('demand')">💡 Demanda</button>
     </div>
     <div class="nav-right">
@@ -7350,6 +7353,12 @@ function updateMsgBadge(count) {
   if (mtabMsg) {
     mtabMsg.style.display = count > 0 ? 'inline-flex' : 'none';
     mtabMsg.textContent = count > 9 ? '9+' : count;
+  }
+  // Actualizar badge del tab mensajes en nav web
+  const webMsg = document.getElementById('ntab-messages-web-count');
+  if (webMsg) {
+    webMsg.style.display = count > 0 ? 'inline-flex' : 'none';
+    webMsg.textContent = count > 9 ? '9+' : count;
   }
   // Actualizar el badge global de actividad
   if (typeof updateActivityBadge === 'function') updateActivityBadge();
