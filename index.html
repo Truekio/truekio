@@ -4761,31 +4761,13 @@ function navToActivity(tab) {
   const bn = document.getElementById('bnav-activity');
   if(bn) bn.classList.add('active');
   switchMatchTab(tab || 'proposals');
-  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
+  if (currentUser) setTimeout(() => loadMatches(), 500);
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
-  // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
-  if (authRequired.includes(v) && !currentUser) {
-    requireAuth(v);
-    return;
-  }
-
-  if(v === 'publish') {
-    pubCurrentScreen = 1;
-    pubGoTo(1);
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn) _bn.style.display = 'none';
-  } else {
-    const _bn = document.querySelector('.bottom-nav');
-    if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
-  }
-  if(v === 'activity') { (document.getElementById('app-scroll')||window).scrollTo(0,0); setTimeout(() => loadProposals(), 600); }
-  if(v === 'messages') { setTimeout(() => { const cl=document.querySelector('.conv-list'); const cm=document.getElementById('chat-main'); if(cl) cl.classList.remove('mobile-hidden'); if(cm) cm.classList.remove('mobile-open'); updateMsgBadge(0); loadConversations(); }, 300); startConvPolling(); } else { stopConvPolling(); }
-  if(v === 'profile' && currentUser) setTimeout(() => loadReviews().then(() => loadProfileStats()), 200);
-  if(v === 'favorites') renderFavorites();
-  if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
-  if(v === 'demand') { loadPublicDemand(); }
+  if (!currentUser) { requireAuth('activity'); return; }
+  const _bn = document.querySelector('.bottom-nav');
+  if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  setTimeout(() => loadProposals(), 600);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
