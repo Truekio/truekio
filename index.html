@@ -4095,7 +4095,8 @@ async function loadItemsFromSupabase() {
   let query = db.from('items')
     .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value')
     .neq('status', 'completed')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(100);
   if (currentUser) query = query.neq('user_id', currentUser.id);
   const { data, error } = await query;
   if (error) {
