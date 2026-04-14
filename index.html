@@ -4482,7 +4482,7 @@ function navToActivity(tab) {
   const nt = document.getElementById('ntab-activity');
   if(nt) nt.classList.add('active');
   document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-activity');
+  const bn = document.getElementById('bnav-messages');
   if(bn) bn.classList.add('active');
   switchMatchTab(tab || 'proposals');
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
@@ -4742,7 +4742,7 @@ function navToActivity(tab) {
   const nt = document.getElementById('ntab-activity');
   if(nt) nt.classList.add('active');
   document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bn = document.getElementById('bnav-activity');
+  const bn = document.getElementById('bnav-messages');
   if(bn) bn.classList.add('active');
   switchMatchTab(tab || 'proposals');
   if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
@@ -11580,7 +11580,10 @@ document.addEventListener('mouseup', e => {
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
-    <button class="bnav-btn" id="bnav-activity" onclick="navTo('activity')"><span>⚡</span><span class="bnav-label">Actividad</span></button>
+    <button class="bnav-btn" id="bnav-messages" onclick="navToActivity('messages')">
+      <span style="position:relative">💬<span class="bnav-badge-msg nav-badge" style="background:#e53e3e;display:none;position:absolute;top:-6px;right:-8px;font-size:9px;min-width:16px;height:16px;padding:0 3px" id="bnav-msg-badge"></span></span>
+      <span class="bnav-label">Mensajes</span>
+    </button>
     <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
       <span class="bnav-publish-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
