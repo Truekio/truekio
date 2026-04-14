@@ -4738,13 +4738,11 @@ function navTo(v) {
 
 function navToMessages() {
   navToActivity("messages");
-  // Ocultar barra de tabs en móvil
-  if (window.innerWidth < 641) {
-    const sticky = document.querySelector(".activity-sticky");
-    if (sticky) sticky.style.display = "none";
-    const wrap = document.querySelector("#view-activity .wrap.page-pad");
-    if (wrap) wrap.style.paddingTop = "0";
-  }
+  // Ocultar barra de tabs siempre al entrar desde el nav inferior
+  const sticky = document.querySelector(".activity-sticky");
+  if (sticky) sticky.style.display = "none";
+  const wrap = document.querySelector("#view-activity .wrap.page-pad");
+  if (wrap) wrap.style.paddingTop = "0";
 }
 function navToActivity(tab) {
   // Restaurar sticky siempre
