@@ -7126,20 +7126,25 @@ async function confirmReceipt(cfId) {
       setTimeout(() => openReviewModal(cfId), 500);
     }
     _confirmingInProgress = false;
+    // Actualizar el card del chat
+    if (activeConvData && activeConvData.id === cfId) {
+      const isUser1 = activeConvData.user1_id === currentUser.id;
+      const otherName2 = isUser1 ? activeConvData.user2_name : activeConvData.user1_name;
+      const otherUserId2 = isUser1 ? activeConvData.user2_id : activeConvData.user1_id;
+      setTimeout(() => renderTradeStatus(activeConvData, otherName2, otherUserId2), 600);
+    }
   } else {
     showToast('✅ Confirmado · Esperando a ' + otherName);
     await loadMyItems();
     renderProfile();
     await renderConfirmations();
 
-    // Abrir modal de valorar aunque B no haya confirmado aún
     const { data: existingReviewB } = await db.from('reviews')
       .select('id').eq('conversation_id', cfId).eq('reviewer_id', currentUser.id).limit(1);
     if (!existingReviewB || !existingReviewB.length) {
       setTimeout(() => openReviewModal(cfId), 500);
     }
 
-    // Email al otro usuario avisando que falta su confirmación
     const otherEmail = await getUserEmail(otherUserId);
     const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
     sendEmail('confirm_pending', otherEmail, {
@@ -7148,6 +7153,13 @@ async function confirmReceipt(cfId) {
       item2: conv.item2_title,
     });
     _confirmingInProgress = false;
+    // Actualizar el card del chat
+    if (activeConvData && activeConvData.id === cfId) {
+      const isUser1 = activeConvData.user1_id === currentUser.id;
+      const otherName2 = isUser1 ? activeConvData.user2_name : activeConvData.user1_name;
+      const otherUserId2 = isUser1 ? activeConvData.user2_id : activeConvData.user1_id;
+      setTimeout(() => renderTradeStatus(activeConvData, otherName2, otherUserId2), 600);
+    }
   }
 }
 
