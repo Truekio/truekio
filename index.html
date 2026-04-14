@@ -4738,11 +4738,13 @@ function navTo(v) {
 
 function navToMessages() {
   navToActivity("messages");
-  // Ocultar barra de tabs siempre al entrar desde el nav inferior
-  const sticky = document.querySelector(".activity-sticky");
-  if (sticky) sticky.style.display = "none";
-  const wrap = document.querySelector("#view-activity .wrap.page-pad");
-  if (wrap) wrap.style.paddingTop = "0";
+  // Usar setTimeout para ejecutar después de que navToActivity restaure la sticky
+  setTimeout(() => {
+    const sticky = document.querySelector(".activity-sticky");
+    if (sticky) sticky.style.display = "none";
+    const wrap = document.querySelector("#view-activity .wrap.page-pad");
+    if (wrap) wrap.style.paddingTop = "0";
+  }, 0);
 }
 function navToActivity(tab) {
   // Restaurar sticky siempre
