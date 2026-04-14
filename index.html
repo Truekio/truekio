@@ -2670,6 +2670,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <span style="color:var(--muted);font-size:14px">🔍</span>
           <input placeholder="Buscar en Truquo..." oninput="searchItems(this.value)" id="search-input">
         </div>
+        <button onclick="navTo('activity')" style="background:none;border:1.5px solid var(--border);border-radius:99px;padding:6px 10px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0" title="Actividad">
+          ⚡
+          <span id="activity-dot-explore" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;background:#e53e3e;border-radius:50%;border:1.5px solid var(--white)"></span>
+        </button>
         <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
           ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
         </button>
@@ -6481,9 +6485,13 @@ function updateActivityBadge() {
     actBadge.textContent = total > 9 ? '9+' : total;
     actBadge.style.display = 'inline-flex';
     if (actDot) actDot.classList.add('visible');
+    const exploreDot = document.getElementById('activity-dot-explore');
+    if (exploreDot) exploreDot.style.display = 'block';
   } else {
     actBadge.style.display = 'none';
     if (actDot) actDot.classList.remove('visible');
+    const exploreDot = document.getElementById('activity-dot-explore');
+    if (exploreDot) exploreDot.style.display = 'none';
   }
 }
 
