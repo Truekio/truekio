@@ -1936,7 +1936,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="nav-tabs">
       <button class="nav-tab active" id="ntab-explore" onclick="navTo('explore')">Explorar</button>
       <button class="nav-tab" id="ntab-activity" onclick="navToActivity('proposals')">
-        <span class="activity-badge">Actividad <span class="activity-dot visible" id="activity-dot"></span></span>
+        <span class="activity-badge">Propuestas <span class="activity-dot visible" id="activity-dot"></span></span>
         <span class="nav-badge" id="activity-badge-nav" style="background:var(--accent);display:none"></span>
       </button>
       <button class="nav-tab" id="ntab-messages-web" onclick="navToMessagesWeb()">
@@ -2673,8 +2673,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <span style="color:var(--muted);font-size:14px">🔍</span>
           <input placeholder="Buscar en Truquo..." oninput="searchItems(this.value)" id="search-input">
         </div>
-        <button onclick="navToActivity('proposals')" style="background:none;border:1.5px solid var(--border);border-radius:99px;padding:6px 10px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0" title="Actividad">
-          ⚡
+        <button onclick="navToActivity('proposals')" style="background:none;border:1.5px solid var(--border);border-radius:99px;padding:6px 10px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0" title="Propuestas">
+          🤝
           <span id="activity-dot-explore" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;background:#e53e3e;border-radius:50%;border:1.5px solid var(--white)"></span>
         </button>
         <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
@@ -2757,7 +2757,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
         <div style="display:flex;gap:0;min-width:max-content">
           <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
-          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green);display:none" id="mtab-confirm-count"></span></button>
+          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')" style="display:none">📦 Confirmaciones <span class="nav-badge" style="background:var(--green);display:none" id="mtab-confirm-count"></span></button>
           <button class="match-tab" id="mtab-messages" onclick="switchMatchTab('messages')" style="display:none">💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="mtab-messages-count"></span></button>
         </div>
       </div>
