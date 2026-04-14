@@ -5439,7 +5439,7 @@ async function deleteProposal(proposalId) {
     const { error } = await db.from('proposals').delete().eq('id', proposalId).eq('offerer_id', currentUser.id);
     if (error) { showToast('⚠️ Error: ' + error.message); return; }
     // Ocultar conversación pendiente si existe
-    const { data: conv } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
+    const { data: conv } = await db.from('conversations').select('id').eq('proposal_id', proposalId).maybeSingle();
     if (conv) {
       try {
         const key = `truquo_hidden_convs_${currentUser.id}`;
@@ -7917,7 +7917,10 @@ async function cancelTrade(convId) {
   // Recargar items y confirmaciones
   await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
 
-  // Ocultar la conversación para ambos usuarios (localStorage) — ya no tiene sentido verla
+  // Marcar conversación como cancelled
+  await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
+
+  // Ocultar la conversación
   try {
     const key = `truquo_hidden_convs_${currentUser.id}`;
     const hidden = JSON.parse(localStorage.getItem(key) || '[]');
