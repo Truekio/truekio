@@ -2755,7 +2755,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <div style="display:flex;gap:0;min-width:max-content">
           <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
           <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')">📦 Confirmaciones <span class="nav-badge" style="background:var(--green);display:none" id="mtab-confirm-count"></span></button>
-          <button class="match-tab" id="mtab-messages" onclick="switchMatchTab('messages')">💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="mtab-messages-count"></span></button>
+          <button class="match-tab" id="mtab-messages" onclick="switchMatchTab('messages')" style="display:none">💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="mtab-messages-count"></span></button>
         </div>
       </div>
     </div>
