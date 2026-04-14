@@ -4743,6 +4743,9 @@ function navToMessages() {
     if (sticky) sticky.style.display = "none";
     const wrap = document.querySelector("#view-activity .wrap.page-pad");
     if (wrap) wrap.style.paddingTop = "0";
+    // Dar espacio al conv-list para el nav superior
+    const convList = document.getElementById('activity-conv-list');
+    if (convList) convList.style.paddingTop = "58px";
   }, 0);
 }
 function navToActivity(tab) {
@@ -4751,6 +4754,8 @@ function navToActivity(tab) {
   if (_sticky) _sticky.style.display = "";
   const _wpad = document.querySelector("#view-activity .wrap.page-pad");
   if (_wpad) _wpad.style.paddingTop = "";
+  const _convList = document.getElementById('activity-conv-list');
+  if (_convList) _convList.style.paddingTop = "";
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById('view-activity').classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
