@@ -8622,8 +8622,8 @@ async function openModal(itemId) {
     const { data } = await db.from('items')
       .select('id,title,category,subcategory,location,emoji,photos,photo_urls,wants,wants_open,status')
       .eq('user_id', currentUser.id)
-      .neq('status', 'completed')
-      .neq('status', 'reserved');
+      .not('status', 'in', '("completed","reserved")')
+      .order('created_at', { ascending: false });
     userObjects = data || [];
   }
 
