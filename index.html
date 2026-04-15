@@ -8686,7 +8686,11 @@ async function openModal(itemId) {
       return;
     }
 
-    offerGrid.innerHTML = goodMatch.map(o => renderCard(o, scored.indexOf(o))).join('');
+    offerGrid.innerHTML = goodMatch.map(o => renderCard(o, scored.indexOf(o))).join('') +
+      (scored.filter(o => o.score < 30).length
+        ? `<div style="font-size:11px;color:var(--muted);grid-column:1/-1;padding:8px 0 4px;text-align:center">— Otros objetos —</div>` +
+          scored.filter(o => o.score < 30).map(o => renderCard(o, scored.indexOf(o))).join('')
+        : '');
 
     // Asegurar botón activo
     const sendBtn = document.querySelector('[onclick="sendOffer()"]');
