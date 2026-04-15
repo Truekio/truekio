@@ -3126,6 +3126,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div style="padding:20px 24px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;position:sticky;bottom:0;background:var(--white)">
       <button class="btn btn-primary btn-md" onclick="saveProfile()">Guardar cambios</button>
       <button class="btn btn-ghost btn-md" onclick="handleLogout()" style="color:#ef4444">Cerrar sesión</button>
+      <button class="btn btn-ghost btn-md" onclick="handleDeleteAccount()" style="color:#9ca3af;font-size:12px;padding:6px">Eliminar cuenta</button>
     </div>
   </div>
 </div>
@@ -4031,6 +4032,47 @@ window._handleLogout = async function() {
   // Scroll al top de la landing
   window.scrollTo({ top: 0, behavior: 'instant' });
   showToast('Sesión cerrada');
+}
+
+async function handleDeleteAccount() {
+  if (!currentUser) return;
+  showAppConfirm(
+    '¿Eliminar tu cuenta?',
+    'Se eliminarán todos tus datos, objetos, propuestas y mensajes. Esta acción no se puede deshacer.',
+    async () => {
+      showToast('⏳ Eliminando cuenta...');
+      const uid = currentUser.id;
+      try {
+        // 1. Borrar mensajes
+        await db.from('messages').delete().eq('sender_id', uid);
+        // 2. Borrar conversaciones
+        await db.from('conversations').delete().or(`user1_id.eq.${uid},user2_id.eq.${uid}`);
+        // 3. Borrar propuestas
+        await db.from('proposals').delete().or(`offerer_id.eq.${uid},owner_id.eq.${uid}`);
+        // 4. Borrar reviews
+        await db.from('reviews').delete().or(`reviewer_id.eq.${uid},reviewee_id.eq.${uid}`);
+        // 5. Borrar push subscriptions
+        await db.from('push_subscriptions').delete().eq('user_id', uid);
+        // 6. Borrar items
+        await db.from('items').delete().eq('user_id', uid);
+        // 7. Borrar perfil
+        await db.from('profiles').delete().eq('id', uid);
+        // 8. Eliminar usuario de Auth via Edge Function
+        const session = await db.auth.getSession();
+        const token = session?.data?.session?.access_token;
+        await fetch(`${SUPABASE_URL}/functions/v1/delete-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ user_id: uid }),
+        });
+        // 9. Cerrar sesión
+        await window._handleLogout();
+        showToast('✅ Cuenta eliminada correctamente');
+      } catch(e) {
+        showToast('⚠️ Error al eliminar: ' + e.message);
+      }
+    }
+  );
 }
 
 window._handleLogin = async function() {
