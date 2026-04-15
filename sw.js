@@ -1,13 +1,13 @@
-// ── Truquo Service Worker v5 ──
-const CACHE_NAME = 'truquo-v5';
+// ── Truquo Service Worker v6 ──
+const CACHE_NAME = 'truquo-v6';
 
 self.addEventListener('install', event => {
-  console.log('[SW] Installing v5');
+  console.log('[SW] Installing v6');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating v5');
+  console.log('[SW] Activating v6');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
@@ -39,21 +39,27 @@ self.addEventListener('fetch', event => {
 
 // ── PUSH ──
 self.addEventListener('push', event => {
-  let title = 'Truquo', body = 'Tienes una novedad', url = '/', tag = 'truquo';
+  let title = 'Truquo', body = 'Tienes una novedad', url = '/', tag = 'truquo', nav = null;
   if (event.data) {
     try {
       const data = JSON.parse(event.data.text());
-      title = data.title || title; body = data.body || body;
-      url = data.url || url; tag = data.tag || tag;
+      title = data.title || title;
+      body  = data.body  || body;
+      url   = data.url   || url;
+      tag   = data.tag   || tag;
+      // Extraer el parámetro nav de la URL
+      if (url.includes('nav=messages')) nav = 'messages';
+      if (url.includes('nav=proposals')) nav = 'proposals';
     } catch(e) { body = event.data.text() || body; }
   }
 
   event.waitUntil(
     Promise.all([
       self.registration.showNotification(title, {
-        body, icon: '/icon.png', badge: '/icon.png', tag, data: { url }, vibrate: [200, 100, 200],
+        body, icon: '/icon.png', badge: '/icon.png', tag,
+        data: { url, nav },
+        vibrate: [200, 100, 200],
       }),
-      // Incrementar badge del icono de la app
       self.registration.getNotifications().then(notifications => {
         const count = notifications.length + 1;
         if ('setAppBadge' in navigator) navigator.setAppBadge(count).catch(() => {});
@@ -67,10 +73,10 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';
+  const nav       = event.notification.data?.nav || null;
 
   event.waitUntil(
     Promise.all([
-      // Limpiar badge al abrir
       self.registration.getNotifications().then(notifications => {
         if (notifications.length === 0) {
           if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
@@ -78,16 +84,22 @@ self.addEventListener('notificationclick', event => {
         }
       }),
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+        // Si la app ya está abierta, enviar mensaje para navegar
         for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.focus();
+            if (nav) client.postMessage({ nav });
+            return;
+          }
         }
+        // Si la app estaba cerrada, abrirla con el parámetro en la URL
         if (clients.openWindow) return clients.openWindow(targetUrl);
       })
     ])
   );
 });
 
-// ── Limpiar badge cuando el usuario abre la app ──
+// ── Mensajes desde la app ──
 self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
   if (event.data === 'CLEAR_BADGE') {

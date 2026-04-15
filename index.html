@@ -5526,7 +5526,7 @@ async function respondProposal(proposalId, status) {
         itemTitle: p.item_title,
         offeredItem: p.offered_item_title,
       });
-      sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`);
+      sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`, '/?nav=messages');
     }
 
     // Recargar el chat actual sin salir
@@ -7513,7 +7513,7 @@ async function startBgPolling() {
       if (n > lastProposalCount) {
         pushNotif('🤝 Nueva propuesta de trueque', 'Alguien quiere intercambiar contigo');
         if (document.visibilityState === 'visible') playNotifSound();
-        sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo');
+        sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo', '/?nav=proposals');
       }
       lastProposalCount = n;
       window._pendingProposalCount = n;
@@ -7626,7 +7626,7 @@ function startConvPolling() {
         updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
         pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
         if (document.visibilityState === 'visible') playNotifSound();
-        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje');
+        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje', '/?nav=messages');
         if (document.visibilityState !== 'visible') {
           sendEmail('new_message', currentUser.email, {
             senderName: otherName,
@@ -11775,6 +11775,26 @@ if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) { refreshing = true; window.location.reload(); }
       });
+
+      // Escuchar mensajes del SW para navegar al clicar notificación
+      navigator.serviceWorker.addEventListener('message', event => {
+        const nav = event.data?.nav;
+        if (!nav) return;
+        if (nav === 'messages') {
+          setTimeout(() => navToMessages(), 500);
+        } else if (nav === 'proposals') {
+          setTimeout(() => navToActivity('proposals'), 500);
+        }
+      });
+
+      // Navegar según parámetro en URL (cuando la app estaba cerrada)
+      const urlParams = new URLSearchParams(window.location.search);
+      const navParam = urlParams.get('nav');
+      if (navParam === 'messages') {
+        setTimeout(() => navToMessages(), 1000);
+      } else if (navParam === 'proposals') {
+        setTimeout(() => navToActivity('proposals'), 1000);
+      }
 
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
