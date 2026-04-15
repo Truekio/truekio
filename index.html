@@ -4058,11 +4058,9 @@ async function handleDeleteAccount() {
         // 7. Borrar perfil
         await db.from('profiles').delete().eq('id', uid);
         // 8. Eliminar usuario de Auth via Edge Function
-        const session = await db.auth.getSession();
-        const token = session?.data?.session?.access_token;
         await fetch(`${SUPABASE_URL}/functions/v1/delete-user`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
           body: JSON.stringify({ user_id: uid }),
         });
         // 9. Cerrar sesión
