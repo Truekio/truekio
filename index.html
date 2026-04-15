@@ -4044,6 +4044,8 @@ window._handleRegister = async function() {
   showToast('✦ Cuenta creada — ¡bienvenido a Truquo!');
   requestNotifPermission();
   startBgPolling();
+  // Email de bienvenida + aviso al admin
+  sendEmail('welcome', email, { name });
 }
 
 function switchAuthTab(tab) {
