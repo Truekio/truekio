@@ -3841,10 +3841,13 @@ async function sendPush(userId, title, body, url = '/') {
 async function getUserEmail(userId) {
   if (!userId) return null;
   try {
-    // Solo funciona si tienes una tabla profiles con email, o si es el usuario actual
     if (userId === currentUser?.id) return currentUser.email;
-    // Para otros usuarios: buscar en tabla profiles (si existe)
-    const { data } = await db.from('profiles').select('email').eq('id', userId).single();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/get-user-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    const data = await res.json();
     return data?.email || null;
   } catch(e) { return null; }
 }
