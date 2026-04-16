@@ -2022,6 +2022,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <button onclick="shareItem()" style="background:var(--bg2);border:none;width:48px;height:48px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0" title="Compartir">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       </button>
+      <button onclick="reportFromDetail()" style="background:var(--bg2);border:none;width:48px;height:48px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0" title="Reportar">⚑</button>
     </div>
   </div>
 </div>
@@ -5157,6 +5158,59 @@ function toggleNotif() {
 function closeNotif() { document.getElementById('notif-panel').classList.remove('open'); }
 
 // ═══ TOAST ═══
+
+// ═══ REPORT SYSTEM ═══
+let _reportData = null;
+
+function openReportModal(type, id, name) {
+  if (!currentUser) { showToast('⚠️ Debes iniciar sesión para reportar'); return; }
+  _reportData = { type, id, name };
+  const info = document.getElementById('report-target-info');
+  if (info) info.textContent = type === 'item' ? `📦 Objeto: ${name}` : `👤 Usuario: ${name}`;
+  document.querySelectorAll('input[name="report-reason"]').forEach(r => r.checked = false);
+  const details = document.getElementById('report-details');
+  if (details) details.value = '';
+  const errEl = document.getElementById('report-error');
+  if (errEl) errEl.style.display = 'none';
+  document.getElementById('report-overlay').style.display = 'flex';
+}
+
+function closeReportModal() {
+  document.getElementById('report-overlay').style.display = 'none';
+  _reportData = null;
+}
+
+async function submitReport() {
+  if (!currentUser || !_reportData) return;
+  const reason = document.querySelector('input[name="report-reason"]:checked')?.value;
+  const details = document.getElementById('report-details')?.value?.trim();
+  const errEl = document.getElementById('report-error');
+  const btn = document.getElementById('report-submit-btn');
+  if (!reason) { errEl.textContent = 'Por favor selecciona un motivo.'; errEl.style.display = ''; return; }
+  btn.textContent = 'Enviando...'; btn.disabled = true;
+  const { error } = await db.from('reports').insert([{
+    reporter_id: currentUser.id,
+    reporter_name: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
+    reported_type: _reportData.type,
+    reported_id: String(_reportData.id),
+    reported_name: _reportData.name,
+    reason,
+    details: details || null,
+  }]);
+  btn.textContent = 'Enviar reporte'; btn.disabled = false;
+  if (error) { errEl.textContent = 'Error al enviar: ' + error.message; errEl.style.display = ''; return; }
+  // Notificar al admin
+  sendEmail('admin_report', 'truquospain@gmail.com', {
+    reporterName: currentUser.user_metadata?.name || currentUser.email.split('@')[0],
+    reporterEmail: currentUser.email,
+    reportedType: _reportData.type === 'item' ? 'Objeto' : 'Usuario',
+    reportedName: _reportData.name,
+    reason,
+    details: details || 'Sin detalles adicionales',
+  });
+  closeReportModal();
+  showToast('✅ Reporte enviado — lo revisaremos pronto');
+}
 
 function cookieChoice(choice) {
   localStorage.setItem("truquo_cookie_consent", choice);
@@ -8855,8 +8909,11 @@ function closeReviewsSheet() {
   if (el) el.classList.remove('open');
 }
 
-function proposeFromDetail() {
+function reportFromDetail() {
   if (!detailCurrentItem) return;
+  openReportModal("item", detailCurrentItem.id, detailCurrentItem.name || detailCurrentItem.title);
+}
+function proposeFromDetail() {  if (!detailCurrentItem) return;
   const id = detailCurrentItem.id;
   closeDetail();
   setTimeout(() => openModal(id), 200);
@@ -11977,6 +12034,31 @@ document.addEventListener('mouseup', e => {
     <button class="btn btn-primary btn-lg btn-full btn-r" onclick="handleResetPassword()" id="reset-btn">
       Guardar contraseña →
     </button>
+  </div>
+</div>
+
+<!-- ── REPORT MODAL ── -->
+<div id="report-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-weight:700;font-size:16px">⚑ Reportar</div>
+      <button onclick="closeReportModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">×</button>
+    </div>
+    <div id="report-target-info" style="background:var(--bg);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--muted);margin-bottom:16px"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Motivo del reporte:</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px" id="report-reasons">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px"><input type="radio" name="report-reason" value="ilegal"> Objeto o contenido ilegal</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px"><input type="radio" name="report-reason" value="falso"> Objeto falso o engañoso</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px"><input type="radio" name="report-reason" value="spam"> Spam o contenido repetido</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px"><input type="radio" name="report-reason" value="acoso"> Acoso o comportamiento inapropiado</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px"><input type="radio" name="report-reason" value="otro"> Otro motivo</label>
+    </div>
+    <textarea id="report-details" placeholder="Detalles adicionales (opcional)..." rows="3" style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:13px;font-family:inherit;resize:none;outline:none;color:var(--text);margin-bottom:14px"></textarea>
+    <div id="report-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r);padding:8px 12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeReportModal()" class="btn btn-secondary btn-md" style="flex:1">Cancelar</button>
+      <button onclick="submitReport()" class="btn btn-md" style="flex:1;background:#ef4444;color:#fff;border:none" id="report-submit-btn">Enviar reporte</button>
+    </div>
   </div>
 </div>
 
