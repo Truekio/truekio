@@ -4063,6 +4063,11 @@ async function handleDeleteAccount() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
           body: JSON.stringify({ user_id: uid }),
         });
+        // 9. Email de confirmación al usuario y aviso al admin
+        const userEmail = currentUser.email;
+        const userName = currentUser.user_metadata?.name || userEmail.split('@')[0];
+        sendEmail('account_deleted', userEmail, { name: userName });
+        sendEmail('admin_account_deleted', 'truquospain@gmail.com', { name: userName, email: userEmail });
         // 9. Cerrar sesión
         await window._handleLogout();
         showToast('✅ Cuenta eliminada correctamente');
@@ -4100,11 +4105,23 @@ window._handleRegister = async function() {
   btn.textContent = 'Creando cuenta...'; btn.disabled = true; errEl.style.display = 'none';
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { name } } });
   if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = ''; btn.textContent = 'Crear cuenta →'; btn.disabled = false; return; }
-  currentUser = data.user;
-  window._enterApp();
-  showToast('✦ Cuenta creada — ¡bienvenido a Truquo!');
-  requestNotifPermission();
-  startBgPolling();
+  
+  // Supabase requiere confirmación de email — mostrar mensaje
+  btn.textContent = 'Crear cuenta →'; btn.disabled = false;
+  errEl.style.display = 'none';
+  
+  // Mostrar pantalla de confirmación pendiente
+  document.getElementById('auth-form-register').innerHTML = `
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:3rem;margin-bottom:16px">📧</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Confirma tu email</div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px">
+        Hemos enviado un email de confirmación a<br><strong>${email}</strong><br><br>
+        Revisa tu bandeja de entrada y pulsa el enlace para activar tu cuenta.
+      </div>
+      <div style="font-size:12px;color:var(--muted)">¿No lo ves? Revisa la carpeta de spam.</div>
+    </div>`;
+  
   // Email de bienvenida + aviso al admin
   sendEmail('welcome', email, { name });
 }
