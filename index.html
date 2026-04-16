@@ -4138,6 +4138,22 @@ window._handleLogin = async function() {
   startBgPolling();
 }
 
+async function handleResetPassword() {
+  const pwd = document.getElementById('new-password').value;
+  const pwd2 = document.getElementById('new-password2').value;
+  const errEl = document.getElementById('reset-error');
+  const btn = document.getElementById('reset-btn');
+  errEl.style.display = 'none';
+  if (!pwd || pwd.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.style.display = ''; return; }
+  if (pwd !== pwd2) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.style.display = ''; return; }
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  const { error } = await db.auth.updateUser({ password: pwd });
+  btn.textContent = 'Guardar contraseña →'; btn.disabled = false;
+  if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = ''; return; }
+  document.getElementById('reset-password-overlay').style.display = 'none';
+  showToast('✅ Contraseña actualizada correctamente');
+}
+
 function showForgotPassword(show = true) {
   document.getElementById('auth-form-login').style.display = show ? 'none' : '';
   document.getElementById('auth-form-forgot').style.display = show ? '' : 'none';
@@ -4503,6 +4519,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Escuchar cambios de sesión — refresco automático del token
   db.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // Mostrar modal de nueva contraseña
+      const overlay = document.getElementById('reset-password-overlay');
+      if (overlay) overlay.style.display = 'flex';
+    }
     if (event === 'TOKEN_REFRESHED' && session) {
       currentUser = session.user;
     }
@@ -11854,6 +11875,35 @@ document.addEventListener('mouseup', e => {
 </div>
 
 <!-- ── ONBOARDING OVERLAY ── -->
+<!-- ── RESET PASSWORD MODAL ── -->
+<div id="reset-password-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:var(--r-lg);padding:32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:2.5rem;margin-bottom:8px">🔑</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text)">Nueva contraseña</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px">Introduce tu nueva contraseña</div>
+    </div>
+    <div class="field">
+      <label>Nueva contraseña</label>
+      <div style="position:relative">
+        <input type="password" id="new-password" placeholder="Mínimo 6 caracteres" style="width:100%;padding-right:42px;box-sizing:border-box">
+        <button type="button" onclick="togglePwd('new-password','eye-new')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0" id="eye-new">👁</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Repetir contraseña</label>
+      <div style="position:relative">
+        <input type="password" id="new-password2" placeholder="Repite la contraseña" style="width:100%;padding-right:42px;box-sizing:border-box">
+        <button type="button" onclick="togglePwd('new-password2','eye-new2')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0" id="eye-new2">👁</button>
+      </div>
+    </div>
+    <div id="reset-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r);padding:10px 14px;font-size:13px;color:#991b1b;margin-bottom:14px"></div>
+    <button class="btn btn-primary btn-lg btn-full btn-r" onclick="handleResetPassword()" id="reset-btn">
+      Guardar contraseña →
+    </button>
+  </div>
+</div>
+
 <!-- ── COOKIE BANNER ── -->
 <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:10000;background:#1a2a3a;color:#fff;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.2)">
   <div style="max-width:760px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
