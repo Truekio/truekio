@@ -3514,6 +3514,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
         <button onclick="closeUserProfile()" style="background:var(--bg2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--muted)">×</button>
       </div>
+      <!-- Acciones: reportar y bloquear -->
+      <div style="display:flex;gap:8px;margin-top:12px" id="up-actions"></div>
       <!-- Stats rápidos -->
       <div id="up-stats" style="display:flex;gap:16px;margin-top:14px"></div>
     </div>
@@ -4593,18 +4595,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (event === 'SIGNED_IN' && session) {
       const user = session.user;
-      // Enviar email de bienvenida solo la primera vez — verificar en Supabase (async fire and forget)
       if (user.email_confirmed_at) {
-        (async () => {
+        // Doble protección: localStorage + Supabase
+        const localKey = `truquo_welcome_sent_${user.id}`;
+        if (!localStorage.getItem(localKey)) {
           try {
             const { data: profile } = await db.from('profiles').select('welcome_sent').eq('id', user.id).maybeSingle();
             if (!profile?.welcome_sent) {
-              await db.from('profiles').upsert({ id: user.id, welcome_sent: true });
+              // Marcar primero en localStorage para evitar duplicados
+              localStorage.setItem(localKey, '1');
+              await db.from('profiles').upsert({ id: user.id, welcome_sent: true }, { onConflict: 'id' });
               const name = user.user_metadata?.name || user.email.split('@')[0];
               sendEmail('welcome', user.email, { name });
+            } else {
+              // Ya enviado, marcar en localStorage también
+              localStorage.setItem(localKey, '1');
             }
           } catch(e) { console.warn('Welcome email check failed:', e); }
-        })();
+        }
       }
     }
     if (event === 'SIGNED_OUT') {
@@ -8890,8 +8898,36 @@ async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
   } else {
     document.getElementById('up-items').innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">No tiene otros objetos publicados.</div>`;
   }
+
+  // Botones reportar y bloquear (solo si hay userId y no es el propio usuario)
+  const actionsEl = document.getElementById('up-actions');
+  if (actionsEl && userId && currentUser && userId !== currentUser.id) {
+    const { data: blockData } = await db.from('blocks').select('id').eq('blocker_id', currentUser.id).eq('blocked_id', userId).maybeSingle();
+    const isBlocked = !!blockData;
+    actionsEl.innerHTML = `
+      <button onclick="openReportModal('user','${userId}','${userName}')" style="flex:1;background:none;border:1.5px solid var(--border);border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit">⚑ Reportar</button>
+      <button id="up-block-btn" onclick="toggleBlockUser('${userId}','${userName}')" style="flex:1;background:none;border:1.5px solid ${isBlocked ? '#ef4444' : 'var(--border)'};border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;color:${isBlocked ? '#ef4444' : 'var(--muted)'};font-family:inherit">${isBlocked ? '🚫 Bloqueado' : '🚫 Bloquear'}</button>`;
+  } else if (actionsEl) {
+    actionsEl.innerHTML = '';
+  }
 }
 
+async function toggleBlockUser(userId, userName) {
+  if (!currentUser) return;
+  const btn = document.getElementById("up-block-btn");
+  const { data: existing } = await db.from("blocks").select("id").eq("blocker_id", currentUser.id).eq("blocked_id", userId).maybeSingle();
+  if (existing) {
+    await db.from("blocks").delete().eq("blocker_id", currentUser.id).eq("blocked_id", userId);
+    if (btn) { btn.textContent = "🚫 Bloquear"; btn.style.borderColor = "var(--border)"; btn.style.color = "var(--muted)"; }
+    showToast("Usuario desbloqueado");
+  } else {
+    showAppConfirm("¿Bloquear a " + userName + "?", "No podrá ver tus objetos ni enviarte propuestas.", async () => {
+      await db.from("blocks").insert([{ blocker_id: currentUser.id, blocked_id: userId }]);
+      if (btn) { btn.textContent = "🚫 Bloqueado"; btn.style.borderColor = "#ef4444"; btn.style.color = "#ef4444"; }
+      showToast("Usuario bloqueado");
+    });
+  }
+}
 function toggleUpReviews() {
   const el = document.getElementById('up-reviews');
   const icon = document.getElementById('up-reviews-toggle-icon');
