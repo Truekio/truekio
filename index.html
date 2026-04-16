@@ -4545,12 +4545,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (event === 'SIGNED_IN' && session) {
       const user = session.user;
-      // Enviar email de bienvenida solo la primera vez que entra
-      const welcomeKey = `truquo_welcome_sent_${user.id}`;
-      if (!localStorage.getItem(welcomeKey) && user.email_confirmed_at) {
-        localStorage.setItem(welcomeKey, '1');
-        const name = user.user_metadata?.name || user.email.split('@')[0];
-        sendEmail('welcome', user.email, { name });
+      // Enviar email de bienvenida solo la primera vez — verificar en Supabase
+      if (user.email_confirmed_at) {
+        const { data: profile } = await db.from('profiles').select('welcome_sent').eq('id', user.id).maybeSingle();
+        if (!profile?.welcome_sent) {
+          // Marcar como enviado en Supabase
+          await db.from('profiles').upsert({ id: user.id, welcome_sent: true });
+          const name = user.user_metadata?.name || user.email.split('@')[0];
+          sendEmail('welcome', user.email, { name });
+        }
       }
     }
     if (event === 'SIGNED_OUT') {
