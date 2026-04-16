@@ -1935,6 +1935,55 @@ function enterApp() { if(window._enterApp) window._enterApp(); }
 function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Structured Data para Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Truquo",
+  "url": "https://truquo.com",
+  "description": "Intercambia objetos sin dinero. El trueque moderno, fácil y seguro.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://truquo.com/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Truquo",
+  "url": "https://truquo.com",
+  "logo": "https://truquo.com/icon.png",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "hola@truquo.com",
+    "contactType": "customer support",
+    "availableLanguage": "Spanish"
+  },
+  "sameAs": []
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SiteNavigationElement",
+  "name": [
+    "Explorar objetos",
+    "Cómo funciona",
+    "Preguntas frecuentes",
+    "Contacto"
+  ],
+  "url": [
+    "https://truquo.com",
+    "https://truquo.com/#como-funciona",
+    "https://truquo.com/#faq",
+    "mailto:hola@truquo.com"
+  ]
+}
+</script>
 </head>
 <body>
 
