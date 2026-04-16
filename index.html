@@ -11921,5 +11921,32 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- ── COOKIE BANNER ── -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a2a3a;color:#fff;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.2)">
+  <div style="max-width:760px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px;font-size:13px;line-height:1.5;color:rgba(255,255,255,.85)">
+      🍪 Usamos cookies técnicas necesarias para el funcionamiento de la app. No usamos cookies publicitarias ni compartimos datos con terceros.
+      <a href="#" onclick="openLegalModal('cookies');return false" style="color:#4a9cc5;text-decoration:underline;margin-left:4px">Más info</a>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button onclick="cookieChoice('reject')" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);padding:8px 16px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Solo necesarias</button>
+      <button onclick="cookieChoice('accept')" style="background:#4a9cc5;border:none;color:#fff;padding:8px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function cookieChoice(choice) {
+  localStorage.setItem('truquo_cookie_consent', choice);
+  document.getElementById('cookie-banner').style.display = 'none';
+}
+function initCookieBanner() {
+  if (!localStorage.getItem('truquo_cookie_consent')) {
+    document.getElementById('cookie-banner').style.display = 'block';
+  }
+}
+window.addEventListener('DOMContentLoaded', initCookieBanner);
+</script>
+
 </body>
 </html>
