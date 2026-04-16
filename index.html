@@ -11945,7 +11945,9 @@ function initCookieBanner() {
     document.getElementById('cookie-banner').style.display = 'block';
   }
 }
-window.addEventListener('DOMContentLoaded', initCookieBanner);
+// Ejecutar inmediatamente y también cuando cargue
+initCookieBanner();
+window.addEventListener('load', initCookieBanner);
 </script>
 
 </body>
