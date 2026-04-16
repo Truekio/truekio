@@ -4545,15 +4545,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (event === 'SIGNED_IN' && session) {
       const user = session.user;
-      // Enviar email de bienvenida solo la primera vez — verificar en Supabase
+      // Enviar email de bienvenida solo la primera vez — verificar en Supabase (async fire and forget)
       if (user.email_confirmed_at) {
-        const { data: profile } = await db.from('profiles').select('welcome_sent').eq('id', user.id).maybeSingle();
-        if (!profile?.welcome_sent) {
-          // Marcar como enviado en Supabase
-          await db.from('profiles').upsert({ id: user.id, welcome_sent: true });
-          const name = user.user_metadata?.name || user.email.split('@')[0];
-          sendEmail('welcome', user.email, { name });
-        }
+        (async () => {
+          try {
+            const { data: profile } = await db.from('profiles').select('welcome_sent').eq('id', user.id).maybeSingle();
+            if (!profile?.welcome_sent) {
+              await db.from('profiles').upsert({ id: user.id, welcome_sent: true });
+              const name = user.user_metadata?.name || user.email.split('@')[0];
+              sendEmail('welcome', user.email, { name });
+            }
+          } catch(e) { console.warn('Welcome email check failed:', e); }
+        })();
       }
     }
     if (event === 'SIGNED_OUT') {
