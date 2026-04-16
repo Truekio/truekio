@@ -2241,6 +2241,12 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
             </div>
           </div>
           <div id="register-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r);padding:10px 14px;font-size:13px;color:#991b1b;margin-bottom:14px"></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px">
+            <input type="checkbox" id="register-terms" style="margin-top:3px;flex-shrink:0;width:16px;height:16px;cursor:pointer">
+            <label for="register-terms" style="font-size:12px;color:var(--muted);line-height:1.5;cursor:pointer">
+              He leído y acepto los <a href="#" onclick="navTo('terms');return false" style="color:var(--accent)">Términos y condiciones</a> y la <a href="#" onclick="navTo('privacy');return false" style="color:var(--accent)">Política de privacidad</a>. Confirmo que tengo al menos 14 años.
+            </label>
+          </div>
           <button class="btn btn-primary btn-lg btn-full btn-r" onclick="handleRegister()" id="register-btn">
             Crear cuenta →
           </button>
@@ -4117,6 +4123,7 @@ window._handleRegister = async function() {
   if (!name || !email || !password) { errEl.textContent = 'Por favor rellena todos los campos.'; errEl.style.display = ''; return; }
   if (password.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.style.display = ''; return; }
   if (password !== password2) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.style.display = ''; return; }
+  if (!document.getElementById('register-terms')?.checked) { errEl.textContent = 'Debes aceptar los términos y condiciones.'; errEl.style.display = ''; return; }
   btn.textContent = 'Creando cuenta...'; btn.disabled = true; errEl.style.display = 'none';
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { name } } });
   if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = ''; btn.textContent = 'Crear cuenta →'; btn.disabled = false; return; }
