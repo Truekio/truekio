@@ -4596,22 +4596,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (event === 'SIGNED_IN' && session) {
       const user = session.user;
       if (user.email_confirmed_at) {
-        // Doble protección: localStorage + Supabase
         const localKey = `truquo_welcome_sent_${user.id}`;
         if (!localStorage.getItem(localKey)) {
-          try {
-            const { data: profile } = await db.from('profiles').select('welcome_sent').eq('id', user.id).maybeSingle();
-            if (!profile?.welcome_sent) {
-              // Marcar primero en localStorage para evitar duplicados
-              localStorage.setItem(localKey, '1');
-              await db.from('profiles').upsert({ id: user.id, welcome_sent: true }, { onConflict: 'id' });
-              const name = user.user_metadata?.name || user.email.split('@')[0];
-              sendEmail('welcome', user.email, { name });
-            } else {
-              // Ya enviado, marcar en localStorage también
-              localStorage.setItem(localKey, '1');
-            }
-          } catch(e) { console.warn('Welcome email check failed:', e); }
+          localStorage.setItem(localKey, '1');
+          // Fire and forget — no await
+          setTimeout(async () => {
+            try {
+              const { data: profile } = await db.from('profiles').select('welcome_sent').eq('id', user.id).maybeSingle();
+              if (!profile?.welcome_sent) {
+                await db.from('profiles').upsert({ id: user.id, welcome_sent: true }, { onConflict: 'id' });
+                const name = user.user_metadata?.name || user.email.split('@')[0];
+                sendEmail('welcome', user.email, { name });
+              }
+            } catch(e) { console.warn('Welcome email check failed:', e); }
+          }, 2000);
         }
       }
     }
