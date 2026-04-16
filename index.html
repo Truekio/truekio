@@ -8056,11 +8056,12 @@ function renderConvList(data) {
           ${isUnread ? `<div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:#e53e3e;border-radius:50%;border:2px solid var(--white)"></div>` : ''}
         </div>
         <div class="conv-info" style="min-width:0">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:1px">${otherName||'Usuario'}</div>
           <div class="conv-name">
-            <span style="${isUnread ? 'font-weight:800;color:var(--text)' : ''}">${otherName||'Usuario'}</span>
+            <span style="font-size:13px;font-weight:700;${isUnread ? 'color:var(--text)' : 'color:var(--text)'}">${otherItemTitle || subject}</span>
             <span class="conv-time" style="${isUnread ? 'color:var(--accent);font-weight:700' : ''}">${time}</span>
           </div>
-          <div class="conv-preview" style="${isUnread ? 'font-weight:700;color:var(--text)' : ''}">${c.status === 'pending' ? '⏳ Propuesta pendiente' : c.last_message || subject}</div>
+          <div class="conv-preview" style="${isUnread ? 'font-weight:700;color:var(--text)' : ''}">${c.status === 'pending' ? '⏳ Propuesta pendiente' : c.last_message || ''}</div>
         </div>
         ${isUnread ? `<div class="conv-unread">${unread}</div>` : ''}
       </div>
