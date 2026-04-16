@@ -8936,11 +8936,15 @@ async function toggleBlockUser(userId, userName) {
     await db.from("blocks").delete().eq("blocker_id", currentUser.id).eq("blocked_id", userId);
     if (btn) { btn.textContent = "🚫 Bloquear"; btn.style.borderColor = "var(--border)"; btn.style.color = "var(--muted)"; }
     showToast("Usuario desbloqueado");
+    const fresh = await loadItemsFromSupabase();
+    if (fresh) { items = fresh; applyFilter('', currentFilter); }
   } else {
     showAppConfirm("¿Bloquear a " + userName + "?", "No podrá ver tus objetos ni enviarte propuestas.", async () => {
       await db.from("blocks").insert([{ blocker_id: currentUser.id, blocked_id: userId }]);
       if (btn) { btn.textContent = "🚫 Bloqueado"; btn.style.borderColor = "#ef4444"; btn.style.color = "#ef4444"; }
       showToast("Usuario bloqueado");
+      const fresh = await loadItemsFromSupabase();
+      if (fresh) { items = fresh; applyFilter('', currentFilter); }
     });
   }
 }
