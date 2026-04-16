@@ -4152,6 +4152,14 @@ async function handleResetPassword() {
   if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = ''; return; }
   document.getElementById('reset-password-overlay').style.display = 'none';
   showToast('✅ Contraseña actualizada correctamente');
+  // Entrar en la app
+  const { data: { session: newSession } } = await db.auth.getSession();
+  if (newSession) {
+    currentUser = newSession.user;
+    window._enterApp();
+    requestNotifPermission();
+    startBgPolling();
+  }
 }
 
 function showForgotPassword(show = true) {
@@ -4510,7 +4518,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Comprobar si ya hay sesión activa — si es así, entrar directamente
   const { data: { session } } = await db.auth.getSession();
-  if (session) {
+
+  // Detectar si venimos de un enlace de reset de contraseña
+  const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+  const accessToken = hashParams.get('access_token');
+  const type = hashParams.get('type');
+  if (accessToken && type === 'recovery') {
+    // Establecer la sesión con el token del enlace
+    await db.auth.setSession({ access_token: accessToken, refresh_token: hashParams.get('refresh_token') || '' });
+    const overlay = document.getElementById('reset-password-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    // Limpiar el hash de la URL
+    history.replaceState(null, '', window.location.pathname);
+  } else if (session) {
     currentUser = session.user;
     window._enterApp();
     requestNotifPermission();
