@@ -2022,7 +2022,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <button onclick="shareItem()" style="background:var(--bg2);border:none;width:48px;height:48px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0" title="Compartir">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       </button>
-      <button onclick="reportFromDetail()" style="background:var(--bg2);border:none;width:48px;height:48px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0" title="Reportar">⚑</button>
     </div>
   </div>
 </div>
@@ -8918,11 +8917,8 @@ async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
   // Botones reportar y bloquear (solo si hay userId y no es el propio usuario)
   const actionsEl = document.getElementById('up-actions');
   if (actionsEl && userId && currentUser && userId !== currentUser.id) {
-    const { data: blockData } = await db.from('blocks').select('id').eq('blocker_id', currentUser.id).eq('blocked_id', userId).maybeSingle();
-    const isBlocked = !!blockData;
     actionsEl.innerHTML = `
-      <button onclick="openReportModal('user','${userId}','${userName}')" style="flex:1;background:none;border:1.5px solid var(--border);border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit">⚑ Reportar</button>
-      <button id="up-block-btn" onclick="toggleBlockUser('${userId}','${userName}')" style="flex:1;background:none;border:1.5px solid ${isBlocked ? '#ef4444' : 'var(--border)'};border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;color:${isBlocked ? '#ef4444' : 'var(--muted)'};font-family:inherit">${isBlocked ? '🚫 Bloqueado' : '🚫 Bloquear'}</button>`;
+      <button onclick="openReportModal('user','${userId}','${userName}')" style="background:none;border:1.5px solid var(--border);border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit">⚑ Reportar usuario</button>`;
   } else if (actionsEl) {
     actionsEl.innerHTML = '';
   }
