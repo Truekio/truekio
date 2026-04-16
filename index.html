@@ -8037,11 +8037,16 @@ function renderConvList(data) {
     const unread = isUser1 ? (c.unread_user1 || 0) : (c.unread_user2 || 0);
     totalUnread += unread;
     const isUnread = unread > 0;
-    // Buscar avatar del otro usuario en items
-    const otherAvatar = items.find(i => i.user_id === otherUserId)?.userAvatar || null;
-    const convAvatarHtml = otherAvatar
-      ? `<img src="${otherAvatar}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
-      : `<div class="conv-avatar" style="background:${bg}">${(otherName||'?').charAt(0).toUpperCase()}</div>`;
+    // Buscar foto del objeto del trueque (el objeto del otro usuario)
+    const otherItemTitle = isUser1 ? c.item2_title : c.item1_title;
+    const otherItemPhoto = (() => {
+      // Buscar en items locales por título y user_id
+      const found = items.find(i => i.user_id === otherUserId && i.name === otherItemTitle);
+      return found?.photos?.[0] || found?.photo_urls?.[0] || null;
+    })();
+    const convAvatarHtml = otherItemPhoto
+      ? `<img src="${otherItemPhoto}" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;">`
+      : `<div class="conv-avatar" style="background:${bg};border-radius:10px">${(otherItemTitle||'?').charAt(0).toUpperCase()}</div>`;
 
     return `
     <div class="conv-item${activeConvId===c.id?' active':''}${isUnread?' conv-item-unread':''}" id="conv-item-${c.id}" style="display:flex;align-items:center;gap:0">
