@@ -7331,11 +7331,6 @@ async function confirmReceipt(cfId) {
 
     const otherEmail = await getUserEmail(otherUserId);
     const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
-    sendEmail('confirm_pending', otherEmail, {
-      otherName: myName,
-      item1: conv.item1_title,
-      item2: conv.item2_title,
-    });
     _confirmingInProgress = false;
     // Actualizar el card del chat
     if (activeConvData && activeConvData.id === cfId) {
@@ -7744,13 +7739,6 @@ function startConvPolling() {
         pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
         if (document.visibilityState === 'visible') playNotifSound();
         sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje');
-        if (document.visibilityState !== 'visible') {
-          sendEmail('new_message', currentUser.email, {
-            senderName: otherName,
-            itemTitle: `${conv.item1_title} ↔ ${conv.item2_title}`,
-            preview: conv.last_message || 'Tienes un nuevo mensaje',
-          });
-        }
       }
     }
     loadConversations();
