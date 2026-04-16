@@ -4121,9 +4121,6 @@ window._handleRegister = async function() {
       </div>
       <div style="font-size:12px;color:var(--muted)">¿No lo ves? Revisa la carpeta de spam.</div>
     </div>`;
-  
-  // Email de bienvenida + aviso al admin
-  sendEmail('welcome', email, { name });
 }
 
 function switchAuthTab(tab) {
@@ -4420,6 +4417,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   db.auth.onAuthStateChange((event, session) => {
     if (event === 'TOKEN_REFRESHED' && session) {
       currentUser = session.user;
+    }
+    if (event === 'SIGNED_IN' && session) {
+      const user = session.user;
+      // Enviar email de bienvenida solo la primera vez que entra
+      const welcomeKey = `truquo_welcome_sent_${user.id}`;
+      if (!localStorage.getItem(welcomeKey) && user.email_confirmed_at) {
+        localStorage.setItem(welcomeKey, '1');
+        const name = user.user_metadata?.name || user.email.split('@')[0];
+        sendEmail('welcome', user.email, { name });
+      }
     }
     if (event === 'SIGNED_OUT') {
       currentUser = null;
