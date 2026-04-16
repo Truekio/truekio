@@ -9767,6 +9767,13 @@ async function submitSuggestion() {
 
   if (error) { showToast('⚠️ Error al enviar: ' + error.message); return; }
 
+  // Notificar al admin por email
+  sendEmail('admin_suggestion', 'truquospain@gmail.com', {
+    userName: currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Usuario',
+    userEmail: currentUser.email,
+    text,
+  });
+
   closeSuggestionModal();
   showToast('✦ ¡Gracias por tu sugerencia!');
 }
