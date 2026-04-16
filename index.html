@@ -9158,6 +9158,7 @@ async function sendOffer() {
       last_message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
       last_message_at: new Date().toISOString(),
       status: 'pending',
+      unread_user1: 1, // Marcar como no leído para el receptor (dueño del objeto)
     }]).select('id').single();
     newConvId = newConv?.id;
   }
