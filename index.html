@@ -4802,7 +4802,7 @@ function navTo(v) {
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
+  const authRequired = ['publish','activity','messages','profile','favorites','admin'];
   if (authRequired.includes(v) && !currentUser) {
     requireAuth(v);
     return;
@@ -4839,7 +4839,7 @@ function navToActivity(tab) {
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
+  const authRequired = ['publish','activity','messages','profile','favorites','admin'];
   if (authRequired.includes(v) && !currentUser) {
     requireAuth(v);
     return;
@@ -5062,7 +5062,7 @@ function navTo(v) {
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   // Rutas que requieren autenticación
-  const authRequired = ['publish','activity','messages','profile','favorites'];
+  const authRequired = ['publish','activity','messages','profile','favorites','admin'];
   if (authRequired.includes(v) && !currentUser) {
     requireAuth(v);
     return;
@@ -12363,7 +12363,7 @@ document.addEventListener('mouseup', e => {
 </div>
 
 <!-- ── ADMIN PANEL ── -->
-<div class="view" id="view-admin" style="display:none;min-height:100vh;background:var(--bg)">
+<div class="view" id="view-admin" style="min-height:100vh;background:var(--bg)">
   <div style="max-width:900px;margin:0 auto;padding:24px 16px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
       <button onclick="navTo('profile')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:14px;font-weight:600;font-family:inherit">← Volver</button>
