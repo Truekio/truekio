@@ -12498,12 +12498,10 @@ document.addEventListener('mouseup', e => {
 <script>
 // ── Service Worker: registro y auto-actualización ──
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
+  const registerSW = async () => {
     try {
-      // Detectar la ruta base automáticamente (funciona en Vercel, GitHub Pages y cualquier host)
       const swUrl = './sw.js';
       const swScope = './';
-
       const reg = await navigator.serviceWorker.register(swUrl, { scope: swScope });
 
       reg.addEventListener('updatefound', () => {
@@ -12543,7 +12541,13 @@ if ('serviceWorker' in navigator) {
     } catch(e) {
       console.warn('[SW] ❌ Error al registrar:', e.message, e);
     }
-  });
+  };
+  // Registrar inmediatamente si el documento ya cargó, si no esperar al load
+  if (document.readyState === 'complete') {
+    registerSW();
+  } else {
+    window.addEventListener('load', registerSW);
+  }
 }
 </script>
 
