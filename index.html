@@ -2495,6 +2495,76 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
   </section>
 
+  <!-- SCREENSHOTS -->
+  <section class="lp-section" style="background:#f8fafc;overflow:hidden">
+    <div class="lp-section-inner" style="text-align:center">
+      <div class="lp-section-tag" style="margin:0 auto 12px">La app por dentro</div>
+      <h2 class="lp-section-title" style="margin-bottom:8px">Diseñada para que el trueque<br>sea fácil y divertido</h2>
+      <p class="lp-section-sub" style="margin:0 auto 48px">Todo lo que necesitas para intercambiar objetos, en un solo lugar.</p>
+
+      <!-- Carrusel de screenshots -->
+      <div style="position:relative;overflow:hidden">
+        <div id="ss-track" style="display:flex;gap:20px;transition:transform .4s cubic-bezier(.4,0,.2,1);will-change:transform;padding:0 20px 20px">
+          
+          <div style="flex:0 0 220px;text-align:center">
+            <div style="background:#1a1a2e;border-radius:24px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.2);display:inline-block">
+              <img src="/screenshots/1.jpeg" alt="Explorador de objetos" style="width:204px;border-radius:18px;display:block">
+            </div>
+            <div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text)">Explorador</div>
+            <div style="font-size:12px;color:var(--muted)">Descubre objetos cerca de ti</div>
+          </div>
+
+          <div style="flex:0 0 220px;text-align:center">
+            <div style="background:#1a1a2e;border-radius:24px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.2);display:inline-block">
+              <img src="/screenshots/2.jpeg" alt="Detalle de objeto" style="width:204px;border-radius:18px;display:block">
+            </div>
+            <div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text)">Detalle del objeto</div>
+            <div style="font-size:12px;color:var(--muted)">Propón el trueque en un clic</div>
+          </div>
+
+          <div style="flex:0 0 220px;text-align:center">
+            <div style="background:#1a1a2e;border-radius:24px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.2);display:inline-block">
+              <img src="/screenshots/3.jpeg" alt="Lo que busca la comunidad" style="width:204px;border-radius:18px;display:block">
+            </div>
+            <div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text)">Demanda</div>
+            <div style="font-size:12px;color:var(--muted)">Lo que busca la comunidad</div>
+          </div>
+
+          <div style="flex:0 0 220px;text-align:center">
+            <div style="background:#1a1a2e;border-radius:24px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.2);display:inline-block">
+              <img src="/screenshots/4.jpeg" alt="Perfil de usuario" style="width:204px;border-radius:18px;display:block">
+            </div>
+            <div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text)">Tu perfil</div>
+            <div style="font-size:12px;color:var(--muted)">Historial y reputación</div>
+          </div>
+
+          <div style="flex:0 0 220px;text-align:center">
+            <div style="background:#1a1a2e;border-radius:24px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.2);display:inline-block">
+              <img src="/screenshots/5.jpeg" alt="Filtros" style="width:204px;border-radius:18px;display:block">
+            </div>
+            <div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text)">Filtros</div>
+            <div style="font-size:12px;color:var(--muted)">Encuentra exactamente lo que buscas</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Dots y controles -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:24px">
+        <button onclick="ssScroll(-1)" style="background:var(--white);border:1.5px solid var(--border);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">‹</button>
+        <div style="display:flex;gap:6px" id="ss-dots">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--border)"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--border)"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--border)"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--border)"></div>
+        </div>
+        <button onclick="ssScroll(1)" style="background:var(--white);border:1.5px solid var(--border);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">›</button>
+      </div>
+
+    </div>
+  </section>
+
   <!-- TESTIMONIALS -->
   <section class="lp-section lp-testimonials">
     <div class="lp-section-inner">
@@ -5507,6 +5577,19 @@ function switchAdminTab(tab) {
     const btn = document.getElementById(`admin-tab-${t}`);
     if (btn) { btn.style.background = t === tab ? 'var(--white)' : 'none'; btn.style.color = t === tab ? 'var(--accent)' : 'var(--muted)'; btn.style.fontWeight = t === tab ? '700' : '600'; }
   });
+}
+
+// Screenshots carousel
+let _ssIdx = 0;
+function ssScroll(dir) {
+  const track = document.getElementById('ss-track');
+  const dots = document.getElementById('ss-dots')?.children;
+  if (!track) return;
+  const total = 5;
+  _ssIdx = Math.max(0, Math.min(total - 1, _ssIdx + dir));
+  const offset = _ssIdx * 240;
+  track.style.transform = `translateX(-${offset}px)`;
+  if (dots) Array.from(dots).forEach((d, i) => d.style.background = i === _ssIdx ? 'var(--accent)' : 'var(--border)');
 }
 
 function cookieChoice(choice) {
