@@ -4001,6 +4001,16 @@ window._enterApp = function() {
   const bn = document.querySelector('.bottom-nav');
   if (bn) bn.style.display = '';
 
+  // Navegar si viene de notificación push
+  const pendingNav = sessionStorage.getItem('truquo_nav_on_login');
+  if (pendingNav) {
+    sessionStorage.removeItem('truquo_nav_on_login');
+    setTimeout(() => {
+      if (pendingNav === 'messages') navToMessages();
+      else if (pendingNav === 'proposals') navToActivity('proposals');
+    }, 800);
+  }
+
   if (currentUser) {
     const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
     const city = currentUser.user_metadata?.city || '';
@@ -12529,8 +12539,12 @@ if ('serviceWorker' in navigator) {
       // Navegar según parámetro en URL (app estaba cerrada)
       const urlParams = new URLSearchParams(window.location.search);
       const navParam = urlParams.get('nav');
-      if (navParam === 'messages') setTimeout(() => { if(currentUser) navToMessages(); }, 1500);
-      else if (navParam === 'proposals') setTimeout(() => { if(currentUser) navToActivity('proposals'); }, 1500);
+      if (navParam) {
+        // Guardar en sessionStorage y navegar cuando el usuario esté logueado
+        sessionStorage.setItem('truquo_nav_on_login', navParam);
+        // Limpiar la URL
+        history.replaceState(null, '', window.location.pathname);
+      }
 
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
