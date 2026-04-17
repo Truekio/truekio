@@ -3258,7 +3258,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div style="padding:20px 24px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;position:sticky;bottom:0;background:var(--white)">
       <button class="btn btn-primary btn-md" onclick="saveProfile()">Guardar cambios</button>
       <button class="btn btn-ghost btn-md" onclick="handleLogout()" style="color:#ef4444">Cerrar sesión</button>
-      <button id="btn-admin-panel" onclick="closeEditProfileDrawer();navTo('admin')" style="display:none;background:none;border:1px solid var(--border);border-radius:99px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit">⚙ Panel admin</button>
+      <button id="btn-admin-panel" onclick="closeEditProfileDrawer();navTo('admin');setTimeout(()=>{const bn=document.querySelector('.bottom-nav');if(bn)bn.style.display='none';},100)" style="display:none;background:none;border:1px solid var(--border);border-radius:99px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit">⚙ Panel admin</button>
       <button class="btn btn-ghost btn-md" onclick="handleDeleteAccount()" style="color:#9ca3af;font-size:12px;padding:6px">Eliminar cuenta</button>
     </div>
   </div>
@@ -5083,7 +5083,7 @@ function navTo(v) {
   if(v === 'favorites') renderFavorites();
   if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
   if(v === 'demand') { loadPublicDemand(); }
-  if(v === 'admin') { if(currentUser) loadAdminPanel(); else { requireAuth('admin'); return; } }
+  if(v === 'admin') { if(currentUser) { loadAdminPanel(); const _bn = document.querySelector('.bottom-nav'); if(_bn) _bn.style.display = 'none'; } else { requireAuth('admin'); return; } }
 }
 
 
@@ -5299,7 +5299,7 @@ async function loadAdminPanel() {
 }
 
 async function loadAdminReports() {
-  const { data } = await db.from('reports').select('*').order('created_at', { ascending: false });
+  const { data } = await db.from('reports').select('*').eq('status','pending').order('created_at', { ascending: false });
   _adminReports = data || [];
   renderAdminReports();
 }
@@ -12366,7 +12366,7 @@ document.addEventListener('mouseup', e => {
 <div class="view" id="view-admin" style="min-height:100vh;background:var(--bg)">
   <div style="max-width:900px;margin:0 auto;padding:24px 16px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-      <button onclick="navTo('profile')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:14px;font-weight:600;font-family:inherit">← Volver</button>
+      <button onclick="const _bn=document.querySelector('.bottom-nav');if(_bn&&window.innerWidth<=640)_bn.style.display='';navTo('profile')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:14px;font-weight:600;font-family:inherit">← Volver</button>
       <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:800;margin:0">⚙ Panel de administración</h2>
     </div>
 
