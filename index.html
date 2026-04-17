@@ -8708,7 +8708,13 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
   el.innerHTML = html;
 }
 
+let _loadMsgsTimer = null;
 async function loadMessages(convId) {
+  // Debounce — evitar recargas múltiples en < 300ms
+  if (_loadMsgsTimer) clearTimeout(_loadMsgsTimer);
+  await new Promise(resolve => { _loadMsgsTimer = setTimeout(resolve, 100); });
+  if (activeConvId !== convId) return; // Conversación cambió mientras esperaba
+
   const { data, error } = await db
     .from('messages')
     .select('id,conversation_id,sender_id,text,created_at')
