@@ -8350,6 +8350,9 @@ function closeMobileChat() {
   <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p>
 </div>`;
   }
+  // Restaurar nav inferior
+  const bn = document.querySelector('.bottom-nav');
+  if (bn) bn.style.display = '';
   loadConversations();
 }
 
@@ -8387,12 +8390,14 @@ async function openConv(convId) {
 
   const main = document.getElementById('chat-main');
 
-  // Móvil: mostrar chat, ocultar lista
+  // Móvil: mostrar chat, ocultar lista y nav inferior
   const isMobile = window.innerWidth < 768;
   if (isMobile) {
     const convList = document.querySelector('.conv-list');
     if (convList) convList.classList.add('mobile-hidden');
     main.classList.add('mobile-open');
+    const bn = document.querySelector('.bottom-nav');
+    if (bn) bn.style.display = 'none';
   }
 
   const cancelBtn = '';
