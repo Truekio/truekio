@@ -396,7 +396,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .item-card.is-premium:hover{box-shadow:0 8px 28px rgba(245,158,11,.18),var(--sh-md);}
 
 /* Foto cuadrada dominante */
-.item-img{aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--bg2);}
+.item-img{aspect-ratio:1/1;position:relative;overflow:hidden;background:var(--bg2);}
 .item-img-bg{position:absolute;inset:0;opacity:.12;}
 .item-img-emoji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.6rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.08));transition:transform .3s ease;}
 .item-card:hover .item-img-emoji{transform:scale(1.06);}
@@ -4999,30 +4999,11 @@ function itemCardHTML(item, isPremiumView=false) {
   const allPhotos = (item.images && item.images.length) ? item.images
     : (item.photos && item.photos.length) ? item.photos
     : item.photo ? [item.photo] : [];
-  const cid = 'car-' + String(item.id).replace(/-/g, '');
-  const imgContent = allPhotos.length > 0 ? (() => {
-    const slides = allPhotos.map((src, i) =>
-      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onerror="this.parentElement.style.background='var(--bg2)'"></div>`
-    ).join('');
-    const dots = allPhotos.length > 1 ? `<div class="carousel-dots" id="${cid}-dots">${allPhotos.map((_,i)=>
-      `<div class="carousel-dot${i===0?' active':''}"></div>`).join('')}</div>` : '';
-    const arrows = allPhotos.length > 1 ? `
-      <button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button>
-      <button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
-    const count = ''; // contador de fotos eliminado
-    return `<div class="card-carousel" id="${cid}" data-idx="0" data-total="${allPhotos.length}"
-      onmousedown="carouselDragStart(event,'${cid}')"
-      ontouchstart="carouselTouchStart(event,'${cid}')"
-      ontouchmove="carouselTouchMove(event,'${cid}')"
-      ontouchend="carouselTouchEnd(event,'${cid}')"
-      style="position:absolute;inset:0">
-      <div class="carousel-track" id="${cid}-track">${slides}</div>
-      ${dots}${arrows}${count}
-    </div>`;
-  })()
-  : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-       <div class="item-img-emoji">${item.emoji}</div>
-     </div>`;
+  const imgContent = allPhotos.length > 0
+    ? `<img src="${allPhotos[0]}" loading="eager" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">${allPhotos.length > 1 ? `<div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">+${allPhotos.length}</div>` : ''}`
+    : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+         <div class="item-img-emoji">${item.emoji}</div>
+       </div>`;
 
   const isCafe = item.wants && item.wants.some(w => w === '☕ ¡Te lo doy por un café!' || w === '☕ Un café');
   const isSurprise = item.wants && item.wants.some(w => w === '🎲 ¡Sorpréndeme!');
@@ -5697,30 +5678,11 @@ function itemCardHTML(item, isPremiumView=false) {
   const allPhotos = (item.images && item.images.length) ? item.images
     : (item.photos && item.photos.length) ? item.photos
     : item.photo ? [item.photo] : [];
-  const cid = 'car-' + String(item.id).replace(/-/g, '');
-  const imgContent = allPhotos.length > 0 ? (() => {
-    const slides = allPhotos.map((src, i) =>
-      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onerror="this.parentElement.style.background='var(--bg2)'"></div>`
-    ).join('');
-    const dots = allPhotos.length > 1 ? `<div class="carousel-dots" id="${cid}-dots">${allPhotos.map((_,i)=>
-      `<div class="carousel-dot${i===0?' active':''}"></div>`).join('')}</div>` : '';
-    const arrows = allPhotos.length > 1 ? `
-      <button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button>
-      <button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
-    const count = ''; // contador de fotos eliminado
-    return `<div class="card-carousel" id="${cid}" data-idx="0" data-total="${allPhotos.length}"
-      onmousedown="carouselDragStart(event,'${cid}')"
-      ontouchstart="carouselTouchStart(event,'${cid}')"
-      ontouchmove="carouselTouchMove(event,'${cid}')"
-      ontouchend="carouselTouchEnd(event,'${cid}')"
-      style="position:absolute;inset:0">
-      <div class="carousel-track" id="${cid}-track">${slides}</div>
-      ${dots}${arrows}${count}
-    </div>`;
-  })()
-  : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-       <div class="item-img-emoji">${item.emoji}</div>
-     </div>`;
+  const imgContent = allPhotos.length > 0
+    ? `<img src="${allPhotos[0]}" loading="eager" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">${allPhotos.length > 1 ? `<div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">+${allPhotos.length}</div>` : ''}`
+    : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+         <div class="item-img-emoji">${item.emoji}</div>
+       </div>`;
 
   const isCafe = item.wants && item.wants.some(w => w === '☕ ¡Te lo doy por un café!' || w === '☕ Un café');
   const isSurprise = item.wants && item.wants.some(w => w === '🎲 ¡Sorpréndeme!');
