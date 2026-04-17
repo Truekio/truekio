@@ -3258,6 +3258,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div style="padding:20px 24px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;position:sticky;bottom:0;background:var(--white)">
       <button class="btn btn-primary btn-md" onclick="saveProfile()">Guardar cambios</button>
       <button class="btn btn-ghost btn-md" onclick="handleLogout()" style="color:#ef4444">Cerrar sesión</button>
+      <button id="btn-admin-panel" onclick="navTo('admin')" style="display:none;background:none;border:1px solid var(--border);border-radius:99px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit">⚙ Panel admin</button>
       <button class="btn btn-ghost btn-md" onclick="handleDeleteAccount()" style="color:#9ca3af;font-size:12px;padding:6px">Eliminar cuenta</button>
     </div>
   </div>
@@ -4006,6 +4007,14 @@ window._enterApp = function() {
     const bio  = currentUser.user_metadata?.bio  || '';
     const photoUrl = currentUser.user_metadata?.avatar_url || '';
     const since = new Date(currentUser.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    // Verificar si es admin
+    setTimeout(async () => {
+      const { data: profile } = await db.from('profiles').select('is_admin').eq('id', currentUser.id).maybeSingle();
+      if (profile?.is_admin) {
+        const adminBtn = document.getElementById('btn-admin-panel');
+        if (adminBtn) adminBtn.style.display = '';
+      }
+    }, 1000);
 
     const editName  = document.getElementById('edit-name');
     const editCity  = document.getElementById('edit-city');
@@ -5074,6 +5083,7 @@ function navTo(v) {
   if(v === 'favorites') renderFavorites();
   if(v === 'wishlist') { renderWishlist(); loadWishAlerts(); }
   if(v === 'demand') { loadPublicDemand(); }
+  if(v === 'admin') { if(currentUser) loadAdminPanel(); else { requireAuth('admin'); return; } }
 }
 
 
@@ -5272,6 +5282,158 @@ async function submitReport() {
   });
   closeReportModal();
   showToast('✅ Reporte enviado — lo revisaremos pronto');
+}
+
+// ═══ ADMIN PANEL ═══
+let _adminUsers = [], _adminItems = [], _adminReports = [];
+
+async function loadAdminPanel() {
+  // Verificar que es admin
+  const { data: profile } = await db.from('profiles').select('is_admin').eq('id', currentUser.id).maybeSingle();
+  if (!profile?.is_admin) { showToast('⚠️ Acceso denegado'); navTo('profile'); return; }
+  // Mostrar botón admin en perfil
+  const adminBtn = document.getElementById('btn-admin-panel');
+  if (adminBtn) adminBtn.style.display = '';
+  // Cargar datos
+  await Promise.all([loadAdminReports(), loadAdminUsers(), loadAdminItems()]);
+}
+
+async function loadAdminReports() {
+  const { data } = await db.from('reports').select('*').order('created_at', { ascending: false });
+  _adminReports = data || [];
+  renderAdminReports();
+}
+
+async function loadAdminUsers() {
+  const { data } = await db.from('profiles').select('id,welcome_sent,is_admin').order('id');
+  // Combinar con datos de items para tener nombres
+  const { data: itemUsers } = await db.from('items').select('user_id,user_name,user_avatar').limit(500);
+  const userMap = {};
+  (itemUsers || []).forEach(i => { if (!userMap[i.user_id]) userMap[i.user_id] = { name: i.user_name, avatar: i.user_avatar }; });
+  _adminUsers = (data || []).map(u => ({ ...u, name: userMap[u.id]?.name || 'Sin nombre', avatar: userMap[u.id]?.avatar || '' }));
+  renderAdminUsers(_adminUsers);
+}
+
+async function loadAdminItems() {
+  const { data } = await db.from('items').select('id,title,user_name,user_id,status,created_at,photo_urls,photos,category').order('created_at', { ascending: false }).limit(200);
+  _adminItems = data || [];
+  renderAdminItems(_adminItems);
+}
+
+function renderAdminReports() {
+  const el = document.getElementById('admin-reports-list');
+  if (!el) return;
+  if (!_adminReports.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">✅ No hay reportes pendientes</div>'; return; }
+  el.innerHTML = _adminReports.map(r => `
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${new Date(r.created_at).toLocaleString('es-ES')}</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">${r.reported_type === 'item' ? '📦' : '👤'} ${r.reported_name || '—'}</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Reportado por: <strong>${r.reporter_name || '—'}</strong></div>
+          <div style="font-size:13px;margin-bottom:4px">Motivo: <strong>${r.reason}</strong></div>
+          ${r.details ? `<div style="font-size:12px;color:var(--muted);font-style:italic">"${r.details}"</div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap">
+          ${r.reported_type === 'item' ? `<button onclick="adminDeleteItem('${r.reported_id}','${r.id}')" style="background:#ef4444;color:#fff;border:none;padding:6px 12px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑 Eliminar objeto</button>` : ''}
+          ${r.reported_type === 'user' ? `<button onclick="adminDeleteUser('${r.reported_id}','${r.id}')" style="background:#ef4444;color:#fff;border:none;padding:6px 12px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🚫 Eliminar usuario</button>` : ''}
+          <button onclick="adminDismissReport('${r.id}')" style="background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ Descartar</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderAdminUsers(list) {
+  const el = document.getElementById('admin-users-list');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">No hay usuarios</div>'; return; }
+  el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${list.length} usuarios</div>` + list.map(u => `
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <div style="width:36px;height:36px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;overflow:hidden">
+          ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover">` : (u.name?.charAt(0)?.toUpperCase() || '?')}
+        </div>
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name} ${u.is_admin ? '⚙' : ''}</div>
+          <div style="font-size:11px;color:var(--muted)">${u.id.substring(0,8)}...</div>
+        </div>
+      </div>
+      ${!u.is_admin ? `<button onclick="adminDeleteUser('${u.id}',null)" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:5px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Eliminar</button>` : '<span style="font-size:11px;color:var(--accent)">Admin</span>'}
+    </div>`).join('');
+}
+
+function renderAdminItems(list) {
+  const el = document.getElementById('admin-items-list');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">No hay objetos</div>'; return; }
+  el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${list.length} objetos</div>` + list.map(i => {
+    const photo = i.photo_urls?.[0] || i.photos?.[0] || '';
+    return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <div style="width:44px;height:44px;border-radius:8px;background:var(--bg2);overflow:hidden;flex-shrink:0">
+          ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem">📦</div>'}
+        </div>
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.title}</div>
+          <div style="font-size:11px;color:var(--muted)">${i.user_name} · ${i.status} · ${new Date(i.created_at).toLocaleDateString('es-ES')}</div>
+        </div>
+      </div>
+      <button onclick="adminDeleteItem('${i.id}',null)" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:5px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Eliminar</button>
+    </div>`;
+  }).join('');
+}
+
+function filterAdminUsers(q) {
+  const filtered = q ? _adminUsers.filter(u => u.name?.toLowerCase().includes(q.toLowerCase())) : _adminUsers;
+  renderAdminUsers(filtered);
+}
+
+function filterAdminItems(q) {
+  const filtered = q ? _adminItems.filter(i => i.title?.toLowerCase().includes(q.toLowerCase()) || i.user_name?.toLowerCase().includes(q.toLowerCase())) : _adminItems;
+  renderAdminItems(filtered);
+}
+
+async function adminDeleteItem(itemId, reportId) {
+  showAppConfirm('¿Eliminar este objeto?', 'Se eliminará permanentemente.', async () => {
+    await db.from('items').delete().eq('id', itemId);
+    if (reportId) await db.from('reports').update({ status: 'resolved' }).eq('id', reportId);
+    showToast('✅ Objeto eliminado');
+    await loadAdminItems();
+    if (reportId) await loadAdminReports();
+  });
+}
+
+async function adminDeleteUser(userId, reportId) {
+  showAppConfirm('¿Eliminar este usuario?', 'Se eliminarán todos sus datos permanentemente.', async () => {
+    await db.from('items').delete().eq('user_id', userId);
+    await db.from('proposals').delete().or(`offerer_id.eq.${userId},owner_id.eq.${userId}`);
+    await db.from('conversations').delete().or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+    await db.from('profiles').delete().eq('id', userId);
+    await fetch(`${SUPABASE_URL}/functions/v1/delete-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    if (reportId) await db.from('reports').update({ status: 'resolved' }).eq('id', reportId);
+    showToast('✅ Usuario eliminado');
+    await loadAdminUsers();
+    if (reportId) await loadAdminReports();
+  });
+}
+
+async function adminDismissReport(reportId) {
+  await db.from('reports').update({ status: 'dismissed' }).eq('id', reportId);
+  showToast('✓ Reporte descartado');
+  _adminReports = _adminReports.filter(r => r.id !== reportId);
+  renderAdminReports();
+}
+
+function switchAdminTab(tab) {
+  ['reports','users','items'].forEach(t => {
+    document.getElementById(`admin-content-${t}`).style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById(`admin-tab-${t}`);
+    if (btn) { btn.style.background = t === tab ? 'var(--white)' : 'none'; btn.style.color = t === tab ? 'var(--accent)' : 'var(--muted)'; btn.style.fontWeight = t === tab ? '700' : '600'; }
+  });
 }
 
 function cookieChoice(choice) {
@@ -12196,6 +12358,44 @@ document.addEventListener('mouseup', e => {
     <div style="display:flex;gap:10px">
       <button onclick="closeReportModal()" class="btn btn-secondary btn-md" style="flex:1">Cancelar</button>
       <button onclick="submitReport()" class="btn btn-md" style="flex:1;background:#ef4444;color:#fff;border:none" id="report-submit-btn">Enviar reporte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN PANEL ── -->
+<div class="view" id="view-admin" style="display:none;min-height:100vh;background:var(--bg)">
+  <div style="max-width:900px;margin:0 auto;padding:24px 16px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <button onclick="navTo('profile')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:14px;font-weight:600;font-family:inherit">← Volver</button>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:800;margin:0">⚙ Panel de administración</h2>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:4px;background:var(--bg2);border-radius:var(--r);padding:4px;margin-bottom:20px;width:fit-content">
+      <button id="admin-tab-reports" onclick="switchAdminTab('reports')" style="background:var(--white);border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--accent)">📋 Reportes</button>
+      <button id="admin-tab-users" onclick="switchAdminTab('users')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">👥 Usuarios</button>
+      <button id="admin-tab-items" onclick="switchAdminTab('items')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📦 Objetos</button>
+    </div>
+
+    <!-- Reportes -->
+    <div id="admin-content-reports">
+      <div id="admin-reports-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Cargando...</div></div>
+    </div>
+
+    <!-- Usuarios -->
+    <div id="admin-content-users" style="display:none">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <input id="admin-user-search" placeholder="Buscar por nombre o email..." oninput="filterAdminUsers(this.value)" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+      </div>
+      <div id="admin-users-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Cargando...</div></div>
+    </div>
+
+    <!-- Objetos -->
+    <div id="admin-content-items" style="display:none">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <input id="admin-item-search" placeholder="Buscar por título..." oninput="filterAdminItems(this.value)" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+      </div>
+      <div id="admin-items-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Cargando...</div></div>
     </div>
   </div>
 </div>
