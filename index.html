@@ -12363,7 +12363,7 @@ document.addEventListener('mouseup', e => {
 </div>
 
 <!-- ── ADMIN PANEL ── -->
-<div class="view" id="view-admin" style="min-height:100vh;background:var(--bg)">
+<div class="view" id="view-admin" style="min-height:100vh;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="max-width:900px;margin:0 auto;padding:24px 16px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
       <button onclick="const _bn=document.querySelector('.bottom-nav');if(_bn&&window.innerWidth<=640)_bn.style.display='';navTo('profile')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:14px;font-weight:600;font-family:inherit">← Volver</button>
