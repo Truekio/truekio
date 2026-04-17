@@ -2,6 +2,18 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script>
+// Detectar parámetro nav de notificación push lo antes posible
+(function() {
+  try {
+    const p = new URLSearchParams(window.location.search).get('nav');
+    if (p) {
+      sessionStorage.setItem('truquo_nav_on_login', p);
+      history.replaceState(null, '', window.location.pathname);
+    }
+  } catch(e) {}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <!-- SEO -->
@@ -12535,16 +12547,6 @@ if ('serviceWorker' in navigator) {
         if (nav === 'messages') setTimeout(() => navToMessages(), 500);
         else if (nav === 'proposals') setTimeout(() => navToActivity('proposals'), 500);
       });
-
-      // Navegar según parámetro en URL (app estaba cerrada)
-      const urlParams = new URLSearchParams(window.location.search);
-      const navParam = urlParams.get('nav');
-      if (navParam) {
-        // Guardar en sessionStorage y navegar cuando el usuario esté logueado
-        sessionStorage.setItem('truquo_nav_on_login', navParam);
-        // Limpiar la URL
-        history.replaceState(null, '', window.location.pathname);
-      }
 
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
