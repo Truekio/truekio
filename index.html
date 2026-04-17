@@ -3805,34 +3805,83 @@ function fdRemoveChip(key) {
 let _cityHighlight = -1;
 
 // ── Autocomplete ciudad en el perfil ──
+let _citySearchTimer = null;
+
+let _obCityTimer = null;
+function obCityAutocomplete(q) {
+  const box = document.getElementById('ob-city-suggestions');
+  if (!box) return;
+  const val = q.trim();
+  if (val.length < 2) { box.style.display = 'none'; return; }
+  box.innerHTML = '<div style="padding:8px 14px;font-size:13px;color:#999">Buscando...</div>';
+  box.style.display = '';
+  if (_obCityTimer) clearTimeout(_obCityTimer);
+  _obCityTimer = setTimeout(async () => {
+    const results = await nominatimSearch(val);
+    if (!results.length) { box.style.display = 'none'; return; }
+    box.innerHTML = results.map(r =>
+      `<div onmousedown="obCitySelect('${r.display.replace(/'/g,"\\'")}',${r.lat},${r.lon})"
+        style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid #f0f4f8;display:flex;align-items:center;gap:8px"
+        onmouseover="this.style.background='#f5f8fb'" onmouseout="this.style.background=''">
+        📍 ${r.display}
+      </div>`
+    ).join('');
+    box.style.display = '';
+  }, 350);
+}
+
+function obCitySelect(city, lat, lon) {
+  const inp = document.getElementById('ob-city-input');
+  if (inp) inp.value = city;
+  const box = document.getElementById('ob-city-suggestions');
+  if (box) box.style.display = 'none';
+  // Guardar coords temporalmente
+  window._obCityLat = lat;
+  window._obCityLon = lon;
+}
+
+async function nominatimSearch(q) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=es&addressdetails=1&limit=7&format=json&accept-language=es`, {
+      headers: { 'Accept-Language': 'es' }
+    });
+    const data = await res.json();
+    return data.map(item => {
+      const addr = item.address;
+      const name = addr.city || addr.town || addr.village || addr.municipality || addr.county || item.display_name.split(',')[0];
+      const region = addr.state || addr.region || '';
+      return { name: name.trim(), display: region ? `${name.trim()}, ${region}` : name.trim(), lat: item.lat, lon: item.lon };
+    }).filter((v, i, a) => a.findIndex(x => x.display === v.display) === i);
+  } catch(e) { return []; }
+}
+
 function profileCityAutocomplete(q) {
   const box = document.getElementById('profile-city-suggestions');
   if (!box) return;
-  const val = q.trim().toLowerCase();
-  if (!val) { box.classList.remove('open'); return; }
-  const all = typeof CITY_COORDS !== 'undefined' ? Object.keys(CITY_COORDS) : [];
-  const starts = all.filter(c => c.toLowerCase().startsWith(val));
-  const contains = all.filter(c => !c.toLowerCase().startsWith(val) && c.toLowerCase().includes(val));
-  const matches = [...starts, ...contains].slice(0, 8);
-  if (!matches.length) { box.classList.remove('open'); return; }
-  box.innerHTML = matches.map(city =>
-    `<div class="city-suggestion" data-city="${city}" onmousedown="profileCitySelect('${city.replace(/'/g,"\\'")}')">
-      <span>📍</span><span class="city-sug-name">${_cityHighlightMatch ? _cityHighlightMatch(city, q) : city}</span>
-    </div>`
-  ).join('');
+  const val = q.trim();
+  if (val.length < 2) { box.classList.remove('open'); return; }
+  box.innerHTML = '<div style="padding:8px 14px;font-size:13px;color:var(--muted)">Buscando...</div>';
   box.classList.add('open');
+  if (_citySearchTimer) clearTimeout(_citySearchTimer);
+  _citySearchTimer = setTimeout(async () => {
+    const results = await nominatimSearch(val);
+    if (!results.length) { box.classList.remove('open'); return; }
+    box.innerHTML = results.map(r =>
+      `<div class="city-suggestion" onmousedown="profileCitySelect('${r.display.replace(/'/g,"\\'")}',${r.lat},${r.lon})">
+        <span>📍</span><span class="city-sug-name">${r.display}</span>
+      </div>`
+    ).join('');
+    box.classList.add('open');
+  }, 350);
 }
 
-function profileCitySelect(city) {
+function profileCitySelect(city, lat, lon) {
   const input = document.getElementById('edit-city');
   if (input) input.value = city;
-  const coords = typeof CITY_COORDS !== 'undefined' ? CITY_COORDS[city] : null;
-  if (coords) {
-    const lat = document.getElementById('edit-lat');
-    const lng = document.getElementById('edit-lng');
-    if (lat) lat.value = coords.lat;
-    if (lng) lng.value = coords.lng;
-  }
+  const latEl = document.getElementById('edit-lat');
+  const lngEl = document.getElementById('edit-lng');
+  if (latEl) latEl.value = lat || '';
+  if (lngEl) lngEl.value = lon || '';
   const box = document.getElementById('profile-city-suggestions');
   if (box) box.classList.remove('open');
 }
@@ -12461,7 +12510,10 @@ document.addEventListener('mouseup', e => {
         <div style="margin-bottom:16px">
           <input id="ob-city-input" placeholder="Escribe tu ciudad..."
             style="width:100%;box-sizing:border-box;background:#f5f8fb;border:1.5px solid #e2e8f0;color:#1a2a3a;font-size:14px;padding:12px 14px;border-radius:10px;outline:none;font-family:inherit"
+            oninput="obCityAutocomplete(this.value)"
+            autocomplete="off"
           >
+          <div id="ob-city-suggestions" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-top:4px;display:none;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
         </div>
         <button onclick="obSaveCity()" style="width:100%;background:#4a9cc5;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Guardar ciudad →</button>
         <button onclick="obDetectCity()" style="width:100%;background:none;border:1.5px solid #e2e8f0;color:#555;font-size:13px;margin-top:8px;cursor:pointer;font-family:inherit;padding:10px;border-radius:10px">📍 Detectar automáticamente</button>
