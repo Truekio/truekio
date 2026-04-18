@@ -3278,6 +3278,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <div style="font-weight:700;font-size:.9rem;margin-bottom:4px">Foto de perfil</div>
           <div style="font-size:12px;color:var(--muted);line-height:1.5">JPG, PNG o WebP · Máx. 2 MB</div>
           <div id="photo-upload-status" style="font-size:12px;margin-top:4px;display:none"></div>
+          <button id="remove-photo-btn" onclick="removeProfilePhoto()" style="display:none;margin-top:6px;background:none;border:none;color:#ef4444;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;padding:0">🗑 Quitar foto</button>
         </div>
       </div>
     </div>
@@ -10271,6 +10272,12 @@ function openEditProfileDrawer() {
       preview.textContent = initial;
     }
   }
+  // Mostrar/ocultar botón de quitar foto
+  const removeBtn = document.getElementById('remove-photo-btn');
+  if (removeBtn) removeBtn.style.display = photoUrl ? '' : 'none';
+  // Limpiar status
+  const status = document.getElementById('photo-upload-status');
+  if (status) status.style.display = 'none';
 
   const overlay = document.getElementById('edit-profile-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -10490,35 +10497,81 @@ function applyAvatar(photoUrl, name) {
 async function handlePhotoChange(event) {
   const file = event.target.files[0];
   if (!file || !currentUser) return;
+
+  // Validaciones
   if (file.size > 2 * 1024 * 1024) { showToast('⚠️ La foto no puede superar 2 MB'); return; }
+  if (!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)) { showToast('⚠️ Formato no válido. Usa JPG, PNG o WebP'); return; }
 
   const status = document.getElementById('photo-upload-status');
   if (status) { status.textContent = '⏳ Subiendo foto...'; status.style.display = ''; status.style.color = 'var(--muted)'; }
 
-  const ext = file.name.split('.').pop();
-  const path = `avatars/${currentUser.id}.${ext}`;
+  try {
+    // Comprimir imagen antes de subir si es muy grande
+    const ext = file.type === 'image/png' ? 'png' : 'jpg';
+    const path = `avatars/${currentUser.id}.${ext}`;
 
-  const { error: upErr } = await db.storage.from('photos').upload(path, file, { upsert: true, contentType: file.type });
-  if (upErr) {
-    if (status) { status.textContent = '⚠️ Error al subir la foto'; status.style.color = '#e53e3e'; }
-    showToast('⚠️ Error al subir la foto');
-    return;
+    const { error: upErr } = await db.storage.from('photos').upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) throw new Error(upErr.message);
+
+    const { data: urlData } = db.storage.from('photos').getPublicUrl(path);
+    const photoUrl = urlData.publicUrl + '?t=' + Date.now();
+
+    // Guardar URL en user_metadata
+    const { error: updErr } = await db.auth.updateUser({ data: { ...currentUser.user_metadata, avatar_url: photoUrl } });
+    if (updErr) throw new Error(updErr.message);
+    currentUser.user_metadata = { ...currentUser.user_metadata, avatar_url: photoUrl };
+
+    applyAvatar(photoUrl, currentUser.user_metadata?.name || currentUser.email.split('@')[0]);
+
+    // Actualizar user_avatar en todos los items del usuario
+    await db.from('items').update({ user_avatar: photoUrl }).eq('user_id', currentUser.id);
+
+    // Mostrar botón de quitar foto
+    const removeBtn = document.getElementById('remove-photo-btn');
+    if (removeBtn) removeBtn.style.display = '';
+
+    if (status) { status.textContent = '✓ Foto actualizada'; status.style.color = 'var(--green)'; }
+    showToast('✦ Foto de perfil actualizada');
+  } catch(e) {
+    console.error('Error subiendo foto:', e);
+    if (status) { status.textContent = '⚠️ Error: ' + e.message; status.style.color = '#e53e3e'; }
+    showToast('⚠️ Error al subir la foto — inténtalo de nuevo');
   }
+  // Limpiar input para poder subir la misma foto de nuevo
+  event.target.value = '';
+}
 
-  const { data: urlData } = db.storage.from('photos').getPublicUrl(path);
-  const photoUrl = urlData.publicUrl + '?t=' + Date.now();
+async function removeProfilePhoto() {
+  if (!currentUser) return;
+  showAppConfirm('¿Quitar foto de perfil?', 'Se eliminará tu foto y se usará tu inicial como avatar.', async () => {
+    try {
+      // Eliminar de storage
+      const ext = currentUser.user_metadata?.avatar_url?.includes('.png') ? 'png' : 'jpg';
+      await db.storage.from('photos').remove([`avatars/${currentUser.id}.${ext}`]);
 
-  // Guardar URL en user_metadata
-  await db.auth.updateUser({ data: { ...currentUser.user_metadata, avatar_url: photoUrl } });
-  currentUser.user_metadata = { ...currentUser.user_metadata, avatar_url: photoUrl };
+      // Quitar de user_metadata
+      const { error } = await db.auth.updateUser({ data: { ...currentUser.user_metadata, avatar_url: null } });
+      if (error) throw new Error(error.message);
+      currentUser.user_metadata = { ...currentUser.user_metadata, avatar_url: null };
 
-  applyAvatar(photoUrl, currentUser.user_metadata?.name || currentUser.email.split('@')[0]);
+      // Quitar de items
+      await db.from('items').update({ user_avatar: null }).eq('user_id', currentUser.id);
 
-  // Actualizar user_avatar en todos los items del usuario
-  await db.from('items').update({ user_avatar: photoUrl }).eq('user_id', currentUser.id);
+      // Actualizar UI
+      const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+      applyAvatar('', name);
 
-  if (status) { status.textContent = '✓ Foto actualizada'; status.style.color = 'var(--green)'; }
-  showToast('✦ Foto de perfil actualizada');
+      const preview = document.getElementById('profile-photo-preview');
+      if (preview) { preview.innerHTML = name.charAt(0).toUpperCase(); preview.style.backgroundImage = ''; }
+
+      const removeBtn = document.getElementById('remove-photo-btn');
+      if (removeBtn) removeBtn.style.display = 'none';
+
+      showToast('✅ Foto eliminada');
+    } catch(e) {
+      showToast('⚠️ Error al quitar la foto');
+    }
+  });
 }
 
 async function saveProfile() {
