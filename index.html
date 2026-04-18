@@ -3308,6 +3308,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <input type="email" id="edit-email" value="" disabled style="opacity:.6;cursor:not-allowed">
         <div style="font-size:11px;color:var(--green);margin-top:4px;font-weight:600">✓ Email verificado</div>
       </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Bio</label>
+        <textarea id="edit-bio" placeholder="Cuéntanos algo sobre ti..." rows="2" style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:14px;font-family:inherit;resize:none;outline:none;color:var(--text)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
     </div>
 
     <!-- Footer -->
@@ -10576,9 +10580,9 @@ async function removeProfilePhoto() {
 
 async function saveProfile() {
   if (!currentUser) return;
-  const name = document.getElementById('edit-name').value.trim();
-  const city = document.getElementById('edit-city').value.trim();
-  const bio  = document.getElementById('edit-bio').value.trim();
+  const name = document.getElementById('edit-name')?.value.trim() || '';
+  const city = document.getElementById('edit-city')?.value.trim() || '';
+  const bio  = document.getElementById('edit-bio')?.value.trim() || '';
 
   const btn = document.querySelector('#ptab-config .btn-primary') || document.querySelector('#edit-profile-overlay .btn-primary');
   if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
