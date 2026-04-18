@@ -3355,173 +3355,192 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <!-- Pantallas -->
     <div class="pub-flow-body">
 
-      <!-- PANTALLA 1: Fotos + título + categoría + descripción -->
+      <!-- PASO 1: Fotos -->
       <div class="pub-screen" id="pub-screen-1">
-        <div class="pub-screen-title">¿Qué ofreces?</div>
-        <div class="pub-screen-sub">Añade fotos y describe tu objeto.</div>
-
-        <!-- Fotos con botón + -->
+        <div class="pub-screen-title">📷 Añade fotos</div>
+        <div class="pub-screen-sub">La primera foto será la principal. Hasta 5 fotos.</div>
         <div class="pub-photos-row" id="pub-photos-row">
           <button class="pub-photo-add" onclick="openPhotoSheet()" type="button">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
           <div class="pub-photos-previews" id="img-previews"></div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:20px;text-align:center">Hasta 5 fotos · La primera será la principal</div>
-
-        <!-- Inputs ocultos -->
         <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)" style="display:none">
         <input type="file" id="pub-camera" accept="image/*" capture="environment" onchange="imgSelected(this)" style="display:none">
+        <div id="pub-photo-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:8px;text-align:center">⚠️ Añade al menos una foto</div>
+      </div>
 
+      <!-- PASO 2: Título -->
+      <div class="pub-screen" id="pub-screen-2" style="display:none">
+        <div class="pub-screen-title">📝 ¿Cómo se llama?</div>
+        <div class="pub-screen-sub">Ponle un nombre claro y descriptivo.</div>
         <div class="field">
-          <label>Nombre del objeto <span style="color:#e53e3e">*</span></label>
-          <input id="pub-name" placeholder="Ej: Guitarra Fender Stratocaster 2019" style="font-size:16px"
-            oninput="clearTimeout(demandTimer);demandTimer=setTimeout(()=>triggerDemandPanel(),600)">
+          <input id="pub-name" placeholder="Ej: Don Quijote de la Mancha" style="font-size:18px;padding:14px" oninput="clearTimeout(demandTimer);demandTimer=setTimeout(()=>triggerDemandPanel(),600)">
         </div>
-        <!-- Pill de demanda real -->
-        <div id="demand-pill" style="display:none;margin-top:-12px;margin-bottom:16px">
-          <button onclick="openDemandSheet()" style="display:inline-flex;align-items:center;gap:7px;background:var(--green-l);border:1.5px solid #86efac;color:#166534;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s">
+        <div id="demand-pill" style="display:none;margin-top:-8px">
+          <button onclick="openDemandSheet()" style="display:inline-flex;align-items:center;gap:7px;background:var(--green-l);border:1.5px solid #86efac;color:#166534;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
             <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></span>
             <span id="demand-pill-text">2 personas lo están buscando</span>
             <span style="opacity:.6">→</span>
           </button>
         </div>
+        <div id="pub-name-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:8px">⚠️ El nombre es obligatorio</div>
+      </div>
+
+      <!-- PASO 3: Categoría -->
+      <div class="pub-screen" id="pub-screen-3" style="display:none">
+        <div class="pub-screen-title">🏷 ¿Qué tipo de objeto es?</div>
+        <div class="pub-screen-sub">Elige la categoría que mejor describe tu objeto.</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="pubSelectCat('Libros')" class="pub-cat-btn" id="pubcat-Libros" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">📚</span><span style="font-weight:700;font-size:15px;color:var(--text)">Libros</span></button>
+          <button onclick="pubSelectCat('Juegos de mesa')" class="pub-cat-btn" id="pubcat-Juegos-de-mesa" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎲</span><span style="font-weight:700;font-size:15px;color:var(--text)">Juegos de mesa</span></button>
+          <button onclick="pubSelectCat('Cartas y coleccionables')" class="pub-cat-btn" id="pubcat-Cartas-y-coleccionables" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🃏</span><span style="font-weight:700;font-size:15px;color:var(--text)">Cartas y coleccionables</span></button>
+          <button onclick="pubSelectCat('Videojuegos')" class="pub-cat-btn" id="pubcat-Videojuegos" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎮</span><span style="font-weight:700;font-size:15px;color:var(--text)">Videojuegos</span></button>
+          <button onclick="pubSelectCat('Música')" class="pub-cat-btn" id="pubcat-Música" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎵</span><span style="font-weight:700;font-size:15px;color:var(--text)">Música</span></button>
+          <button onclick="pubSelectCat('Hogar y muebles')" class="pub-cat-btn" id="pubcat-Hogar-y-muebles" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🏠</span><span style="font-weight:700;font-size:15px;color:var(--text)">Hogar y muebles</span></button>
+          <button onclick="pubSelectCat('Servicios')" class="pub-cat-btn" id="pubcat-Servicios" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🤝</span><span style="font-weight:700;font-size:15px;color:var(--text)">Servicios</span></button>
+          <button onclick="pubSelectCat('Otros')" class="pub-cat-btn" id="pubcat-Otros" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">📦</span><span style="font-weight:700;font-size:15px;color:var(--text)">Otros</span></button>
+        </div>
+        <div id="pub-cat-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:8px">⚠️ Selecciona una categoría</div>
+        <input type="hidden" id="pub-cat">
+      </div>
+
+      <!-- PASO 4: Subcategoría -->
+      <div class="pub-screen" id="pub-screen-4" style="display:none">
+        <div class="pub-screen-title">🔍 ¿Más específico?</div>
+        <div class="pub-screen-sub" id="pub-subcat-sub">Elige la subcategoría.</div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="pub-subcat-options"></div>
+        <input type="hidden" id="pub-subcat">
+        <!-- Atributos dinámicos -->
+        <div id="pub-attrs" style="margin-top:20px;display:flex;flex-direction:column;gap:14px"></div>
+      </div>
+
+      <!-- PASO 5: Descripción + condición -->
+      <div class="pub-screen" id="pub-screen-5" style="display:none">
+        <div class="pub-screen-title">📄 Cuéntanos más</div>
+        <div class="pub-screen-sub">Opcional pero ayuda a encontrar el match perfecto.</div>
         <div class="field">
-          <label>Categoría <span style="color:#e53e3e">*</span></label>
-          <select id="pub-cat" onchange="updatePubSubcat()" style="font-size:15px">
-            <option value="">— Selecciona —</option>
-            <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
-            <option>Libros</option><option>Juguetes</option><option>Deporte</option>
-            <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
-          </select>
-        </div>
-        <div class="field" id="pub-book-lang-field" style="display:none">
-          <label>Idioma del libro <span style="color:#e53e3e">*</span></label>
-          <select id="pub-book-lang">
-            <option value="">— Selecciona idioma —</option>
-            <option>Español</option><option>Inglés</option><option>Catalán</option>
-            <option>Francés</option><option>Alemán</option><option>Italiano</option>
-            <option>Portugués</option><option>Otro idioma</option>
-          </select>
-        </div>
-        <div class="field" id="pub-subcat-field" style="display:none">
-          <label id="pub-subcat-label">Subcategoría</label>
-          <select id="pub-subcat"><option value="">— Opcional —</option></select>
-        </div>
-        <div id="pub-service-hint" style="display:none;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12px;color:#166534;font-weight:600">
-          🤝 Servicio profesional — describe tu experiencia en el siguiente paso.
-        </div>
-        <div id="pub-book-hint" style="display:none;padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:10px;font-size:12px;color:#92400e;font-weight:600">
-          📚 Indica título, autor y estado en la descripción.
+          <label>Estado del objeto</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+            <button onclick="pubSelectCondition('Nuevo')" id="cond-Nuevo" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">Nuevo</button>
+            <button onclick="pubSelectCondition('Como nuevo')" id="cond-Como-nuevo" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">Como nuevo</button>
+            <button onclick="pubSelectCondition('Buen estado')" id="cond-Buen-estado" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">Buen estado</button>
+            <button onclick="pubSelectCondition('Usado')" id="cond-Usado" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">Usado</button>
+            <button onclick="pubSelectCondition('Para piezas')" id="cond-Para-piezas" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">Para piezas</button>
+          </div>
+          <input type="hidden" id="pub-condition">
         </div>
         <div class="field">
           <label>Descripción <span style="font-size:11px;font-weight:500;color:var(--muted)">(opcional)</span></label>
-          <textarea id="pub-desc" placeholder="Estado, accesorios incluidos, años de uso..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:14px;outline:none;resize:none;min-height:90px;font-family:inherit;line-height:1.6;transition:border-color .18s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <textarea id="pub-desc" placeholder="Estado, accesorios incluidos, años de uso..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:14px;outline:none;resize:none;min-height:100px;font-family:inherit;line-height:1.6;transition:border-color .18s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
+        <div class="field">
+          <label>Valor estimado <span style="font-size:11px;font-weight:500;color:var(--muted)">(opcional)</span></label>
+          <div style="position:relative">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:600">€</span>
+            <input id="pub-value" type="number" placeholder="0" min="0" style="padding-left:28px">
+          </div>
         </div>
       </div>
 
-      <!-- PANTALLA 2: Qué aceptas -->
-      <div class="pub-screen" id="pub-screen-2" style="display:none">
-
-        <!-- SUB-PASO 2a: Elegir tipo -->
-        <div id="pub-wants-step-a">
-          <div class="pub-screen-title">¿Qué aceptas?</div>
-          <div class="pub-screen-sub">Elige qué tipo de intercambio buscas.</div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <button onclick="selectWantsType('cafe')" class="pub-wants-type-btn" id="wtype-cafe"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
-              <span style="font-size:1.8rem">☕</span>
-              <div>
-                <div style="font-weight:700;font-size:14px;color:var(--text)">Solo un café</div>
-                <div style="font-size:12px;color:var(--muted);margin-top:2px">Regalo este objeto a cambio de un café simbólico.</div>
-              </div>
-            </button>
-            <button onclick="selectWantsType('surprise')" class="pub-wants-type-btn" id="wtype-surprise"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
-              <span style="font-size:1.8rem">🎲</span>
-              <div>
-                <div style="font-weight:700;font-size:14px;color:var(--text)">¡Sorpréndeme!</div>
-                <div style="font-size:12px;color:var(--muted);margin-top:2px">Acepto cualquier propuesta. ¡Que sea una sorpresa!</div>
-              </div>
-            </button>
-            <button onclick="selectWantsType('flexible')" class="pub-wants-type-btn" id="wtype-flexible"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
-              <span style="font-size:1.8rem">🔓</span>
-              <div>
-                <div style="font-weight:700;font-size:14px;color:var(--text)">Soy flexible</div>
-                <div style="font-size:12px;color:var(--muted);margin-top:2px">Acepto varias categorías. Selecciono cuáles me interesan.</div>
-              </div>
-            </button>
-            <button onclick="selectWantsType('concrete')" class="pub-wants-type-btn" id="wtype-concrete"
-              style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
-              <span style="font-size:1.8rem">🎯</span>
-              <div>
-                <div style="font-weight:700;font-size:14px;color:var(--text)">Tengo algo concreto en mente</div>
-                <div style="font-size:12px;color:var(--muted);margin-top:2px">Especifico exactamente qué objeto o categoría busco.</div>
-              </div>
-            </button>
-          </div>
+      <!-- PASO 6: ¿Qué aceptas? -->
+      <div class="pub-screen" id="pub-screen-6" style="display:none">
+        <div class="pub-screen-title">🔄 ¿Qué aceptas?</div>
+        <div class="pub-screen-sub">Elige qué tipo de intercambio buscas.</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="pubSelectWantsType('cafe')" class="pub-wants-type-btn" id="wtype-cafe"
+            style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
+            <span style="font-size:1.8rem">☕</span>
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--text)">Solo un café</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">Regalo este objeto a cambio de un café simbólico.</div>
+            </div>
+          </button>
+          <button onclick="pubSelectWantsType('surprise')" class="pub-wants-type-btn" id="wtype-surprise"
+            style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
+            <span style="font-size:1.8rem">🎲</span>
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--text)">¡Sorpréndeme!</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">Acepto cualquier propuesta.</div>
+            </div>
+          </button>
+          <button onclick="pubSelectWantsType('concrete')" class="pub-wants-type-btn" id="wtype-concrete"
+            style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px">
+            <span style="font-size:1.8rem">🎯</span>
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--text)">Tengo algo concreto en mente</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">Especifico qué categoría o objeto busco.</div>
+            </div>
+          </button>
         </div>
+        <div id="pub-wants-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:8px">⚠️ Elige una opción</div>
+        <input type="hidden" id="pub-wants-type">
+      </div>
 
-        <!-- SUB-PASO 2b: Flexible — elegir categorías -->
-        <div id="pub-wants-step-b-flexible" style="display:none">
-          <div class="pub-screen-title">¿Qué categorías aceptas?</div>
-          <div class="pub-screen-sub">Selecciona una o varias categorías que te interesan.</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px" id="wants-open-cat-chips"></div>
-          <div id="wants-flex-empty" style="font-size:12px;color:#e53e3e;display:none;margin-top:-12px;margin-bottom:12px">⚠️ Selecciona al menos una categoría</div>
+      <!-- PASO 7: Categoría de lo que busca (solo si concreto) -->
+      <div class="pub-screen" id="pub-screen-7" style="display:none">
+        <div class="pub-screen-title">🏷 ¿Qué categoría buscas?</div>
+        <div class="pub-screen-sub">Elige qué tipo de objeto o servicio quieres a cambio.</div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="wants-cat-options">
+          <button onclick="pubSelectWantsCat('Libros')" class="pub-wants-cat-btn" id="wantscat-Libros" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">📚</span><span style="font-weight:700;font-size:15px;color:var(--text)">Libros</span></button>
+          <button onclick="pubSelectWantsCat('Juegos de mesa')" class="pub-wants-cat-btn" id="wantscat-Juegos-de-mesa" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎲</span><span style="font-weight:700;font-size:15px;color:var(--text)">Juegos de mesa</span></button>
+          <button onclick="pubSelectWantsCat('Cartas y coleccionables')" class="pub-wants-cat-btn" id="wantscat-Cartas-y-coleccionables" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🃏</span><span style="font-weight:700;font-size:15px;color:var(--text)">Cartas y coleccionables</span></button>
+          <button onclick="pubSelectWantsCat('Videojuegos')" class="pub-wants-cat-btn" id="wantscat-Videojuegos" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎮</span><span style="font-weight:700;font-size:15px;color:var(--text)">Videojuegos</span></button>
+          <button onclick="pubSelectWantsCat('Música')" class="pub-wants-cat-btn" id="wantscat-Música" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎵</span><span style="font-weight:700;font-size:15px;color:var(--text)">Música</span></button>
+          <button onclick="pubSelectWantsCat('Hogar y muebles')" class="pub-wants-cat-btn" id="wantscat-Hogar-y-muebles" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🏠</span><span style="font-weight:700;font-size:15px;color:var(--text)">Hogar y muebles</span></button>
+          <button onclick="pubSelectWantsCat('Servicios')" class="pub-wants-cat-btn" id="wantscat-Servicios" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🤝</span><span style="font-weight:700;font-size:15px;color:var(--text)">Servicios</span></button>
+          <button onclick="pubSelectWantsCat('Otros')" class="pub-wants-cat-btn" id="wantscat-Otros" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">📦</span><span style="font-weight:700;font-size:15px;color:var(--text)">Otros</span></button>
         </div>
+        <input type="hidden" id="wants-cat">
+      </div>
 
-        <!-- SUB-PASO 2b: Concreto — añadir objetos -->
-        <div id="pub-wants-step-b-concrete" style="display:none">
-          <div class="pub-screen-title">¿Qué buscas?</div>
-          <div class="pub-screen-sub">Añade uno o varios objetos o categorías que aceptarías.</div>
+      <!-- PASO 8: Subcategoría + atributos de lo que busca -->
+      <div class="pub-screen" id="pub-screen-8" style="display:none">
+        <div class="pub-screen-title" id="wants-subcat-title">🔍 ¿Más específico?</div>
+        <div class="pub-screen-sub">Opcional — ayuda a encontrar el match perfecto.</div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="wants-subcat-options"></div>
+        <div id="wants-attrs" style="margin-top:20px;display:flex;flex-direction:column;gap:14px"></div>
+        <input type="hidden" id="wants-subcat">
 
-          <div id="exchange-options-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+        <!-- Lista de opciones añadidas -->
+        <div id="wants-added-list" style="margin-top:20px"></div>
+        <button onclick="pubAddAnotherWant()" style="margin-top:12px;background:none;border:1.5px dashed var(--border);border-radius:var(--r);padding:12px;width:100%;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;font-family:inherit">+ Añadir otra opción</button>
+      </div>
 
-          <div style="border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px;background:var(--bg)">
-            <div class="form-row" style="margin-bottom:10px">
-              <div class="field" style="margin-bottom:0">
-                <label>Categoría</label>
-                <select id="wants-cat" onchange="updateSubcat()">
-                  <option value="">— Cualquier categoría —</option>
-                  <option>Electrónica</option><option>Ropa</option><option>Hogar</option>
-                  <option>Libros</option><option>Juguetes</option><option>Deporte</option>
-                  <option>Cartas</option><option>Juegos de mesa</option><option>Servicios</option><option>Otros</option>
-                </select>
-              </div>
-            </div>
-            <div class="field" id="wants-lang-field" style="display:none;margin-bottom:10px">
-              <label>Idioma <span style="color:#e53e3e">*</span></label>
-              <select id="wants-lang">
-                <option value="">— Selecciona idioma —</option>
-                <option>Español</option><option>Inglés</option><option>Catalán</option>
-                <option>Francés</option><option>Alemán</option><option>Italiano</option>
-                <option>Portugués</option><option>Otro idioma</option>
-              </select>
-            </div>
-            <div class="field" id="wants-subcat-field" style="display:none;margin-bottom:10px">
-              <label>Subcategoría (opcional)</label>
-              <select id="wants-subcat"><option value="">— Cualquier subcategoría —</option></select>
-            </div>
-            <div class="wants-input-row" style="margin-bottom:10px">
-              <input id="wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D, opcional)">
-            </div>
-            <div style="display:flex;justify-content:flex-end">
-              <button class="btn btn-primary btn-sm" onclick="addExchangeOption()">+ Añadir</button>
-            </div>
-          </div>
-          <div id="wants-concrete-empty" style="font-size:12px;color:#e53e3e;display:none;margin-top:10px">⚠️ Añade al menos una opción</div>
-        </div>
+      <!-- PASO 9: Resumen + Publicar -->
+      <div class="pub-screen" id="pub-screen-9" style="display:none">
+        <div class="pub-screen-title">✅ ¡Listo para publicar!</div>
+        <div class="pub-screen-sub">Revisa el resumen de tu objeto.</div>
+        <div id="pub-summary" style="background:var(--bg);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:12px"></div>
+      </div>
 
-        <!-- Elementos ocultos para compatibilidad con funciones existentes -->
-        <div style="display:none">
-          <div id="wants-open-question"></div>
-          <div id="wants-open-cats"></div>
-          <div id="wants-add-form"></div>
-          <div id="btn-add-cat"></div>
-          <div id="wants-chips"></div>
-        </div>
-
+      <!-- Elementos ocultos para compatibilidad -->
+      <div style="display:none">
+        <div id="wants-open-question"></div>
+        <div id="wants-open-cats"></div>
+        <div id="wants-add-form"></div>
+        <div id="btn-add-cat"></div>
+        <div id="wants-chips"></div>
+        <div id="pub-book-lang-field"></div>
+        <select id="pub-book-lang"><option value="">—</option><option>Español</option><option>Inglés</option><option>Catalán</option><option>Francés</option><option>Alemán</option><option>Italiano</option><option>Portugués</option><option>Otro idioma</option></select>
+        <div id="pub-subcat-field"></div>
+        <div id="pub-service-hint"></div>
+        <div id="pub-book-hint"></div>
+        <select id="pub-condition-old"></select>
+        <div id="wants-open-cat-chips"></div>
+        <div id="exchange-options-list"></div>
+        <select id="wants-cat-old"></select>
+        <div id="wants-lang-field"></div>
+        <select id="wants-lang"><option value="">—</option><option>Español</option><option>Inglés</option><option>Catalán</option><option>Francés</option><option>Alemán</option><option>Italiano</option><option>Portugués</option><option>Otro idioma</option></select>
+        <div id="wants-subcat-field"></div>
+        <select id="wants-subcat-old"></select>
+        <input id="wants-input">
+        <div id="wants-flex-empty"></div>
+        <div id="wants-concrete-empty"></div>
+        <div id="pub-wants-step-a"></div>
+        <div id="pub-wants-step-b-flexible"></div>
+        <div id="pub-wants-step-b-concrete"></div>
+        <div id="pub-screen-old-2"></div>
       </div>
 
     </div>
@@ -4507,7 +4526,7 @@ async function _fixOrphanedReservedItems() {
 
 async function loadItemsFromSupabase() {
   let query = db.from('items')
-    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value')
+    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value,attributes,wants_attributes')
     .neq('status', 'completed')
     .order('created_at', { ascending: false })
     .limit(100);
@@ -10846,16 +10865,412 @@ let sortByDistance = !!userCoords; // activo por defecto si ya tenemos coords
 
 // ── PUBLISH FLOW ──
 // PUB_SCREENS definido más abajo
+// ═══ NUEVO FLUJO DE PUBLICACIÓN PASO A PASO ═══
 let pubCurrentScreen = 1;
-const PUB_SCREENS = 2;
-const PUB_OPTIONAL = { 1: false, 2: false };
-let pubWantsOpen = null; // null = sin respuesta, true = flexible, false = concreto, 'cafe' = café simbólico
-let pubOpenCats = []; // categorías seleccionadas cuando wants_open=true
+const PUB_SCREENS = 9;
+const PUB_OPTIONAL = {};
+let pubWantsOpen = null;
+let pubOpenCats = [];
+let pubWantsType = null;
+let _pubWantsAdded = []; // lista de opciones añadidas en paso concreto
 
-let pubWantsType = null; // 'cafe' | 'surprise' | 'flexible' | 'concrete'
+// Datos de categorías y subcategorías
+const PUB_CATS = {
+  'Libros': {
+    emoji: '📚',
+    subcats: ['Novela','Ciencia ficción','Fantasía','Terror','Romance','Historia','Biografía','Infantil','Cómic / Manga','Autoayuda','No ficción / Economía','Universitario','Escolar / Bachillerato','Técnico / Programación','Otros'],
+    attrs: [{ id: 'language', label: 'Idioma', type: 'select', options: ['Español','Inglés','Catalán','Francés','Alemán','Italiano','Portugués','Otro'], required: true, exclusive: true }]
+  },
+  'Juegos de mesa': {
+    emoji: '🎲',
+    subcats: ['Estrategia','Party / Familiar','Cooperativo','Puzzle','Dados / Azar','Cartas no coleccionables','Otros'],
+    attrs: []
+  },
+  'Cartas y coleccionables': {
+    emoji: '🃏',
+    subcats: ['Pokémon','Magic: The Gathering','Yu-Gi-Oh','One Piece','Cromos deportivos','Cromos infantiles','Otras'],
+    attrs: []
+  },
+  'Videojuegos': {
+    emoji: '🎮',
+    subcats: ['Nintendo Switch','PlayStation','Xbox','PC','Retro','Otros'],
+    attrs: []
+  },
+  'Música': {
+    emoji: '🎵',
+    subcats: ['Vinilo','CD','Cassette','Instrumentos','Otros'],
+    attrs: []
+  },
+  'Hogar y muebles': {
+    emoji: '🏠',
+    subcats: ['Muebles','Cocina','Decoración','Herramientas','Iluminación','Otros'],
+    attrs: []
+  },
+  'Servicios': {
+    emoji: '🤝',
+    subcats: ['Idiomas / Conversación','Clases / Academia','Tecnología / Informática','Diseño / Arte','Reparaciones','Deporte / Entrenamiento','Música / Instrumento','Fotografía / Vídeo','Otros'],
+    attrs: []
+  },
+  'Otros': {
+    emoji: '📦',
+    subcats: [],
+    attrs: []
+  }
+};
 
-function selectWantsType(type) {
+function pubSelectCat(cat) {
+  document.getElementById('pub-cat').value = cat;
+  document.querySelectorAll('.pub-cat-btn').forEach(btn => {
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'var(--bg)';
+  });
+  const btn = document.getElementById('pubcat-' + cat.replace(/ /g, '-'));
+  if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; }
+}
+
+function pubSelectCondition(cond) {
+  document.getElementById('pub-condition').value = cond;
+  document.querySelectorAll('[id^="cond-"]').forEach(btn => {
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+  });
+  const btn = document.getElementById('cond-' + cond.replace(/ /g, '-'));
+  if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; btn.style.color = 'var(--accent)'; }
+}
+
+function pubSelectWantsType(type) {
   pubWantsType = type;
+  document.getElementById('pub-wants-type').value = type;
+  ['cafe','surprise','concrete'].forEach(t => {
+    const btn = document.getElementById('wtype-' + t);
+    if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)'; }
+  });
+  const btn = document.getElementById('wtype-' + type);
+  if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; }
+}
+
+function pubSelectWantsCat(cat) {
+  document.getElementById('wants-cat').value = cat;
+  document.querySelectorAll('.pub-wants-cat-btn').forEach(btn => {
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'var(--bg)';
+  });
+  const btn = document.getElementById('wantscat-' + cat.replace(/ /g, '-'));
+  if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; }
+  // Cargar subcategorías de lo que busca
+  pubLoadWantsSubcats(cat);
+}
+
+function pubLoadSubcats(cat) {
+  const data = PUB_CATS[cat];
+  if (!data) return;
+  const container = document.getElementById('pub-subcat-options');
+  const attrsContainer = document.getElementById('pub-attrs');
+  if (!container) return;
+
+  container.innerHTML = '';
+  document.getElementById('pub-subcat').value = '';
+
+  if (data.subcats.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px">No hay subcategorías para esta categoría.</div>';
+    if (attrsContainer) attrsContainer.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = data.subcats.map(sub =>
+    `<button onclick="pubSelectSubcat('${sub.replace(/'/g,"\\'")}','pub')" class="pub-subcat-btn" id="pubsub-${sub.replace(/[^a-zA-Z0-9]/g,'-')}"
+      style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .15s">${sub}</button>`
+  ).join('');
+
+  // Añadir "Cualquiera" al principio
+  container.innerHTML = `<button onclick="pubSelectSubcat('','pub')" class="pub-subcat-btn" id="pubsub-any"
+    style="background:var(--accent-l);border:1.5px solid var(--accent);border-radius:99px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent);transition:all .15s">Cualquiera ✓</button>` + container.innerHTML;
+
+  // Cargar atributos dinámicos
+  if (attrsContainer) {
+    attrsContainer.innerHTML = data.attrs.map(attr => `
+      <div class="field">
+        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(excluyente)</span>' : ''}</label>
+        <select id="pub-attr-${attr.id}" style="font-size:14px">
+          <option value="">— ${attr.required ? 'Selecciona' : 'Opcional'} —</option>
+          ${attr.options.map(o => `<option>${o}</option>`).join('')}
+        </select>
+      </div>`).join('');
+  }
+}
+
+function pubSelectSubcat(sub, prefix) {
+  document.getElementById(`${prefix === 'pub' ? 'pub-subcat' : 'wants-subcat'}`).value = sub;
+  const container = document.getElementById(`${prefix === 'pub' ? 'pub-subcat-options' : 'wants-subcat-options'}`);
+  if (!container) return;
+  container.querySelectorAll('button').forEach(btn => {
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+  });
+  const id = sub ? `${prefix === 'pub' ? 'pubsub' : 'wantsub'}-${sub.replace(/[^a-zA-Z0-9]/g,'-')}` : `${prefix === 'pub' ? 'pubsub' : 'wantsub'}-any`;
+  const btn = document.getElementById(id);
+  if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; btn.style.color = 'var(--accent)'; }
+}
+
+function pubLoadWantsSubcats(cat) {
+  const data = PUB_CATS[cat];
+  if (!data) return;
+  const container = document.getElementById('wants-subcat-options');
+  const attrsContainer = document.getElementById('wants-attrs');
+  if (!container) return;
+
+  document.getElementById('wants-subcat').value = '';
+  const title = document.getElementById('wants-subcat-title');
+  if (title) title.textContent = `🔍 ¿Qué ${cat.toLowerCase()} buscas?`;
+
+  if (data.subcats.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px">Sin subcategorías — añade directamente.</div>';
+    if (attrsContainer) attrsContainer.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `<button onclick="pubSelectSubcat('','wants')" class="pub-subcat-btn" id="wantsub-any"
+    style="background:var(--accent-l);border:1.5px solid var(--accent);border-radius:99px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent);transition:all .15s">Cualquiera ✓</button>` +
+    data.subcats.map(sub =>
+      `<button onclick="pubSelectSubcat('${sub.replace(/'/g,"\\'")}','wants')" class="pub-subcat-btn" id="wantsub-${sub.replace(/[^a-zA-Z0-9]/g,'-')}"
+        style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .15s">${sub}</button>`
+    ).join('');
+
+  if (attrsContainer) {
+    attrsContainer.innerHTML = data.attrs.map(attr => `
+      <div class="field">
+        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(excluyente)</span>' : ''}</label>
+        <select id="wants-attr-${attr.id}" style="font-size:14px">
+          <option value="">— ${attr.required ? 'Selecciona' : 'Opcional'} —</option>
+          ${attr.options.map(o => `<option>${o}</option>`).join('')}
+        </select>
+      </div>`).join('');
+  }
+}
+
+function pubAddAnotherWant() {
+  // Guardar opción actual antes de añadir otra
+  const cat = document.getElementById('wants-cat')?.value;
+  const subcat = document.getElementById('wants-subcat')?.value;
+  const catData = PUB_CATS[cat];
+  const langAttr = catData?.attrs?.find(a => a.id === 'language');
+  const lang = langAttr ? document.getElementById('wants-attr-language')?.value : '';
+
+  if (!cat) { showToast('⚠️ Selecciona una categoría primero'); return; }
+  if (langAttr?.required && !lang) { showToast('⚠️ El idioma es obligatorio para libros'); return; }
+
+  const option = { cat, subcat, lang };
+  _pubWantsAdded.push(option);
+  renderWantsAddedList();
+
+  // Reset selección
+  document.getElementById('wants-cat').value = '';
+  document.getElementById('wants-subcat').value = '';
+  document.querySelectorAll('.pub-wants-cat-btn').forEach(btn => {
+    btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)';
+  });
+  document.getElementById('wants-subcat-options').innerHTML = '';
+  document.getElementById('wants-attrs').innerHTML = '';
+
+  showToast('✅ Opción añadida');
+}
+
+function renderWantsAddedList() {
+  const el = document.getElementById('wants-added-list');
+  if (!el || !_pubWantsAdded.length) { if(el) el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">Opciones añadidas:</div>` +
+    _pubWantsAdded.map((opt, i) =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--accent-l);border:1px solid var(--accent);border-radius:99px;padding:8px 14px;margin-bottom:6px;font-size:13px;font-weight:600;color:var(--accent)">
+        <span>${PUB_CATS[opt.cat]?.emoji || '📦'} ${opt.cat}${opt.subcat ? ' · ' + opt.subcat : ''}${opt.lang ? ' · ' + opt.lang : ''}</span>
+        <button onclick="_pubWantsAdded.splice(${i},1);renderWantsAddedList()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0 0 0 8px">×</button>
+      </div>`
+    ).join('');
+}
+
+function pubRenderSummary() {
+  const cat = document.getElementById('pub-cat')?.value;
+  const subcat = document.getElementById('pub-subcat')?.value;
+  const name = document.getElementById('pub-name')?.value;
+  const condition = document.getElementById('pub-condition')?.value;
+  const desc = document.getElementById('pub-desc')?.value;
+  const wantsType = document.getElementById('pub-wants-type')?.value;
+  const emoji = PUB_CATS[cat]?.emoji || '📦';
+
+  const wantsLabel = {
+    cafe: '☕ Solo un café',
+    surprise: '🎲 ¡Sorpréndeme!',
+    concrete: '🎯 Algo concreto'
+  }[wantsType] || '—';
+
+  const el = document.getElementById('pub-summary');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <span style="font-size:2rem">${emoji}</span>
+      <div>
+        <div style="font-weight:800;font-size:16px">${name}</div>
+        <div style="font-size:13px;color:var(--muted)">${cat}${subcat ? ' · ' + subcat : ''}</div>
+      </div>
+    </div>
+    ${condition ? `<div style="font-size:13px"><strong>Estado:</strong> ${condition}</div>` : ''}
+    ${desc ? `<div style="font-size:13px"><strong>Descripción:</strong> ${desc}</div>` : ''}
+    <div style="font-size:13px"><strong>Acepta:</strong> ${wantsLabel}</div>
+    ${_pubWantsAdded.length ? `<div style="font-size:13px"><strong>Busca:</strong> ${_pubWantsAdded.map(o => `${o.cat}${o.subcat ? ' · '+o.subcat : ''}${o.lang ? ' ('+o.lang+')' : ''}`).join(', ')}</div>` : ''}
+  `;
+}
+
+function pubGetTotalSteps() {
+  const wantsType = document.getElementById('pub-wants-type')?.value;
+  return wantsType === 'concrete' ? 9 : 7;
+}
+
+function pubGoTo(n) {
+  const cat = document.getElementById('pub-cat')?.value;
+  // Saltar paso 4 (subcategoría) si categoría no tiene subcats
+  if (n === 4 && cat && PUB_CATS[cat]?.subcats?.length === 0) {
+    n = n > pubCurrentScreen ? 5 : 3;
+  }
+  document.querySelectorAll('.pub-screen').forEach(s => s.style.display = 'none');
+  const screen = document.getElementById('pub-screen-' + n);
+  if (screen) screen.style.display = '';
+  pubCurrentScreen = n;
+
+  // Barra de progreso
+  const total = pubGetTotalSteps();
+  const fill = document.getElementById('pub-flow-fill');
+  if (fill) fill.style.width = Math.round((n / total) * 100) + '%';
+
+  // Botón atrás
+  const backBtn = document.getElementById('pub-back-btn');
+  if (backBtn) backBtn.style.visibility = n > 1 ? 'visible' : 'hidden';
+
+  // Botón siguiente
+  const nextBtn = document.getElementById('pub-next-btn');
+  if (nextBtn) {
+    if (n === total) {
+      nextBtn.textContent = '✅ Publicar';
+    } else if (n === 8 && document.getElementById('pub-wants-type')?.value === 'concrete') {
+      nextBtn.textContent = '➕ Añadir y publicar';
+    } else {
+      nextBtn.textContent = 'Continuar →';
+    }
+  }
+
+  // Cargar subcategorías al llegar al paso 4
+  if (n === 4 && cat) pubLoadSubcats(cat);
+
+  // Renderizar resumen al llegar al paso final
+  if (n === 9 || (n === 7 && document.getElementById('pub-wants-type')?.value !== 'concrete')) pubRenderSummary();
+
+  window.scrollTo(0, 0);
+}
+
+function pubNext(skip = false) {
+  const n = pubCurrentScreen;
+
+  if (n === 1) {
+    const previews = document.getElementById('img-previews');
+    if (!previews || previews.children.length === 0) {
+      const err = document.getElementById('pub-photo-error');
+      if (err) err.style.display = '';
+      showToast('⚠️ Añade al menos una foto');
+      return;
+    }
+    const err = document.getElementById('pub-photo-error');
+    if (err) err.style.display = 'none';
+    pubGoTo(2);
+  } else if (n === 2) {
+    const name = document.getElementById('pub-name')?.value.trim();
+    if (!name) {
+      const err = document.getElementById('pub-name-error');
+      if (err) err.style.display = '';
+      showToast('⚠️ El nombre es obligatorio');
+      return;
+    }
+    const err = document.getElementById('pub-name-error');
+    if (err) err.style.display = 'none';
+    pubGoTo(3);
+  } else if (n === 3) {
+    const cat = document.getElementById('pub-cat')?.value;
+    if (!cat) {
+      const err = document.getElementById('pub-cat-error');
+      if (err) err.style.display = '';
+      showToast('⚠️ Selecciona una categoría');
+      return;
+    }
+    const err = document.getElementById('pub-cat-error');
+    if (err) err.style.display = 'none';
+    pubGoTo(4);
+  } else if (n === 4) {
+    // Validar atributo excluyente si es necesario
+    const cat = document.getElementById('pub-cat')?.value;
+    const catData = PUB_CATS[cat];
+    const requiredAttr = catData?.attrs?.find(a => a.required);
+    if (requiredAttr) {
+      const val = document.getElementById(`pub-attr-${requiredAttr.id}`)?.value;
+      if (!val) { showToast(`⚠️ El ${requiredAttr.label.toLowerCase()} es obligatorio`); return; }
+    }
+    pubGoTo(5);
+  } else if (n === 5) {
+    pubGoTo(6);
+  } else if (n === 6) {
+    const wantsType = document.getElementById('pub-wants-type')?.value;
+    if (!wantsType) {
+      const err = document.getElementById('pub-wants-error');
+      if (err) err.style.display = '';
+      showToast('⚠️ Elige una opción');
+      return;
+    }
+    if (wantsType === 'concrete') {
+      _pubWantsAdded = [];
+      pubGoTo(7);
+    } else {
+      pubGoTo(9); // Ir directo al resumen
+    }
+  } else if (n === 7) {
+    const cat = document.getElementById('wants-cat')?.value;
+    if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
+    pubGoTo(8);
+  } else if (n === 8) {
+    // Guardar opción actual y publicar
+    const cat = document.getElementById('wants-cat')?.value;
+    if (cat) {
+      const subcat = document.getElementById('wants-subcat')?.value;
+      const catData = PUB_CATS[cat];
+      const langAttr = catData?.attrs?.find(a => a.id === 'language');
+      const lang = langAttr ? document.getElementById('wants-attr-language')?.value : '';
+      if (langAttr?.required && !lang) { showToast('⚠️ El idioma es obligatorio para libros'); return; }
+      _pubWantsAdded.push({ cat, subcat, lang });
+    }
+    pubGoTo(9);
+  } else if (n === 9) {
+    submitItem();
+  }
+}
+
+function pubBack() {
+  const n = pubCurrentScreen;
+  const wantsType = document.getElementById('pub-wants-type')?.value;
+
+  if (n === 9 && wantsType === 'concrete') pubGoTo(8);
+  else if (n === 9) pubGoTo(6);
+  else if (n === 8) pubGoTo(7);
+  else if (n === 7) pubGoTo(6);
+  else if (n > 1) pubGoTo(n - 1);
+}
+
+function pubCancel() {
+  showAppConfirm('¿Cancelar publicación?', 'Perderás los cambios no guardados.', () => {
+    pubCurrentScreen = 1;
+    _pubWantsAdded = [];
+    pubWantsType = null;
+    navTo('explore');
+  });
+}
+
+function selectWantsType(type) { pubSelectWantsType(type); } // compatibilidad
 
   // Reset estilos botones
   ['cafe','surprise','flexible','concrete'].forEach(t => {
@@ -11844,131 +12259,126 @@ function selectShip(el, mode) {
   el.classList.add('selected');
   shippingMode = mode;
 }
+// submitItem llama a publishItem con los nuevos datos
+function submitItem() { publishItem(); }
+
 async function publishItem() {
-  const name = document.getElementById('pub-name').value.trim();
-  if(!name){showToast('⚠️ Escribe el nombre del objeto o servicio');return;}
+  const name = document.getElementById('pub-name')?.value.trim();
+  if (!name) { showToast('⚠️ Escribe el nombre del objeto'); return; }
 
-  // Validar subcategoría obligatoria
-  const pubCatCheck = document.getElementById('pub-cat').value;
-  const REQUIRED_SUBCAT_CATS = ['Electrónica','Ropa','Hogar','Libros','Deporte','Cartas','Juegos de mesa'];
-  if (REQUIRED_SUBCAT_CATS.includes(pubCatCheck)) {
-    const subcat = document.getElementById('pub-subcat')?.value;
-    if (!subcat) { showToast('⚠️ Selecciona una subcategoría para ' + pubCatCheck); return; }
-  }
-  // Para libros: idioma también obligatorio
-  if (pubCatCheck === 'Libros') {
-    const lang = document.getElementById('pub-book-lang')?.value;
-    if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
-  }
+  const pubCat = document.getElementById('pub-cat')?.value || 'Otros';
+  const pubSubcat = document.getElementById('pub-subcat')?.value || '';
+  const pubCondition = document.getElementById('pub-condition')?.value || '';
+  const wantsType = document.getElementById('pub-wants-type')?.value || 'surprise';
 
-  if(pubWantsOpen === true && !pubOpenCats.length){showToast('⚠️ Selecciona al menos una categoría');return;}
-  if(pubWantsOpen === false && !exchangeOptions.length){showToast('⚠️ Añade al menos una opción de cambio');return;}
-  // pubWantsOpen === 'cafe' no necesita validación extra
+  // Atributo excluyente (ej: idioma para libros)
+  const catData = PUB_CATS[pubCat];
+  const exclusiveAttr = catData?.attrs?.find(a => a.exclusive);
+  const exclusiveVal = exclusiveAttr ? document.getElementById(`pub-attr-${exclusiveAttr.id}`)?.value || '' : '';
 
-  // Refrescar sesión antes de publicar (crítico en móvil)
+  // Subcategoría completa incluyendo atributo excluyente
+  const fullSubcat = exclusiveVal
+    ? (pubSubcat ? `${pubSubcat} · ${exclusiveVal}` : exclusiveVal)
+    : pubSubcat;
+
+  // Refrescar sesión
   if (currentUser) {
     const ok = await _ensureSession();
     if (!ok) { showToast('⚠️ Sesión caducada — vuelve a iniciar sesión'); return; }
   }
 
-  // Ciudad del perfil del usuario
+  // Ciudad del perfil
   let city = currentUser?.user_metadata?.city || '';
   if (!city) {
-    // Intentar obtener ciudad de las coordenadas si las tiene
-    const lat = currentUser?.user_metadata?.lat;
-    const lng = currentUser?.user_metadata?.lng;
-    if (lat && lng && getNearestCityName) {
-      city = getNearestCityName(lat, lng) || '';
-    }
-    if (!city) {
-      showToast('⚠️ Añade tu ciudad en tu perfil antes de publicar');
-      navTo('profile');
-      setTimeout(() => switchPTab('config'), 400);
-      return;
-    }
+    showToast('⚠️ Añade tu ciudad en tu perfil antes de publicar');
+    navTo('profile');
+    setTimeout(() => openEditProfileDrawer(), 400);
+    return;
   }
 
-  // Parse category — ahora son dos campos separados
-  const pubCat = document.getElementById('pub-cat').value || 'Otro';
-  const pubSubcat = document.getElementById('pub-subcat')?.value || '';
-  const pubLang = document.getElementById('pub-book-lang')?.value || '';
-  // Para libros: subcategory = "Género · Idioma", para el resto solo el género
-  const fullSubcat = pubCat === 'Libros' && pubLang
-    ? (pubSubcat ? pubSubcat + ' · ' + pubLang : pubLang)
-    : pubSubcat;
-  const rawCat = fullSubcat ? pubCat + '|' + fullSubcat : pubCat;
-  const isService = pubCat === 'Servicios';
-  const autoEmoji = getEmojiForCat(rawCat);
+  const autoEmoji = PUB_CATS[pubCat]?.emoji || getEmojiForCat(pubCat) || '📦';
+  const userName = currentUser ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0]) : 'Anónimo';
 
-  // Flatten wants
-  const wantsFlat = [...new Set(exchangeOptions.flatMap(o => o.items))];
+  // Preparar wants
+  let wantsStr = '';
+  let wantsOpen = false;
+  if (wantsType === 'cafe') { wantsStr = '☕ ¡Te lo doy por un café!'; wantsOpen = false; }
+  else if (wantsType === 'surprise') { wantsStr = '🎲 ¡Sorpréndeme!'; wantsOpen = true; }
+  else if (wantsType === 'concrete' && _pubWantsAdded.length) {
+    wantsStr = _pubWantsAdded.map(o => {
+      let s = o.cat;
+      if (o.subcat) s += ' · ' + o.subcat;
+      if (o.lang) s += ' (' + o.lang + ')';
+      return s;
+    }).join(', ');
+    wantsOpen = false;
+  }
 
-  // Nombre del usuario actual
-  const userName = currentUser
-    ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0])
-    : 'Anónimo';
-  const userId = currentUser ? currentUser.id : null;
+  // Atributos para matching
+  const attributes = {};
+  if (exclusiveAttr && exclusiveVal) attributes[exclusiveAttr.id] = exclusiveVal;
+  // Atributos de lo que busca (excluyentes)
+  const wantsAttributes = _pubWantsAdded.map(o => {
+    const wa = {};
+    if (o.lang) wa.language = o.lang;
+    return { cat: o.cat, subcat: o.subcat || '', attributes: wa };
+  });
 
-  // Mostrar estado de carga
-  const btn = document.querySelector('[onclick="publishItem()"]');
-  const originalText = btn ? btn.textContent : '';
-  if(btn) { btn.textContent = '⏳ Subiendo fotos...'; btn.disabled = true; }
+  // Botón de carga
+  const btn = document.getElementById('pub-next-btn');
+  const originalText = btn?.textContent || 'Publicar';
+  if (btn) { btn.textContent = '⏳ Subiendo fotos...'; btn.disabled = true; }
 
-  // Subir fotos a Supabase Storage (ya comprimidas en addPubImage)
+  // Subir fotos
   let photoUrls = [];
-  for(let i = 0; i < pubImages.length; i++) {
+  const userId = currentUser?.id || 'anon';
+  for (let i = 0; i < pubImages.length; i++) {
     const img = pubImages[i];
-    // dataUrl ya es JPEG comprimido — convertir a Blob
-    const res = await fetch(img.dataUrl);
-    const blob = await res.blob();
-    const fileName = `${userId || 'anon'}_${Date.now()}_${i}.jpg`;
-
-    const { error: uploadError } = await db.storage
-      .from('photos')
-      .upload(fileName, blob, { contentType: 'image/jpeg' });
-
-    if(uploadError) {
-      console.error('Error subiendo foto:', uploadError);
-      continue;
-    }
-
-    // Obtener URL pública
-    const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
-    photoUrls.push(urlData.publicUrl);
+    try {
+      const res = await fetch(img.dataUrl);
+      const blob = await res.blob();
+      const fileName = `${userId}_${Date.now()}_${i}.jpg`;
+      const { error: uploadError } = await db.storage.from('photos').upload(fileName, blob, { contentType: 'image/jpeg' });
+      if (!uploadError) {
+        const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
+        photoUrls.push(urlData.publicUrl);
+      }
+    } catch(e) { console.warn('Error subiendo foto:', e); }
   }
 
-  if(btn) { btn.textContent = '⏳ Publicando...'; }
+  if (btn) btn.textContent = '⏳ Publicando...';
 
-  // Preparar fila para Supabase
   const row = {
     title: name,
-    description: document.getElementById('pub-desc').value || '',
+    description: document.getElementById('pub-desc')?.value || '',
     category: pubCat,
     subcategory: fullSubcat || null,
     emoji: autoEmoji,
-    condition: isService ? 'Servicio' : (document.getElementById('pub-price-range')?.value || 'Bueno'),
-    wants: pubWantsOpen === true ? pubOpenCats.join(', ') : pubWantsOpen === 'cafe' ? '☕ ¡Te lo doy por un café!' : pubWantsOpen === 'surprise' ? '🎲 ¡Sorpréndeme!' : wantsFlat.join(', '),
-    wants_open: pubWantsOpen === true || pubWantsOpen === 'surprise',
+    condition: pubCondition || 'Bueno',
+    wants: wantsStr,
+    wants_open: wantsOpen,
     photos: photoUrls.length ? photoUrls[0] : '',
     photo_urls: photoUrls.length ? photoUrls : null,
     user_name: userName,
-    user_id: currentUser ? currentUser.id : null,
+    user_id: currentUser?.id || null,
     user_avatar: currentUser?.user_metadata?.avatar_url || null,
     location: city,
     lat: currentUser?.user_metadata?.lat || null,
     lng: currentUser?.user_metadata?.lng || null,
+    estimated_value: parseFloat(document.getElementById('pub-value')?.value) || null,
+    attributes: Object.keys(attributes).length ? attributes : null,
+    wants_attributes: wantsAttributes.length ? wantsAttributes : null,
   };
 
-  // Guardar en Supabase
   const { data, error } = await db.from('items').insert([row]).select();
 
-  if(error) {
+  if (error) {
     showToast('⚠️ Error al publicar: ' + error.message);
-    if(btn) { btn.textContent = originalText; btn.disabled = false; }
+    if (btn) { btn.textContent = originalText; btn.disabled = false; }
     return;
   }
 
-  // Añadir al estado local con el id real de Supabase
+  // Añadir al estado local
   const newItem = {
     id: data[0].id,
     emoji: autoEmoji,
@@ -11976,70 +12386,44 @@ async function publishItem() {
     cat: pubCat,
     subcat: fullSubcat,
     location: city,
-    price: row.estimated_value ? String(row.estimated_value) : null,
     desc: row.description,
-    wants: wantsFlat,
+    wants: [wantsStr],
     photos: photoUrls.length ? photoUrls : [],
     photo_urls: photoUrls.length ? photoUrls : [],
-    shipping: 'persona',
-    verified: false,
     user: userName,
-    userEmoji: '😎',
     condition: row.condition,
     created_at: new Date().toISOString(),
     user_id: currentUser?.id || null,
   };
   items.unshift(newItem);
-  myItems.push({id: newItem.id, emoji: autoEmoji, name, cat: pubCat});
+  myItems.push({ id: newItem.id, emoji: autoEmoji, name, cat: pubCat });
 
   // Reset formulario
-  exchangeOptions = [];
   pubImages = [];
-  pubWantsOpen = null;
-  pubOpenCats = [];
-  // Reset demand pill
-  const dp = document.getElementById('demand-pill');
-  if(dp) dp.style.display = 'none';
-  demandWishMatches = [];
-  renderExchangeOptions();
-  renderImgPreviews();
-  document.getElementById('pub-name').value = '';
-  document.getElementById('pub-desc').value = '';
-  if(document.getElementById('pub-subcat')) document.getElementById('pub-subcat').innerHTML = '<option value="">— Selecciona categoría primero —</option>';
-  if(document.getElementById('pub-book-lang')) document.getElementById('pub-book-lang').value = '';
-  if(document.getElementById('pub-book-lang-field')) document.getElementById('pub-book-lang-field').style.display = 'none';
+  pubWantsType = null;
+  _pubWantsAdded = [];
+  pubCurrentScreen = 1;
+
+  ['pub-name','pub-desc','pub-value'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('pub-cat').value = '';
-  const _priceHint = document.getElementById('price-hint');
-  if(_priceHint) _priceHint.style.display = 'none';
-  const _serviceHint = document.getElementById('pub-service-hint');
-  if(_serviceHint) _serviceHint.style.display = 'none';
-  const _bookHint = document.getElementById('pub-book-hint');
-  if(_bookHint) _bookHint.style.display = 'none';
-  if(btn) { btn.textContent = originalText; btn.disabled = false; }
+  document.getElementById('pub-subcat').value = '';
+  document.getElementById('pub-condition').value = '';
+  document.getElementById('pub-wants-type').value = '';
+  const dp = document.getElementById('demand-pill'); if(dp) dp.style.display = 'none';
+  renderImgPreviews();
+
+  document.querySelectorAll('.pub-screen').forEach(s => s.style.display = 'none');
+  const s1 = document.getElementById('pub-screen-1'); if(s1) s1.style.display = '';
+  const fill = document.getElementById('pub-flow-fill'); if(fill) fill.style.width = '0%';
+  const backBtn = document.getElementById('pub-back-btn'); if(backBtn) backBtn.style.visibility = 'hidden';
+  if(btn) { btn.textContent = 'Continuar →'; btn.disabled = false; }
 
   showToast('✦ ¡Publicado en Truquo!');
   navTo('explore');
   applyFilter('', currentFilter);
-  renderProfile();
-  loadMyItems(); // actualizar lista de mis objetos
-  const _psi = document.getElementById('prof-stat-items'); if(_psi) _psi.textContent = myItems.length;
-
-  // Detectar coincidencias con deseos de otros usuarios (fire & forget)
-  checkWishMatches(name, pubCat, newItem.id);
-
-  // Recalcular matches con el nuevo item publicado
+  loadMyItems();
   setTimeout(() => loadMatches(), 1000);
-
-  // Reset del formulario — inmediato y silencioso
-  pubCurrentScreen = 1;
-  document.getElementById('pub-screen-1').style.display = '';
-  document.getElementById('pub-screen-2').style.display = 'none';
-  const _fill = document.getElementById('pub-flow-fill');
-  if (_fill) _fill.style.width = '50%';
-  const _back = document.getElementById('pub-back-btn');
-  if (_back) _back.style.visibility = 'hidden';
-  const _next = document.getElementById('pub-next-btn');
-  if (_next) { _next.textContent = 'Continuar →'; _next.onclick = () => pubNext(false); }
+  checkWishMatches(name, pubCat, newItem.id);
 }
 
 // ═══════════════════════════════════
