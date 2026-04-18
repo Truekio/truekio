@@ -10580,7 +10580,7 @@ async function saveProfile() {
   const city = document.getElementById('edit-city').value.trim();
   const bio  = document.getElementById('edit-bio').value.trim();
 
-  const btn = document.querySelector('#ptab-config .btn-primary');
+  const btn = document.querySelector('#ptab-config .btn-primary') || document.querySelector('#edit-profile-overlay .btn-primary');
   if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
 
   const lat = parseFloat(document.getElementById('edit-lat').value) || currentUser.user_metadata?.lat || null;
