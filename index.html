@@ -11272,58 +11272,6 @@ function pubCancel() {
 
 function selectWantsType(type) { pubSelectWantsType(type); } // compatibilidad
 
-  // Reset estilos botones
-  ['cafe','surprise','flexible','concrete'].forEach(t => {
-    const btn = document.getElementById('wtype-' + t);
-    if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)'; }
-  });
-
-  // Activar seleccionado
-  const colors = { cafe:'#92400e', surprise:'#6344a8', flexible:'var(--accent)', concrete:'var(--accent)' };
-  const bgs    = { cafe:'#fef3c7', surprise:'#f2eefb', flexible:'var(--accent-l)', concrete:'var(--accent-l)' };
-  const btn = document.getElementById('wtype-' + type);
-  if (btn) { btn.style.borderColor = colors[type]; btn.style.background = bgs[type]; }
-
-  // Si café o sorpréndeme → confirmar selección y habilitar publicar directamente
-  if (type === 'cafe' || type === 'surprise') {
-    pubWantsOpen = type;
-    exchangeOptions = [];
-    pubOpenCats = [];
-    // Mostrar confirmación inline y cambiar botón a Publicar
-    document.getElementById('pub-next-btn').textContent = '🚀 Publicar';
-    document.getElementById('pub-next-btn').onclick = () => publishItem();
-    return;
-  }
-
-  // Flexible → mostrar selector de categorías
-  if (type === 'flexible') {
-    pubWantsOpen = true;
-    document.getElementById('pub-wants-step-a').style.display = 'none';
-    document.getElementById('pub-wants-step-b-flexible').style.display = '';
-    document.getElementById('pub-wants-step-b-concrete').style.display = 'none';
-    // Inicializar chips si no existen
-    const chipsEl = document.getElementById('wants-open-cat-chips');
-    if (chipsEl && !chipsEl.children.length) {
-      const cats = ['Electrónica','Ropa','Hogar','Libros','Juguetes','Deporte','Cartas','Juegos de mesa','Servicios','Otros'];
-      chipsEl.innerHTML = cats.map(c =>
-        `<button onclick="toggleOpenCat(this,'${c}')" style="padding:7px 16px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);font-family:inherit;transition:all .14s">${c}</button>`
-      ).join('');
-    }
-    document.getElementById('pub-next-btn').textContent = '🚀 Publicar';
-    document.getElementById('pub-next-btn').onclick = () => pubNextWants();
-    return;
-  }
-
-  // Concreto → mostrar formulario
-  if (type === 'concrete') {
-    pubWantsOpen = false;
-    document.getElementById('pub-wants-step-a').style.display = 'none';
-    document.getElementById('pub-wants-step-b-flexible').style.display = 'none';
-    document.getElementById('pub-wants-step-b-concrete').style.display = '';
-    document.getElementById('pub-next-btn').textContent = '🚀 Publicar';
-    document.getElementById('pub-next-btn').onclick = () => pubNextWants();
-  }
-}
 
 function pubNextWants() {
   if (pubWantsType === 'flexible') {
