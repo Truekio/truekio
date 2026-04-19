@@ -5772,6 +5772,9 @@ function renderTradeChains(chains) {
 
   if (!chains.length) { el.style.display = 'none'; return; }
 
+  const catEmoji = { 'Libros':'📚','Juegos de mesa':'🎲','Cartas y coleccionables':'🃏','Videojuegos':'🎮','Música':'🎵','Hogar y muebles':'🏠','Servicios':'🤝','Otros':'📦' };
+  const emoji = cat => catEmoji[cat] || '📦';
+
   el.style.display = '';
   el.innerHTML = `
     <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
@@ -5785,39 +5788,93 @@ function renderTradeChains(chains) {
       const isA = c.user_a_id === currentUser.id;
       const isB = c.user_b_id === currentUser.id;
       const isC = c.user_c_id === currentUser.id;
-      const myItem = isA ? c.item_a : isB ? c.item_b : c.item_c;
-      const catEmoji = { 'Libros':'📚','Juegos de mesa':'🎲','Cartas y coleccionables':'🃏','Videojuegos':'🎮','Música':'🎵','Hogar y muebles':'🏠','Servicios':'🤝','Otros':'📦' };
-      const emoji = cat => catEmoji[cat] || '📦';
+
+      // Lo que yo doy y lo que recibo
+      let iGive, iReceive, iReceiveFrom, otherUser1, otherUser1Item, otherUser2, otherUser2Item;
+      if (isA) {
+        iGive = c.item_a; iReceive = c.item_c; iReceiveFrom = c.item_c?.user_name;
+        otherUser1 = c.item_b?.user_name; otherUser1Item = c.item_b;
+        otherUser2 = c.item_c?.user_name; otherUser2Item = c.item_c;
+      } else if (isB) {
+        iGive = c.item_b; iReceive = c.item_a; iReceiveFrom = c.item_a?.user_name;
+        otherUser1 = c.item_a?.user_name; otherUser1Item = c.item_a;
+        otherUser2 = c.item_c?.user_name; otherUser2Item = c.item_c;
+      } else {
+        iGive = c.item_c; iReceive = c.item_b; iReceiveFrom = c.item_b?.user_name;
+        otherUser1 = c.item_a?.user_name; otherUser1Item = c.item_a;
+        otherUser2 = c.item_b?.user_name; otherUser2Item = c.item_b;
+      }
+
+      // IDs de los otros usuarios para abrir chat
+      const otherId1 = isA ? c.user_b_id : isB ? c.user_a_id : c.user_a_id;
+      const otherId2 = isA ? c.user_c_id : isB ? c.user_c_id : c.user_b_id;
 
       return `
-      <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-            <span style="font-size:1.1rem">${emoji(c.item_a?.category)}</span>
-            <span style="font-size:10px;font-weight:700;color:${isA?'var(--accent)':'var(--text)'};max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_a?.title || '—'}</span>
-            ${isA ? `<span style="font-size:9px;color:var(--accent);font-weight:700">← tú</span>` : `<span style="font-size:9px;color:var(--muted)">${c.item_a?.user_name||''}</span>`}
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+
+        <!-- Flujo visual -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <div style="text-align:center;cursor:pointer" onclick="openDetail(${c.item_a_id})">
+            <div style="font-size:1.3rem">${emoji(c.item_a?.category)}</div>
+            <div style="font-size:10px;font-weight:700;color:${isA?'var(--accent)':'var(--text)'};max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_a?.title||'—'}</div>
+            <div style="font-size:9px;color:var(--muted)">${isA?'tú':c.item_a?.user_name||''}</div>
           </div>
-          <span style="color:var(--muted);font-size:18px">→</span>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-            <span style="font-size:1.1rem">${emoji(c.item_b?.category)}</span>
-            <span style="font-size:10px;font-weight:700;color:${isB?'var(--accent)':'var(--text)'};max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_b?.title || '—'}</span>
-            ${isB ? `<span style="font-size:9px;color:var(--accent);font-weight:700">← tú</span>` : `<span style="font-size:9px;color:var(--muted)">${c.item_b?.user_name||''}</span>`}
+          <span style="color:var(--muted)">→</span>
+          <div style="text-align:center;cursor:pointer" onclick="openDetail(${c.item_b_id})">
+            <div style="font-size:1.3rem">${emoji(c.item_b?.category)}</div>
+            <div style="font-size:10px;font-weight:700;color:${isB?'var(--accent)':'var(--text)'};max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_b?.title||'—'}</div>
+            <div style="font-size:9px;color:var(--muted)">${isB?'tú':c.item_b?.user_name||''}</div>
           </div>
-          <span style="color:var(--muted);font-size:18px">→</span>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-            <span style="font-size:1.1rem">${emoji(c.item_c?.category)}</span>
-            <span style="font-size:10px;font-weight:700;color:${isC?'var(--accent)':'var(--text)'};max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_c?.title || '—'}</span>
-            ${isC ? `<span style="font-size:9px;color:var(--accent);font-weight:700">← tú</span>` : `<span style="font-size:9px;color:var(--muted)">${c.item_c?.user_name||''}</span>`}
+          <span style="color:var(--muted)">→</span>
+          <div style="text-align:center;cursor:pointer" onclick="openDetail(${c.item_c_id})">
+            <div style="font-size:1.3rem">${emoji(c.item_c?.category)}</div>
+            <div style="font-size:10px;font-weight:700;color:${isC?'var(--accent)':'var(--text)'};max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_c?.title||'—'}</div>
+            <div style="font-size:9px;color:var(--muted)">${isC?'tú':c.item_c?.user_name||''}</div>
           </div>
-          <span style="color:var(--muted);font-size:18px">→ 🔄</span>
+          <span style="color:var(--muted)">→ 🔄</span>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
-          Tú das <strong>${myItem?.title||'tu objeto'}</strong> y recibes a cambio en cadena.
-          Contacta a los participantes por chat para coordinar.
+
+        <!-- Resumen claro -->
+        <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.8">
+          <div>📤 <strong>Tú das:</strong> ${iGive?.title||'—'}</div>
+          <div>📥 <strong>Recibes:</strong> ${iReceive?.title||'—'} <span style="color:var(--muted)">(de ${iReceiveFrom||'—'})</span></div>
         </div>
-        <button onclick="dismissChain('${c.id}')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">Descartar</button>
+
+        <!-- Botones -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="openChainChat('${otherId1}','${otherUser1}','${otherUser1Item?.title||''}','${iGive?.title||''}')" style="flex:1;background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💬 Contactar a ${otherUser1||'—'}</button>
+          <button onclick="openChainChat('${otherId2}','${otherUser2}','${otherUser2Item?.title||''}','${iGive?.title||''}')" style="flex:1;background:none;border:1.5px solid var(--accent);color:var(--accent);padding:8px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💬 Contactar a ${otherUser2||'—'}</button>
+          <button onclick="dismissChain('${c.id}')" style="background:none;border:1px solid var(--border);padding:8px 12px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">✕</button>
+        </div>
       </div>`;
     }).join('')}`;
+}
+
+async function openChainChat(userId, userName, theirItemTitle, myItemTitle) {
+  if (!currentUser || !userId) return;
+  // Navegar a mensajes
+  navToMessages();
+  // Buscar si ya existe conversación con este usuario
+  setTimeout(async () => {
+    const { data: convs } = await db.from('conversations')
+      .select('id')
+      .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
+      .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+      .limit(1);
+
+    const chainMsg = `🔗 Hola ${userName}! He detectado una posible cadena de trueque: yo te daría "${myItemTitle}" y tú me darías "${theirItemTitle}". ¿Te interesa coordinarlo?`;
+
+    if (convs && convs.length) {
+      openConv(convs[0].id);
+      setTimeout(() => {
+        const input = document.getElementById('chat-input');
+        if (input) { input.value = chainMsg; input.focus(); }
+      }, 800);
+    } else {
+      // No hay conversación previa — mostrar instrucción
+      showToast(`💬 Busca a ${userName} en el explorador y propónle el trueque`);
+    }
+  }, 600);
 }
 
 async function dismissChain(chainId) {
