@@ -11176,7 +11176,11 @@ function pubGoTo(n) {
   }
 
   // Cargar subcategorías al llegar al paso 4
-  if (n === 4 && cat) setTimeout(() => pubLoadSubcats(cat), 50);
+  if (n === 4) {
+    const catVal = document.getElementById('pub-cat')?.value;
+    console.log('[PUB] Going to step 4, cat=', catVal);
+    if (catVal) setTimeout(() => pubLoadSubcats(catVal), 100);
+  }
 
   // Renderizar resumen al llegar al paso final
   if (n === 9 || (n === 7 && document.getElementById('pub-wants-type')?.value !== 'concrete')) pubRenderSummary();
