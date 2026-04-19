@@ -11076,7 +11076,6 @@ function pubLoadWantsSubcats(cat) {
 }
 
 function pubAddAnotherWant() {
-  // Guardar opción actual antes de añadir otra
   const cat = document.getElementById('wants-cat')?.value;
   const subcat = document.getElementById('wants-subcat')?.value;
   const catData = PUB_CATS[cat];
@@ -11090,14 +11089,20 @@ function pubAddAnotherWant() {
   _pubWantsAdded.push(option);
   renderWantsAddedList();
 
-  // Reset selección
+  // Reset selección visual
   document.getElementById('wants-cat').value = '';
   document.getElementById('wants-subcat').value = '';
   document.querySelectorAll('.pub-wants-cat-btn').forEach(btn => {
     btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)';
   });
-  document.getElementById('wants-subcat-options').innerHTML = '';
-  document.getElementById('wants-attrs').innerHTML = '';
+  const subcatContainer = document.getElementById('wants-subcat-options');
+  if (subcatContainer) subcatContainer.innerHTML = '';
+  const attrsContainer = document.getElementById('wants-attrs');
+  if (attrsContainer) attrsContainer.innerHTML = '';
+
+  // Actualizar botón a Publicar ahora que hay al menos una opción
+  const nextBtn = document.getElementById('pub-next-btn');
+  if (nextBtn) nextBtn.textContent = '✅ Publicar';
 
   showToast('✅ Opción añadida');
 }
@@ -11267,7 +11272,7 @@ function pubNext(skip = false) {
     if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
     pubGoTo(8);
   } else if (n === 8) {
-    // Guardar opción actual y publicar directamente
+    // Guardar opción actual si hay categoría seleccionada
     const cat = document.getElementById('wants-cat')?.value;
     if (cat) {
       const subcat = document.getElementById('wants-subcat')?.value;
@@ -11277,7 +11282,9 @@ function pubNext(skip = false) {
       if (langAttr?.required && !lang) { showToast('⚠️ El idioma es obligatorio para libros'); return; }
       _pubWantsAdded.push({ cat, subcat, lang });
     }
-    submitItem(); // Publicar directamente
+    // Necesita al menos una opción
+    if (!_pubWantsAdded.length) { showToast('⚠️ Añade al menos una opción'); return; }
+    submitItem();
   } else if (n === 9) {
     submitItem();
   }
