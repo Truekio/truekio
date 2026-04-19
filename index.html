@@ -4517,7 +4517,7 @@ async function _fixOrphanedReservedItems() {
 
 async function loadItemsFromSupabase() {
   let query = db.from('items')
-    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value,attributes,wants_attributes')
+    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value')
     .neq('status', 'completed')
     .order('created_at', { ascending: false })
     .limit(100);
@@ -10954,7 +10954,9 @@ function pubSelectWantsCat(cat) {
 }
 
 function pubLoadSubcats(cat) {
+  console.log('[PUB] pubLoadSubcats called with cat:', cat);
   const data = PUB_CATS[cat];
+  console.log('[PUB] data found:', data);
   if (!data) return;
   const container = document.getElementById('pub-subcat-options');
   const attrsContainer = document.getElementById('pub-attrs');
