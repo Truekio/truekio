@@ -10954,6 +10954,9 @@ function pubSelectWantsCat(cat) {
   });
   const btn = document.getElementById('wantscat-' + cat.replace(/ /g, '-'));
   if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; }
+  // Actualizar botón a Continuar (hay subcategorías en paso 8)
+  const nextBtn = document.getElementById('pub-next-btn');
+  if (nextBtn) nextBtn.textContent = 'Continuar →';
   // Cargar subcategorías de lo que busca
   pubLoadWantsSubcats(cat);
 }
@@ -11174,6 +11177,8 @@ function pubGoTo(n) {
     const total = pubGetTotalSteps();
     if (n === 6 && document.getElementById('pub-wants-type')?.value !== 'concrete') {
       nextBtn.textContent = '✅ Publicar';
+    } else if (n === 7) {
+      nextBtn.textContent = 'Continuar →';
     } else if (n === 8) {
       nextBtn.textContent = '✅ Publicar';
     } else if (n === total) {
