@@ -4524,7 +4524,7 @@ async function _fixOrphanedReservedItems() {
 
 async function loadItemsFromSupabase() {
   let query = db.from('items')
-    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value')
+    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,user_name,user_avatar,user_id,location,lat,lng,created_at,status,estimated_value,attributes,wants_attributes')
     .neq('status', 'completed')
     .order('created_at', { ascending: false })
     .limit(100);
@@ -4569,6 +4569,8 @@ async function loadItemsFromSupabase() {
     price: '',
     wants: row.wants ? row.wants.split(',').map(w => w.trim()) : [],
     wants_open: row.wants_open || false,
+    attributes: row.attributes || null,
+    wants_attributes: row.wants_attributes || [],
     photos: row.photo_urls && row.photo_urls.length ? row.photo_urls : (row.photos ? [row.photos] : []),
     user: row.user_name || 'Usuario',
     userEmoji: '👤',
@@ -6830,20 +6832,16 @@ function filterDemand(q) {
 function calcMatchScore(itemA, itemB) {
   const stem = w => w.replace(/[eos]$/, '').replace(/ción$/, 'cion').trim();
 
-  // Coincidencia de título — exacta o muy cercana (mismas palabras principales)
   const STOP_WORDS = new Set(['el','la','los','las','un','una','unos','unas','de','del','y','en','a','por','para','con','que','se','su','al']);
   const titleTokens = t => t.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !STOP_WORDS.has(w));
   const matchTitle = (titleA, titleB) => {
     if (!titleA || !titleB) return false;
     const a = titleA.toLowerCase().trim();
     const b = titleB.toLowerCase().trim();
-    // Exacto
     if (a === b) return true;
-    // Tokens principales de A todos presentes en B o viceversa
     const tokA = titleTokens(a);
     const tokB = titleTokens(b);
     if (tokA.length === 0 || tokB.length === 0) return false;
-    // Al menos el 80% de los tokens del más corto están en el más largo
     const shorter = tokA.length <= tokB.length ? tokA : tokB;
     const longer  = tokA.length <= tokB.length ? tokB : tokA;
     const longerStr = longer.join(' ');
@@ -6851,7 +6849,6 @@ function calcMatchScore(itemA, itemB) {
     return matched.length / shorter.length >= 0.8;
   };
 
-  // Coincidencia de categoría/subcategoría — más permisiva
   const matchCat = (wantStr, catStr) => {
     if (!wantStr || !catStr) return false;
     const w = wantStr.toLowerCase().trim();
@@ -6859,7 +6856,6 @@ function calcMatchScore(itemA, itemB) {
     return w === c || w.includes(c) || c.includes(w);
   };
 
-  // Normalizar wants siempre a array
   const toArr = w => Array.isArray(w) ? w : (w || '').split(',').map(x => x.trim()).filter(Boolean);
 
   // Datos de A (mi item)
@@ -6869,6 +6865,8 @@ function calcMatchScore(itemA, itemB) {
   const aWants = toArr(itemA.wants);
   const aWantsOpen = itemA.wants_open || false;
   const aLocation = (itemA.location || '').toLowerCase();
+  const aAttrs = itemA.attributes || {};
+  const aWantsAttrs = itemA.wants_attributes || []; // [{cat, subcat, attributes:{language:...}}]
 
   // Datos de B (su item)
   const bTitle = (itemB.name || itemB.title || '').toLowerCase();
@@ -6877,65 +6875,107 @@ function calcMatchScore(itemA, itemB) {
   const bWants = toArr(itemB.wants);
   const bWantsOpen = itemB.wants_open || false;
   const bLocation = (itemB.location || '').toLowerCase();
+  const bAttrs = itemB.attributes || {};
+  const bWantsAttrs = itemB.wants_attributes || [];
 
-  const aWantsStr = aWants.join(' ').toLowerCase();
-  const bWantsStr = bWants.join(' ').toLowerCase();
+  // ── FILTRO IDIOMA para libros (eliminatorio) ──
+  const getLang = (subcat, attrs) => {
+    // Primero intentar desde attributes JSON
+    if (attrs?.language) return attrs.language.toLowerCase();
+    // Luego desde subcategory "Género · Idioma"
+    if (!subcat) return null;
+    const parts = subcat.split('·').map(p => p.trim().toLowerCase());
+    return parts.length > 1 ? parts[parts.length - 1] : null;
+  };
+
+  if (aCat === 'libros' || bCat === 'libros') {
+    const langA = getLang(aSubcat, aAttrs);
+    const langB = getLang(bSubcat, bAttrs);
+    if (langA && langB && langA !== langB) return 0;
+
+    // También verificar idioma en wants_attributes
+    if (aWantsAttrs.length) {
+      for (const wa of aWantsAttrs) {
+        const waCat = (wa.cat || '').toLowerCase();
+        if (waCat === 'libros' && wa.attributes?.language) {
+          const wLang = wa.attributes.language.toLowerCase();
+          if (langB && wLang !== langB) return 0;
+        }
+      }
+    }
+    if (bWantsAttrs.length) {
+      for (const wb of bWantsAttrs) {
+        const wbCat = (wb.cat || '').toLowerCase();
+        if (wbCat === 'libros' && wb.attributes?.language) {
+          const wLang = wb.attributes.language.toLowerCase();
+          if (langA && wLang !== langA) return 0;
+        }
+      }
+    }
+  }
 
   // ── LADO A: ¿A quiere lo que ofrece B? ──
   let scoreA = 0;
-  const aWantsBTitle  = aWants.some(w => matchTitle(w, bTitle));
-  const aWantsBCat    = aWants.some(w => matchCat(w, bCat));
-  const aWantsBSubcat = bSubcat && aWants.some(w => matchCat(w, bSubcat));
 
-  if (aWantsBTitle)       scoreA = 50;
-  else if (aWantsBSubcat) scoreA = 35;
-  else if (aWantsBCat)    scoreA = 25;
-  else if (aWantsOpen && bCat) scoreA = 15;
-  else                    scoreA = 0;
+  // Comprobar con wants_attributes (nuevo sistema)
+  if (aWantsAttrs.length) {
+    for (const wa of aWantsAttrs) {
+      const waCat = (wa.cat || '').toLowerCase();
+      const waSubcat = (wa.subcat || '').toLowerCase();
+      if (matchCat(waCat, bCat)) {
+        if (waSubcat && matchCat(waSubcat, bSubcat)) scoreA = Math.max(scoreA, 40);
+        else scoreA = Math.max(scoreA, 25);
+      }
+    }
+  }
+
+  // Comprobar con wants string (sistema anterior + café/sorpréndeme)
+  if (scoreA === 0) {
+    const aWantsBTitle  = aWants.some(w => matchTitle(w, bTitle));
+    const aWantsBCat    = aWants.some(w => matchCat(w, bCat));
+    const aWantsBSubcat = bSubcat && aWants.some(w => matchCat(w, bSubcat));
+    if (aWantsBTitle)       scoreA = 50;
+    else if (aWantsBSubcat) scoreA = 35;
+    else if (aWantsBCat)    scoreA = 25;
+    else if (aWantsOpen && bCat) scoreA = 15;
+  }
 
   // ── LADO B: ¿B quiere lo que ofrece A? ──
   let scoreB = 0;
-  const bWantsATitle  = bWants.some(w => matchTitle(w, aTitle));
-  const bWantsACat    = bWants.some(w => matchCat(w, aCat));
-  const bWantsASubcat = aSubcat && bWants.some(w => matchCat(w, aSubcat));
 
-  if (bWantsATitle)       scoreB = 50;
-  else if (bWantsASubcat) scoreB = 35;
-  else if (bWantsACat)    scoreB = 25;
-  else if (bWantsOpen && aCat) scoreB = 15;
-  else                    scoreB = 0;
+  if (bWantsAttrs.length) {
+    for (const wb of bWantsAttrs) {
+      const wbCat = (wb.cat || '').toLowerCase();
+      const wbSubcat = (wb.subcat || '').toLowerCase();
+      if (matchCat(wbCat, aCat)) {
+        if (wbSubcat && matchCat(wbSubcat, aSubcat)) scoreB = Math.max(scoreB, 40);
+        else scoreB = Math.max(scoreB, 25);
+      }
+    }
+  }
 
-  // Si ninguno quiere nada del otro → 0
+  if (scoreB === 0) {
+    const bWantsATitle  = bWants.some(w => matchTitle(w, aTitle));
+    const bWantsACat    = bWants.some(w => matchCat(w, aCat));
+    const bWantsASubcat = aSubcat && bWants.some(w => matchCat(w, aSubcat));
+    if (bWantsATitle)       scoreB = 50;
+    else if (bWantsASubcat) scoreB = 35;
+    else if (bWantsACat)    scoreB = 25;
+    else if (bWantsOpen && aCat) scoreB = 15;
+  }
+
   if (scoreA === 0 && scoreB === 0) return 0;
 
-  // Necesitamos que AMBOS lados tengan algo de interés para un match real
-  // Si solo un lado tiene interés → score reducido
   let total;
   if (scoreA > 0 && scoreB > 0) {
-    // Match bilateral — sumar ambos lados (máx 99 sin bonus)
     total = scoreA + scoreB;
   } else {
-    // Match unilateral — solo la mitad del score
     total = Math.round((scoreA + scoreB) / 2);
   }
 
-  // ── BONUS: misma ciudad +14 ──
+  // Bonus misma ciudad
   if (aLocation && bLocation && aLocation === bLocation) {
     total += 14;
-  }
-
-  // ── FILTRO IDIOMA para libros (eliminatorio) ──
-  if (aCat === 'libros' || bCat === 'libros') {
-    // Extraer idioma de subcategory "Género · Idioma"
-    const getLang = subcat => {
-      if (!subcat) return null;
-      const parts = subcat.split('·').map(p => p.trim().toLowerCase());
-      return parts.length > 1 ? parts[1] : null;
-    };
-    const langA = getLang(aSubcat);
-    const langB = getLang(bSubcat);
-    // Si ambos tienen idioma especificado y no coinciden → 0
-    if (langA && langB && langA !== langB) return 0;
   }
 
   return Math.min(99, total);
