@@ -5751,7 +5751,7 @@ async function loadTradeChains() {
 
   // Cargar títulos de los items
   const itemIds = [...new Set(chains.flatMap(c => [c.item_a_id, c.item_b_id, c.item_c_id]))];
-  const { data: itemsData } = await db.from('items').select('id,title,category,user_name').in('id', itemIds);
+  const { data: itemsData } = await db.from('items').select('id,title,category,user_name,photo_urls,photos').in('id', itemIds);
   const itemMap = {};
   (itemsData || []).forEach(i => { itemMap[i.id] = i; });
 
@@ -5814,23 +5814,23 @@ function renderTradeChains(chains) {
 
         <!-- Flujo visual -->
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-          <div style="text-align:center;cursor:pointer" onclick="openDetail(${c.item_a_id})">
-            <div style="font-size:1.3rem">${emoji(c.item_a?.category)}</div>
-            <div style="font-size:10px;font-weight:700;color:${isA?'var(--accent)':'var(--text)'};max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_a?.title||'—'}</div>
-            <div style="font-size:9px;color:var(--muted)">${isA?'tú':c.item_a?.user_name||''}</div>
-          </div>
-          <span style="color:var(--muted)">→</span>
-          <div style="text-align:center;cursor:pointer" onclick="openDetail(${c.item_b_id})">
-            <div style="font-size:1.3rem">${emoji(c.item_b?.category)}</div>
-            <div style="font-size:10px;font-weight:700;color:${isB?'var(--accent)':'var(--text)'};max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_b?.title||'—'}</div>
-            <div style="font-size:9px;color:var(--muted)">${isB?'tú':c.item_b?.user_name||''}</div>
-          </div>
-          <span style="color:var(--muted)">→</span>
-          <div style="text-align:center;cursor:pointer" onclick="openDetail(${c.item_c_id})">
-            <div style="font-size:1.3rem">${emoji(c.item_c?.category)}</div>
-            <div style="font-size:10px;font-weight:700;color:${isC?'var(--accent)':'var(--text)'};max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_c?.title||'—'}</div>
-            <div style="font-size:9px;color:var(--muted)">${isC?'tú':c.item_c?.user_name||''}</div>
-          </div>
+          ${[
+            {item: c.item_a, id: c.item_a_id, isMe: isA},
+            {item: c.item_b, id: c.item_b_id, isMe: isB},
+            {item: c.item_c, id: c.item_c_id, isMe: isC}
+          ].map((entry, idx) => {
+            const photo = entry.item?.photo_urls?.[0] || entry.item?.photos?.[0] || null;
+            const border = entry.isMe ? '2px solid var(--accent)' : '1.5px solid var(--border)';
+            return `
+            ${idx > 0 ? '<span style="color:var(--muted)">→</span>' : ''}
+            <div style="text-align:center;cursor:pointer" onclick="openDetail(${entry.id})">
+              <div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:${border};background:var(--bg2);display:flex;align-items:center;justify-content:center;margin:0 auto 3px">
+                ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:1.3rem">${emoji(entry.item?.category)}</span>`}
+              </div>
+              <div style="font-size:10px;font-weight:700;color:${entry.isMe?'var(--accent)':'var(--text)'};max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.item?.title||'—'}</div>
+              <div style="font-size:9px;color:var(--muted)">${entry.isMe?'tú':entry.item?.user_name||''}</div>
+            </div>`;
+          }).join('')}
           <span style="color:var(--muted)">→ 🔄</span>
         </div>
 
