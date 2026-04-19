@@ -3416,7 +3416,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="pub-screen" id="pub-screen-5" style="display:none">
         <div class="pub-screen-title">📄 Cuéntanos más</div>
         <div class="pub-screen-sub">Opcional pero ayuda a encontrar el match perfecto.</div>
-        <div class="field">
+        <div class="field" id="pub-condition-field">
           <label>Estado del objeto</label>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px">
             <button onclick="pubSelectCondition('Nuevo')" id="cond-Nuevo" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">Nuevo</button>
@@ -11204,6 +11204,13 @@ function pubGoTo(n) {
     const catVal = document.getElementById('pub-cat')?.value;
     console.log('[PUB] Going to step 4, cat=', catVal);
     if (catVal) setTimeout(() => pubLoadSubcats(catVal), 100);
+  }
+
+  // Ocultar campo condición si es Servicios
+  if (n === 5) {
+    const catVal = document.getElementById('pub-cat')?.value;
+    const condField = document.getElementById('pub-condition-field');
+    if (condField) condField.style.display = catVal === 'Servicios' ? 'none' : '';
   }
 
   // Renderizar resumen al llegar al paso final
