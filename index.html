@@ -11222,6 +11222,7 @@ function pubNext(skip = false) {
     const err = document.getElementById('pub-cat-error');
     if (err) err.style.display = 'none';
     pubGoTo(4);
+    pubLoadSubcats(cat);
   } else if (n === 4) {
     // Validar atributo excluyente si es necesario
     const cat = document.getElementById('pub-cat')?.value;
