@@ -2971,6 +2971,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <div class="wrap page-pad" style="padding-top:24px">
     <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
     <div id="matches-proposals" class="match-tab-content active">
+      <!-- Sección de cadenas de trueque -->
+      <div id="trade-chains-section" style="display:none;background:var(--white);border:1.5px solid var(--accent);border-radius:var(--r-lg);margin-bottom:16px;overflow:hidden"></div>
       <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
     </div>
     <div id="matches-confirm" class="match-tab-content" style="display:none">
@@ -5604,6 +5606,195 @@ window.addEventListener('appinstalled', () => {
   showToast('✅ ¡Truquo instalado correctamente!');
 });
 
+// ═══ TRADE CHAIN DETECTION ═══
+
+function chainMatchCat(wantStr, catStr) {
+  if (!wantStr || !catStr) return false;
+  const w = wantStr.toLowerCase().trim();
+  const c = catStr.toLowerCase().trim();
+  // Ignorar café y sorpréndeme
+  if (w.includes('café') || w.includes('sorpréndeme')) return false;
+  return w === c || w.includes(c) || c.includes(w);
+}
+
+function itemWantsCategory(item, cat) {
+  if (!item || !cat) return false;
+  if (item.wants_open) return true; // acepta cualquier cosa
+  const wants = Array.isArray(item.wants)
+    ? item.wants
+    : (item.wants || '').split(',').map(w => w.trim()).filter(Boolean);
+  return wants.some(w => chainMatchCat(w, cat));
+}
+
+async function detectTradeChains(newItemId) {
+  if (!currentUser) return;
+  try {
+    // Cargar todos los objetos disponibles
+    const { data: allItems } = await db.from('items')
+      .select('id,title,category,wants,wants_open,user_id,user_name')
+      .eq('status', 'available')
+      .neq('user_id', currentUser.id)
+      .limit(200);
+
+    if (!allItems || allItems.length < 2) return;
+
+    // Mi objeto nuevo
+    const myItem = items.find(i => String(i.id) === String(newItemId));
+    if (!myItem) return;
+
+    const myCat = myItem.cat || myItem.category || '';
+    const myWants = Array.isArray(myItem.wants) ? myItem.wants : (myItem.wants || '').split(',').map(w => w.trim());
+
+    const chainsFound = [];
+
+    // Buscar cadenas A(yo) → B → C → yo
+    for (const itemB of allItems) {
+      if (itemB.user_id === currentUser.id) continue;
+
+      // ¿B tiene lo que yo quiero?
+      const bCat = itemB.category || '';
+      const iWantB = myWants.some(w => chainMatchCat(w, bCat)) || myItem.wants_open;
+      if (!iWantB) continue;
+
+      // ¿Qué quiere B?
+      const bWants = (itemB.wants || '').split(',').map(w => w.trim()).filter(Boolean);
+      const bWantsOpen = itemB.wants_open;
+
+      // Buscar C que tenga lo que quiere B y quiera lo que tengo yo
+      for (const itemC of allItems) {
+        if (itemC.user_id === itemB.user_id) continue;
+        if (itemC.user_id === currentUser.id) continue;
+
+        const cCat = itemC.category || '';
+
+        // ¿B quiere lo que tiene C?
+        const bWantC = bWants.some(w => chainMatchCat(w, cCat)) || bWantsOpen;
+        if (!bWantC) continue;
+
+        // ¿C quiere lo que tengo yo?
+        const cWants = (itemC.wants || '').split(',').map(w => w.trim()).filter(Boolean);
+        const cWantsOpen = itemC.wants_open;
+        const cWantMe = cWants.some(w => chainMatchCat(w, myCat)) || cWantsOpen;
+        if (!cWantMe) continue;
+
+        // ¡Cadena encontrada!
+        chainsFound.push({
+          item_a_id: newItemId,
+          item_b_id: itemB.id,
+          item_c_id: itemC.id,
+          user_a_id: currentUser.id,
+          user_b_id: itemB.user_id,
+          user_c_id: itemC.user_id,
+          item_a_title: myItem.name || myItem.title,
+          item_b_title: itemB.title,
+          item_c_title: itemC.title,
+          user_b_name: itemB.user_name,
+          user_c_name: itemC.user_name,
+        });
+
+        if (chainsFound.length >= 3) break; // Máximo 3 cadenas por objeto
+      }
+      if (chainsFound.length >= 3) break;
+    }
+
+    if (!chainsFound.length) return;
+
+    // Guardar en Supabase
+    for (const chain of chainsFound) {
+      // Verificar que no existe ya
+      const { data: existing } = await db.from('trade_chains')
+        .select('id')
+        .eq('item_a_id', chain.item_a_id)
+        .eq('item_b_id', chain.item_b_id)
+        .eq('item_c_id', chain.item_c_id)
+        .maybeSingle();
+
+      if (!existing) {
+        await db.from('trade_chains').insert([{
+          item_a_id: chain.item_a_id,
+          item_b_id: chain.item_b_id,
+          item_c_id: chain.item_c_id,
+          user_a_id: chain.user_a_id,
+          user_b_id: chain.user_b_id,
+          user_c_id: chain.user_c_id,
+        }]);
+      }
+    }
+
+    // Mostrar notificación al usuario
+    if (chainsFound.length > 0) {
+      showChainNotification(chainsFound);
+    }
+
+  } catch(e) {
+    console.warn('[Chains] Error detectando cadenas:', e);
+  }
+}
+
+function showChainNotification(chains) {
+  const chain = chains[0];
+  showToast(`🔗 ¡Cadena de trueque detectada! ${chain.item_a_title} ↔ ${chain.item_b_title} ↔ ${chain.item_c_title}`);
+  // Mostrar en sección de propuestas
+  setTimeout(() => loadTradeChains(), 500);
+}
+
+async function loadTradeChains() {
+  if (!currentUser) return;
+  const { data: chains } = await db.from('trade_chains')
+    .select('*')
+    .or(`user_a_id.eq.${currentUser.id},user_b_id.eq.${currentUser.id},user_c_id.eq.${currentUser.id}`)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  renderTradeChains(chains || []);
+}
+
+function renderTradeChains(chains) {
+  const el = document.getElementById('trade-chains-section');
+  if (!el) return;
+
+  if (!chains.length) {
+    el.style.display = 'none';
+    return;
+  }
+
+  el.style.display = '';
+  el.innerHTML = `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div style="font-weight:800;font-size:15px;margin-bottom:4px">🔗 Cadenas de trueque</div>
+      <div style="font-size:12px;color:var(--muted)">Intercambios en cadena donde todos ganan</div>
+    </div>
+    ${chains.map(c => {
+      const isA = c.user_a_id === currentUser.id;
+      const isB = c.user_b_id === currentUser.id;
+      const isC = c.user_c_id === currentUser.id;
+      return `
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap;margin-bottom:10px">
+          <span style="background:${isA?'var(--accent-l)':'var(--bg2)'};color:${isA?'var(--accent)':'var(--text)'};padding:4px 10px;border-radius:99px;font-weight:700">📦 Item A</span>
+          <span style="color:var(--muted)">→</span>
+          <span style="background:${isB?'var(--accent-l)':'var(--bg2)'};color:${isB?'var(--accent)':'var(--text)'};padding:4px 10px;border-radius:99px;font-weight:700">📦 Item B</span>
+          <span style="color:var(--muted)">→</span>
+          <span style="background:${isC?'var(--accent-l)':'var(--bg2)'};color:${isC?'var(--accent)':'var(--text)'};padding:4px 10px;border-radius:99px;font-weight:700">📦 Item C</span>
+          <span style="color:var(--muted)">→ ti</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+          Propón el trueque a los otros participantes por chat para coordinar el intercambio.
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="dismissChain('${c.id}')" style="background:none;border:1px solid var(--border);padding:6px 12px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">Descartar</button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+async function dismissChain(chainId) {
+  await db.from('trade_chains').update({ status: 'dismissed' }).eq('id', chainId);
+  showToast('Cadena descartada');
+  loadTradeChains();
+}
+
 function cookieChoice(choice) {
   localStorage.setItem("truquo_cookie_consent", choice);
   const b = document.getElementById("cookie-banner");
@@ -6026,6 +6217,8 @@ async function loadProposals() {
   const el = document.getElementById('proposals-list');
   if (!el) return;
   el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando...</div>';
+  // Cargar cadenas también
+  loadTradeChains();
 
   const { data, error } = await db
     .from('proposals')
@@ -12363,6 +12556,8 @@ async function publishItem() {
   loadMyItems();
   setTimeout(() => loadMatches(), 1000);
   checkWishMatches(name, pubCat, newItem.id);
+  // Detectar cadenas de trueque con el nuevo objeto
+  setTimeout(() => detectTradeChains(newItem.id), 2000);
 }
 
 // ═══════════════════════════════════
