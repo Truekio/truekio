@@ -11167,6 +11167,11 @@ function pubGoTo(n) {
   // Saltar paso 4 (subcategoría) si categoría no tiene subcats
   if (n === 4 && cat && PUB_CATS[cat]?.subcats?.length === 0) {
     n = n > pubCurrentScreen ? 5 : 3;
+    // Ocultar campo condición si es Servicios al saltar al paso 5
+    if (n === 5) {
+      const condField = document.getElementById('pub-condition-field');
+      if (condField) condField.style.display = cat === 'Servicios' ? 'none' : '';
+    }
   }
   document.querySelectorAll('.pub-screen').forEach(s => s.style.display = 'none');
   const screen = document.getElementById('pub-screen-' + n);
@@ -11264,6 +11269,9 @@ function pubNext(skip = false) {
       if (!val) { showToast(`⚠️ El ${requiredAttr.label.toLowerCase()} es obligatorio`); return; }
     }
     pubGoTo(5);
+    // Ocultar campo condición si es Servicios
+    const condField = document.getElementById('pub-condition-field');
+    if (condField) condField.style.display = cat === 'Servicios' ? 'none' : '';
   } else if (n === 5) {
     pubGoTo(6);
   } else if (n === 6) {
