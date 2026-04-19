@@ -10939,6 +10939,11 @@ function pubSelectWantsType(type) {
   });
   const btn = document.getElementById('wtype-' + type);
   if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; }
+  // Actualizar botón según selección
+  const nextBtn = document.getElementById('pub-next-btn');
+  if (nextBtn) {
+    nextBtn.textContent = type === 'concrete' ? 'Continuar →' : '✅ Publicar';
+  }
 }
 
 function pubSelectWantsCat(cat) {
