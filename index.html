@@ -3468,35 +3468,39 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <input type="hidden" id="pub-wants-type">
       </div>
 
-      <!-- PASO 7: Categoría de lo que busca (solo si concreto) -->
+      <!-- PASO 7: Qué buscas (categoría + subcategoría + añadir múltiples) -->
       <div class="pub-screen" id="pub-screen-7" style="display:none">
-        <div class="pub-screen-title">🏷 ¿Qué categoría buscas?</div>
-        <div class="pub-screen-sub">Elige qué tipo de objeto o servicio quieres a cambio.</div>
-        <div style="display:flex;flex-direction:column;gap:10px" id="wants-cat-options">
-          <button onclick="pubSelectWantsCat('Libros')" class="pub-wants-cat-btn" id="wantscat-Libros" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">📚</span><span style="font-weight:700;font-size:15px;color:var(--text)">Libros</span></button>
-          <button onclick="pubSelectWantsCat('Juegos de mesa')" class="pub-wants-cat-btn" id="wantscat-Juegos-de-mesa" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎲</span><span style="font-weight:700;font-size:15px;color:var(--text)">Juegos de mesa</span></button>
-          <button onclick="pubSelectWantsCat('Cartas y coleccionables')" class="pub-wants-cat-btn" id="wantscat-Cartas-y-coleccionables" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🃏</span><span style="font-weight:700;font-size:15px;color:var(--text)">Cartas y coleccionables</span></button>
-          <button onclick="pubSelectWantsCat('Videojuegos')" class="pub-wants-cat-btn" id="wantscat-Videojuegos" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎮</span><span style="font-weight:700;font-size:15px;color:var(--text)">Videojuegos</span></button>
-          <button onclick="pubSelectWantsCat('Música')" class="pub-wants-cat-btn" id="wantscat-Música" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🎵</span><span style="font-weight:700;font-size:15px;color:var(--text)">Música</span></button>
-          <button onclick="pubSelectWantsCat('Hogar y muebles')" class="pub-wants-cat-btn" id="wantscat-Hogar-y-muebles" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🏠</span><span style="font-weight:700;font-size:15px;color:var(--text)">Hogar y muebles</span></button>
-          <button onclick="pubSelectWantsCat('Servicios')" class="pub-wants-cat-btn" id="wantscat-Servicios" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">🤝</span><span style="font-weight:700;font-size:15px;color:var(--text)">Servicios</span></button>
-          <button onclick="pubSelectWantsCat('Otros')" class="pub-wants-cat-btn" id="wantscat-Otros" style="background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:14px"><span style="font-size:1.6rem">📦</span><span style="font-weight:700;font-size:15px;color:var(--text)">Otros</span></button>
-        </div>
-        <input type="hidden" id="wants-cat">
-      </div>
+        <div class="pub-screen-title">🎯 ¿Qué buscas?</div>
+        <div class="pub-screen-sub">Selecciona categoría y añade una o varias opciones.</div>
 
-      <!-- PASO 8: Subcategoría + atributos de lo que busca -->
-      <div class="pub-screen" id="pub-screen-8" style="display:none">
-        <div class="pub-screen-title" id="wants-subcat-title">🔍 ¿Más específico?</div>
-        <div class="pub-screen-sub">Opcional — ayuda a encontrar el match perfecto.</div>
-        <div style="display:flex;flex-direction:column;gap:8px" id="wants-subcat-options"></div>
-        <div id="wants-attrs" style="margin-top:20px;display:flex;flex-direction:column;gap:14px"></div>
+        <!-- Opciones añadidas -->
+        <div id="wants-added-list" style="margin-bottom:12px"></div>
+
+        <!-- Selector de categoría -->
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">CATEGORÍA</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+          <button onclick="pubSelectWantsCat('Libros')" class="pub-wants-cat-btn" id="wantscat-Libros" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">📚 Libros</button>
+          <button onclick="pubSelectWantsCat('Juegos de mesa')" class="pub-wants-cat-btn" id="wantscat-Juegos-de-mesa" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">🎲 Juegos de mesa</button>
+          <button onclick="pubSelectWantsCat('Cartas y coleccionables')" class="pub-wants-cat-btn" id="wantscat-Cartas-y-coleccionables" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">🃏 Cartas</button>
+          <button onclick="pubSelectWantsCat('Videojuegos')" class="pub-wants-cat-btn" id="wantscat-Videojuegos" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">🎮 Videojuegos</button>
+          <button onclick="pubSelectWantsCat('Música')" class="pub-wants-cat-btn" id="wantscat-Música" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">🎵 Música</button>
+          <button onclick="pubSelectWantsCat('Hogar y muebles')" class="pub-wants-cat-btn" id="wantscat-Hogar-y-muebles" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">🏠 Hogar</button>
+          <button onclick="pubSelectWantsCat('Servicios')" class="pub-wants-cat-btn" id="wantscat-Servicios" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">🤝 Servicios</button>
+          <button onclick="pubSelectWantsCat('Otros')" class="pub-wants-cat-btn" id="wantscat-Otros" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s">📦 Otros</button>
+        </div>
+
+        <!-- Subcategorías y atributos dinámicos -->
+        <div id="wants-subcat-options" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+        <div id="wants-attrs" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px"></div>
+        <input type="hidden" id="wants-cat">
         <input type="hidden" id="wants-subcat">
 
-        <!-- Lista de opciones añadidas -->
-        <div id="wants-added-list" style="margin-top:20px"></div>
-        <button onclick="pubAddAnotherWant()" style="margin-top:12px;background:none;border:1.5px dashed var(--border);border-radius:var(--r);padding:12px;width:100%;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;font-family:inherit">+ Añadir otra opción</button>
+        <!-- Botón añadir esta opción -->
+        <button id="wants-add-btn" onclick="pubAddWantOption()" style="display:none;width:100%;background:none;border:1.5px dashed var(--accent);border-radius:var(--r);padding:10px;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;margin-bottom:4px">+ Añadir esta opción</button>
       </div>
+
+      <!-- PASO 8: vacío — ya no se usa -->
+      <div class="pub-screen" id="pub-screen-8" style="display:none"></div>
 
       <!-- PASO 9: Resumen + Publicar -->
       <div class="pub-screen" id="pub-screen-9" style="display:none">
@@ -10949,16 +10953,18 @@ function pubSelectWantsType(type) {
 function pubSelectWantsCat(cat) {
   document.getElementById('wants-cat').value = cat;
   document.querySelectorAll('.pub-wants-cat-btn').forEach(btn => {
-    btn.style.borderColor = 'var(--border)';
-    btn.style.background = 'var(--bg)';
+    btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)'; btn.style.color = 'var(--text)';
   });
   const btn = document.getElementById('wantscat-' + cat.replace(/ /g, '-'));
-  if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; }
-  // Actualizar botón a Continuar (hay subcategorías en paso 8)
-  const nextBtn = document.getElementById('pub-next-btn');
-  if (nextBtn) nextBtn.textContent = 'Continuar →';
-  // Cargar subcategorías de lo que busca
+  if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; btn.style.color = 'var(--accent)'; }
+  // Cargar subcategorías inline
   pubLoadWantsSubcats(cat);
+  // Mostrar botón añadir
+  const addBtn = document.getElementById('wants-add-btn');
+  if (addBtn) addBtn.style.display = '';
+  // Botón principal sigue siendo Publicar si ya hay opciones
+  const nextBtn = document.getElementById('pub-next-btn');
+  if (nextBtn) nextBtn.textContent = _pubWantsAdded.length ? '✅ Publicar' : 'Continuar →';
 }
 
 function pubLoadSubcats(cat) {
@@ -11075,32 +11081,32 @@ function pubLoadWantsSubcats(cat) {
   }
 }
 
-function pubAddAnotherWant() {
+function pubAddWantOption() {
   const cat = document.getElementById('wants-cat')?.value;
+  if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
   const subcat = document.getElementById('wants-subcat')?.value;
   const catData = PUB_CATS[cat];
   const langAttr = catData?.attrs?.find(a => a.id === 'language');
   const lang = langAttr ? document.getElementById('wants-attr-language')?.value : '';
-
-  if (!cat) { showToast('⚠️ Selecciona una categoría primero'); return; }
   if (langAttr?.required && !lang) { showToast('⚠️ El idioma es obligatorio para libros'); return; }
 
-  const option = { cat, subcat, lang };
-  _pubWantsAdded.push(option);
+  _pubWantsAdded.push({ cat, subcat, lang });
   renderWantsAddedList();
 
-  // Reset selección visual
+  // Reset selección
   document.getElementById('wants-cat').value = '';
   document.getElementById('wants-subcat').value = '';
   document.querySelectorAll('.pub-wants-cat-btn').forEach(btn => {
-    btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)';
+    btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)'; btn.style.color = 'var(--text)';
   });
-  const subcatContainer = document.getElementById('wants-subcat-options');
-  if (subcatContainer) subcatContainer.innerHTML = '';
-  const attrsContainer = document.getElementById('wants-attrs');
-  if (attrsContainer) attrsContainer.innerHTML = '';
+  const subcatEl = document.getElementById('wants-subcat-options');
+  if (subcatEl) subcatEl.innerHTML = '';
+  const attrsEl = document.getElementById('wants-attrs');
+  if (attrsEl) attrsEl.innerHTML = '';
+  const addBtn = document.getElementById('wants-add-btn');
+  if (addBtn) addBtn.style.display = 'none';
 
-  // Actualizar botón a Publicar ahora que hay al menos una opción
+  // Botón cambia a Publicar
   const nextBtn = document.getElementById('pub-next-btn');
   if (nextBtn) nextBtn.textContent = '✅ Publicar';
 
@@ -11153,7 +11159,7 @@ function pubRenderSummary() {
 
 function pubGetTotalSteps() {
   const wantsType = document.getElementById('pub-wants-type')?.value;
-  return wantsType === 'concrete' ? 8 : 6;
+  return wantsType === 'concrete' ? 7 : 6;
 }
 
 function pubGoTo(n) {
@@ -11268,11 +11274,7 @@ function pubNext(skip = false) {
       submitItem(); // Publicar directamente
     }
   } else if (n === 7) {
-    const cat = document.getElementById('wants-cat')?.value;
-    if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
-    pubGoTo(8);
-  } else if (n === 8) {
-    // Guardar opción actual si hay categoría seleccionada
+    // Intentar añadir categoría actual si hay una seleccionada
     const cat = document.getElementById('wants-cat')?.value;
     if (cat) {
       const subcat = document.getElementById('wants-subcat')?.value;
@@ -11282,8 +11284,9 @@ function pubNext(skip = false) {
       if (langAttr?.required && !lang) { showToast('⚠️ El idioma es obligatorio para libros'); return; }
       _pubWantsAdded.push({ cat, subcat, lang });
     }
-    // Necesita al menos una opción
     if (!_pubWantsAdded.length) { showToast('⚠️ Añade al menos una opción'); return; }
+    submitItem();
+  } else if (n === 8) {
     submitItem();
   } else if (n === 9) {
     submitItem();
@@ -11292,10 +11295,7 @@ function pubNext(skip = false) {
 
 function pubBack() {
   const n = pubCurrentScreen;
-  const wantsType = document.getElementById('pub-wants-type')?.value;
-
-  if (n === 8) pubGoTo(7);
-  else if (n === 7) pubGoTo(6);
+  if (n === 7) pubGoTo(6);
   else if (n === 3) pubGoTo(1);
   else if (n > 1) pubGoTo(n - 1);
 }
