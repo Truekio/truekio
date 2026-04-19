@@ -11371,59 +11371,6 @@ function pubGoTo(n) {
   if (body) body.scrollTop = 0;
 }
 
-function pubNext(skip = false) {
-  if (!skip) {
-    if (pubCurrentScreen === 1) {
-      const name = document.getElementById('pub-name').value.trim();
-      if (!name) { showToast('⚠️ Escribe el nombre del objeto'); return; }
-      if (name.length < 2) { showToast('⚠️ El nombre debe tener al menos 2 caracteres'); return; }
-      const cat = document.getElementById('pub-cat').value;
-      if (!cat) { showToast('⚠️ Selecciona una categoría'); return; }
-      if (!pubImages.length) { showToast('⚠️ Añade al menos una foto del objeto'); return; }
-      // Subcategoría obligatoria para estas categorías
-      const REQUIRED_SUBCAT_CATS = ['Electrónica','Ropa','Hogar','Libros','Deporte','Cartas','Juegos de mesa'];
-      if (REQUIRED_SUBCAT_CATS.includes(cat)) {
-        const subcat = document.getElementById('pub-subcat')?.value;
-        if (!subcat) { showToast('⚠️ Selecciona una subcategoría para ' + cat); return; }
-      }
-      // Para libros: idioma también obligatorio
-      if (cat === 'Libros') {
-        const lang = document.getElementById('pub-book-lang')?.value;
-        if (!lang) { showToast('⚠️ Selecciona el idioma del libro'); return; }
-      }
-    }
-    if (pubCurrentScreen === 2) {
-      // Si no ha seleccionado tipo todavía
-      if (!pubWantsType) { showToast('⚠️ Indica qué aceptas a cambio'); return; }
-    }
-  }
-  if (pubCurrentScreen < PUB_SCREENS) pubGoTo(pubCurrentScreen + 1);
-  else publishItem();
-}
-
-function pubBack() {
-  // Si estamos en sub-paso B (flexible o concreto), volver a sub-paso A
-  const stepBFlex = document.getElementById('pub-wants-step-b-flexible');
-  const stepBConc = document.getElementById('pub-wants-step-b-concrete');
-  if (pubCurrentScreen === 2 &&
-      ((stepBFlex && stepBFlex.style.display !== 'none') ||
-       (stepBConc && stepBConc.style.display !== 'none'))) {
-    pubBackToWantsA();
-    return;
-  }
-  if (pubCurrentScreen > 1) pubGoTo(pubCurrentScreen - 1);
-}
-
-function pubCancel() {
-  const name = document.getElementById('pub-name')?.value?.trim();
-  if (name) {
-    if (!confirm('¿Seguro que quieres cancelar? Perderás los datos introducidos.')) return;
-  }
-  pubWantsOpen = null;
-  pubOpenCats = [];
-  navTo('explore');
-}
-
 // Action sheet fotos
 function openPhotoSheet() {
   document.getElementById('photo-sheet-overlay').classList.add('open');
