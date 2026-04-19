@@ -11174,7 +11174,7 @@ function pubGoTo(n) {
   }
 
   // Cargar subcategorías al llegar al paso 4
-  if (n === 4 && cat) pubLoadSubcats(cat);
+  if (n === 4 && cat) setTimeout(() => pubLoadSubcats(cat), 50);
 
   // Renderizar resumen al llegar al paso final
   if (n === 9 || (n === 7 && document.getElementById('pub-wants-type')?.value !== 'concrete')) pubRenderSummary();
