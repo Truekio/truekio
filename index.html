@@ -3355,10 +3355,10 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <!-- Pantallas -->
     <div class="pub-flow-body">
 
-      <!-- PASO 1: Fotos -->
+      <!-- PASO 1: Fotos + Nombre -->
       <div class="pub-screen" id="pub-screen-1">
-        <div class="pub-screen-title">📷 Añade fotos</div>
-        <div class="pub-screen-sub">La primera foto será la principal. Hasta 5 fotos.</div>
+        <div class="pub-screen-title">📷 Foto y nombre</div>
+        <div class="pub-screen-sub">Añade una foto y ponle nombre a tu objeto.</div>
         <div class="pub-photos-row" id="pub-photos-row">
           <button class="pub-photo-add" onclick="openPhotoSheet()" type="button">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -3367,15 +3367,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </div>
         <input type="file" id="pub-images" accept="image/*" multiple onchange="imgSelected(this)" style="display:none">
         <input type="file" id="pub-camera" accept="image/*" capture="environment" onchange="imgSelected(this)" style="display:none">
-        <div id="pub-photo-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:8px;text-align:center">⚠️ Añade al menos una foto</div>
-      </div>
-
-      <!-- PASO 2: Título -->
-      <div class="pub-screen" id="pub-screen-2" style="display:none">
-        <div class="pub-screen-title">📝 ¿Cómo se llama?</div>
-        <div class="pub-screen-sub">Ponle un nombre claro y descriptivo.</div>
-        <div class="field">
-          <input id="pub-name" placeholder="Ej: Don Quijote de la Mancha" style="font-size:18px;padding:14px" oninput="clearTimeout(demandTimer);demandTimer=setTimeout(()=>triggerDemandPanel(),600)">
+        <div id="pub-photo-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:4px;text-align:center">⚠️ Añade al menos una foto</div>
+        <div class="field" style="margin-top:16px">
+          <input id="pub-name" placeholder="Nombre del objeto..." style="font-size:16px;padding:14px" oninput="clearTimeout(demandTimer);demandTimer=setTimeout(()=>triggerDemandPanel(),600)">
         </div>
         <div id="demand-pill" style="display:none;margin-top:-8px">
           <button onclick="openDemandSheet()" style="display:inline-flex;align-items:center;gap:7px;background:var(--green-l);border:1.5px solid #86efac;color:#166534;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
@@ -3384,8 +3378,11 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
             <span style="opacity:.6">→</span>
           </button>
         </div>
-        <div id="pub-name-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:8px">⚠️ El nombre es obligatorio</div>
+        <div id="pub-name-error" style="display:none;font-size:12px;color:#e53e3e;margin-top:4px">⚠️ El nombre es obligatorio</div>
       </div>
+
+      <!-- PASO 2: vacío — redirige a 3 -->
+      <div class="pub-screen" id="pub-screen-2" style="display:none"></div>
 
       <!-- PASO 3: Categoría -->
       <div class="pub-screen" id="pub-screen-3" style="display:none">
@@ -3434,13 +3431,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <label>Descripción <span style="font-size:11px;font-weight:500;color:var(--muted)">(opcional)</span></label>
           <textarea id="pub-desc" placeholder="Estado, accesorios incluidos, años de uso..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:14px;outline:none;resize:none;min-height:100px;font-family:inherit;line-height:1.6;transition:border-color .18s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
         </div>
-        <div class="field">
-          <label>Valor estimado <span style="font-size:11px;font-weight:500;color:var(--muted)">(opcional)</span></label>
-          <div style="position:relative">
-            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:600">€</span>
-            <input id="pub-value" type="number" placeholder="0" min="0" style="padding-left:28px">
-          </div>
-        </div>
+        <input type="hidden" id="pub-value" value="0">
       </div>
 
       <!-- PASO 6: ¿Qué aceptas? -->
@@ -10991,12 +10982,24 @@ function pubLoadSubcats(cat) {
   if (attrsContainer) {
     attrsContainer.innerHTML = data.attrs.map(attr => `
       <div class="field">
-        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(excluyente)</span>' : ''}</label>
+        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(el idioma debe coincidir para hacer match)</span>' : ''}</label>
         <select id="pub-attr-${attr.id}" style="font-size:14px">
           <option value="">— ${attr.required ? 'Selecciona' : 'Opcional'} —</option>
           ${attr.options.map(o => `<option>${o}</option>`).join('')}
         </select>
       </div>`).join('');
+  }
+
+  // Para libros: mostrar subcategorías como select en lugar de botones
+  if (cat === 'Libros' && data.subcats.length) {
+    container.innerHTML = `
+      <div class="field">
+        <label>Género <span style="font-size:11px;color:var(--muted)">(opcional)</span></label>
+        <select id="pub-subcat-select" onchange="document.getElementById('pub-subcat').value=this.value;pubSelectSubcat(this.value,'pub')" style="font-size:14px">
+          <option value="">— Cualquier género —</option>
+          ${data.subcats.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>`;
   }
 }
 
@@ -11041,12 +11044,24 @@ function pubLoadWantsSubcats(cat) {
   if (attrsContainer) {
     attrsContainer.innerHTML = data.attrs.map(attr => `
       <div class="field">
-        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(excluyente)</span>' : ''}</label>
+        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(excluyente — el idioma debe coincidir)</span>' : ''}</label>
         <select id="wants-attr-${attr.id}" style="font-size:14px">
           <option value="">— ${attr.required ? 'Selecciona' : 'Opcional'} —</option>
           ${attr.options.map(o => `<option>${o}</option>`).join('')}
         </select>
       </div>`).join('');
+
+    // Para libros: mostrar subcategorías como select desplegable en lugar de botones
+    if (cat === 'Libros' && data.subcats.length) {
+      container.innerHTML = `
+        <div class="field">
+          <label>Género <span style="font-size:11px;color:var(--muted)">(opcional)</span></label>
+          <select id="wants-subcat-select" onchange="document.getElementById('wants-subcat').value=this.value" style="font-size:14px">
+            <option value="">— Cualquier género —</option>
+            ${data.subcats.map(s => `<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>`;
+    }
   }
 }
 
@@ -11180,18 +11195,16 @@ function pubNext(skip = false) {
     }
     const err = document.getElementById('pub-photo-error');
     if (err) err.style.display = 'none';
-    pubGoTo(2);
-  } else if (n === 2) {
     const name = document.getElementById('pub-name')?.value.trim();
     if (!name) {
-      const err = document.getElementById('pub-name-error');
-      if (err) err.style.display = '';
+      const errN = document.getElementById('pub-name-error');
+      if (errN) errN.style.display = '';
       showToast('⚠️ El nombre es obligatorio');
       return;
     }
-    const err = document.getElementById('pub-name-error');
-    if (err) err.style.display = 'none';
-    pubGoTo(3);
+    const errN = document.getElementById('pub-name-error');
+    if (errN) errN.style.display = 'none';
+    pubGoTo(3); // Saltar paso 2 vacío
   } else if (n === 3) {
     const cat = document.getElementById('pub-cat')?.value;
     if (!cat) {
@@ -11258,6 +11271,7 @@ function pubBack() {
   else if (n === 9) pubGoTo(6);
   else if (n === 8) pubGoTo(7);
   else if (n === 7) pubGoTo(6);
+  else if (n === 3) pubGoTo(1); // Saltar paso 2 vacío
   else if (n > 1) pubGoTo(n - 1);
 }
 
