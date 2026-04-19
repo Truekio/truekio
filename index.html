@@ -3492,6 +3492,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <!-- Subcategorías y atributos dinámicos -->
         <div id="wants-subcat-options" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div id="wants-attrs" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px"></div>
+        <div id="wants-desc-field" style="display:none;margin-bottom:12px">
+          <textarea id="wants-desc" placeholder="Describe qué buscas exactamente (opcional)..." rows="2" style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:13px;font-family:inherit;resize:none;outline:none;color:var(--text)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
         <input type="hidden" id="wants-cat">
         <input type="hidden" id="wants-subcat">
 
@@ -10959,7 +10962,9 @@ function pubSelectWantsCat(cat) {
   if (btn) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-l)'; btn.style.color = 'var(--accent)'; }
   // Cargar subcategorías inline
   pubLoadWantsSubcats(cat);
-  // Mostrar botón añadir
+  // Mostrar campo descripción y botón añadir
+  const descField = document.getElementById('wants-desc-field');
+  if (descField) descField.style.display = '';
   const addBtn = document.getElementById('wants-add-btn');
   if (addBtn) addBtn.style.display = '';
   // Botón principal sigue siendo Publicar si ya hay opciones
@@ -11090,12 +11095,17 @@ function pubAddWantOption() {
   const lang = langAttr ? document.getElementById('wants-attr-language')?.value : '';
   if (langAttr?.required && !lang) { showToast('⚠️ El idioma es obligatorio para libros'); return; }
 
-  _pubWantsAdded.push({ cat, subcat, lang });
+  const desc = document.getElementById('wants-desc')?.value.trim() || '';
+  _pubWantsAdded.push({ cat, subcat, lang, desc });
   renderWantsAddedList();
 
   // Reset selección
   document.getElementById('wants-cat').value = '';
   document.getElementById('wants-subcat').value = '';
+  const wantsDescEl = document.getElementById('wants-desc');
+  if (wantsDescEl) wantsDescEl.value = '';
+  const descField = document.getElementById('wants-desc-field');
+  if (descField) descField.style.display = 'none';
   document.querySelectorAll('.pub-wants-cat-btn').forEach(btn => {
     btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg)'; btn.style.color = 'var(--text)';
   });
@@ -11118,9 +11128,12 @@ function renderWantsAddedList() {
   if (!el || !_pubWantsAdded.length) { if(el) el.innerHTML = ''; return; }
   el.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">Opciones añadidas:</div>` +
     _pubWantsAdded.map((opt, i) =>
-      `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--accent-l);border:1px solid var(--accent);border-radius:99px;padding:8px 14px;margin-bottom:6px;font-size:13px;font-weight:600;color:var(--accent)">
-        <span>${PUB_CATS[opt.cat]?.emoji || '📦'} ${opt.cat}${opt.subcat ? ' · ' + opt.subcat : ''}${opt.lang ? ' · ' + opt.lang : ''}</span>
-        <button onclick="_pubWantsAdded.splice(${i},1);renderWantsAddedList()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0 0 0 8px">×</button>
+      `<div style="background:var(--accent-l);border:1px solid var(--accent);border-radius:var(--r);padding:10px 14px;margin-bottom:6px;font-size:13px;color:var(--accent)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700">${PUB_CATS[opt.cat]?.emoji || '📦'} ${opt.cat}${opt.subcat ? ' · ' + opt.subcat : ''}${opt.lang ? ' · ' + opt.lang : ''}</span>
+          <button onclick="_pubWantsAdded.splice(${i},1);renderWantsAddedList();if(!_pubWantsAdded.length){const nb=document.getElementById('pub-next-btn');if(nb)nb.textContent='Continuar →';}" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0 0 0 8px">×</button>
+        </div>
+        ${opt.desc ? `<div style="font-size:12px;color:var(--accent);opacity:.8;margin-top:4px;font-style:italic">"${opt.desc}"</div>` : ''}
       </div>`
     ).join('');
 }
@@ -12258,6 +12271,7 @@ async function publishItem() {
       let s = o.cat;
       if (o.subcat) s += ' · ' + o.subcat;
       if (o.lang) s += ' (' + o.lang + ')';
+      if (o.desc) s += ': ' + o.desc;
       return s;
     }).join(', ');
     wantsOpen = false;
