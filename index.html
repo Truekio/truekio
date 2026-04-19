@@ -5747,44 +5747,75 @@ async function loadTradeChains() {
     .order('created_at', { ascending: false })
     .limit(10);
 
-  renderTradeChains(chains || []);
+  if (!chains || !chains.length) { renderTradeChains([]); return; }
+
+  // Cargar títulos de los items
+  const itemIds = [...new Set(chains.flatMap(c => [c.item_a_id, c.item_b_id, c.item_c_id]))];
+  const { data: itemsData } = await db.from('items').select('id,title,category,user_name').in('id', itemIds);
+  const itemMap = {};
+  (itemsData || []).forEach(i => { itemMap[i.id] = i; });
+
+  // Enriquecer cadenas con títulos
+  const enriched = chains.map(c => ({
+    ...c,
+    item_a: itemMap[c.item_a_id] || { title: 'Objeto A', category: '' },
+    item_b: itemMap[c.item_b_id] || { title: 'Objeto B', category: '' },
+    item_c: itemMap[c.item_c_id] || { title: 'Objeto C', category: '' },
+  }));
+
+  renderTradeChains(enriched);
 }
 
 function renderTradeChains(chains) {
   const el = document.getElementById('trade-chains-section');
   if (!el) return;
 
-  if (!chains.length) {
-    el.style.display = 'none';
-    return;
-  }
+  if (!chains.length) { el.style.display = 'none'; return; }
 
   el.style.display = '';
   el.innerHTML = `
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-      <div style="font-weight:800;font-size:15px;margin-bottom:4px">🔗 Cadenas de trueque</div>
-      <div style="font-size:12px;color:var(--muted)">Intercambios en cadena donde todos ganan</div>
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.2rem">🔗</span>
+      <div>
+        <div style="font-weight:800;font-size:14px">Cadenas de trueque</div>
+        <div style="font-size:11px;color:var(--muted)">Intercambios en cadena donde todos ganan</div>
+      </div>
     </div>
     ${chains.map(c => {
       const isA = c.user_a_id === currentUser.id;
       const isB = c.user_b_id === currentUser.id;
       const isC = c.user_c_id === currentUser.id;
+      const myItem = isA ? c.item_a : isB ? c.item_b : c.item_c;
+      const catEmoji = { 'Libros':'📚','Juegos de mesa':'🎲','Cartas y coleccionables':'🃏','Videojuegos':'🎮','Música':'🎵','Hogar y muebles':'🏠','Servicios':'🤝','Otros':'📦' };
+      const emoji = cat => catEmoji[cat] || '📦';
+
       return `
       <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap;margin-bottom:10px">
-          <span style="background:${isA?'var(--accent-l)':'var(--bg2)'};color:${isA?'var(--accent)':'var(--text)'};padding:4px 10px;border-radius:99px;font-weight:700">📦 Item A</span>
-          <span style="color:var(--muted)">→</span>
-          <span style="background:${isB?'var(--accent-l)':'var(--bg2)'};color:${isB?'var(--accent)':'var(--text)'};padding:4px 10px;border-radius:99px;font-weight:700">📦 Item B</span>
-          <span style="color:var(--muted)">→</span>
-          <span style="background:${isC?'var(--accent-l)':'var(--bg2)'};color:${isC?'var(--accent)':'var(--text)'};padding:4px 10px;border-radius:99px;font-weight:700">📦 Item C</span>
-          <span style="color:var(--muted)">→ ti</span>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <span style="font-size:1.1rem">${emoji(c.item_a?.category)}</span>
+            <span style="font-size:10px;font-weight:700;color:${isA?'var(--accent)':'var(--text)'};max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_a?.title || '—'}</span>
+            ${isA ? `<span style="font-size:9px;color:var(--accent);font-weight:700">← tú</span>` : `<span style="font-size:9px;color:var(--muted)">${c.item_a?.user_name||''}</span>`}
+          </div>
+          <span style="color:var(--muted);font-size:18px">→</span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <span style="font-size:1.1rem">${emoji(c.item_b?.category)}</span>
+            <span style="font-size:10px;font-weight:700;color:${isB?'var(--accent)':'var(--text)'};max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_b?.title || '—'}</span>
+            ${isB ? `<span style="font-size:9px;color:var(--accent);font-weight:700">← tú</span>` : `<span style="font-size:9px;color:var(--muted)">${c.item_b?.user_name||''}</span>`}
+          </div>
+          <span style="color:var(--muted);font-size:18px">→</span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <span style="font-size:1.1rem">${emoji(c.item_c?.category)}</span>
+            <span style="font-size:10px;font-weight:700;color:${isC?'var(--accent)':'var(--text)'};max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.item_c?.title || '—'}</span>
+            ${isC ? `<span style="font-size:9px;color:var(--accent);font-weight:700">← tú</span>` : `<span style="font-size:9px;color:var(--muted)">${c.item_c?.user_name||''}</span>`}
+          </div>
+          <span style="color:var(--muted);font-size:18px">→ 🔄</span>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
-          Propón el trueque a los otros participantes por chat para coordinar el intercambio.
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
+          Tú das <strong>${myItem?.title||'tu objeto'}</strong> y recibes a cambio en cadena.
+          Contacta a los participantes por chat para coordinar.
         </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="dismissChain('${c.id}')" style="background:none;border:1px solid var(--border);padding:6px 12px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">Descartar</button>
-        </div>
+        <button onclick="dismissChain('${c.id}')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">Descartar</button>
       </div>`;
     }).join('')}`;
 }
