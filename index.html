@@ -8864,9 +8864,15 @@ function openConvMenu(e, convId, isUnread) {
       ${isUnread ? '✅ Marcar como leído' : '🔵 Marcar como no leído'}
     </button>
     <div style="height:1px;background:var(--border)"></div>
-    <button onclick="deleteConversation('${convId}');this.closest('#conv-ctx-menu').remove()" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
-      🗑 Ocultar conversación
-    </button>`;
+    ${isUnread
+      ? `<div style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;font-size:13px;font-weight:600;font-family:inherit;color:var(--muted2);cursor:not-allowed">
+           🗑 Ocultar conversación
+           <span style="margin-left:auto;font-size:10px;background:var(--bg2);border-radius:99px;padding:2px 7px;font-weight:700">Léela antes</span>
+         </div>`
+      : `<button onclick="deleteConversation('${convId}');this.closest('#conv-ctx-menu').remove()" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
+           🗑 Ocultar conversación
+         </button>`
+    }`;
   document.body.appendChild(menu);
   setTimeout(() => document.addEventListener('click', () => document.getElementById('conv-ctx-menu')?.remove(), { once: true }), 50);
 }
@@ -8891,6 +8897,20 @@ async function markConvUnread(convId, markAsUnread) {
 
 async function deleteConversation(convId) {
   if (!currentUser) return;
+
+  // Bloquear si la conversación tiene mensajes no leídos
+  try {
+    const { data: convCheck } = await db.from('conversations')
+      .select('unread_user1,unread_user2,user1_id')
+      .eq('id', convId).single();
+    if (convCheck) {
+      const myUnread = convCheck.user1_id === currentUser.id ? (convCheck.unread_user1 || 0) : (convCheck.unread_user2 || 0);
+      if (myUnread > 0) {
+        showToast('⚠️ Lee los mensajes nuevos antes de ocultar esta conversación');
+        return;
+      }
+    }
+  } catch(e) {}
 
   const confirmed = await new Promise(resolve => {
     const overlay = document.createElement('div');
