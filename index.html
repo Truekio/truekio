@@ -94,12 +94,6 @@
   --cat-servicios:#1e8a82;--cat-servicios-l:#d6f0ee;
   --cat-ropa:#a84470;--cat-ropa-l:#f8e6ee;
   --cat-hogar:#4e8fba;--cat-hogar-l:#edf4f9;
-  --cat-juegos:#7c3aed;--cat-juegos-l:#ede9fe;
-  --cat-cartas:#db2777;--cat-cartas-l:#fce7f3;
-  --cat-videojuegos:#0369a1;--cat-videojuegos-l:#e0f2fe;
-  --cat-musica2:#6344a8;--cat-musica2-l:#ece7f9;
-  --cat-hogar2:#4e8fba;--cat-hogar2-l:#edf4f9;
-  --cat-otros:#64748b;--cat-otros-l:#f1f5f9;
 
   /* ── Elite: warm gold only ── */
   --elite-1:#c9a870;
@@ -1005,14 +999,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .filter-btn.active{color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.2);}
 .filter-btn.active[data-sort]{background:var(--accent);border-color:var(--accent);}
 .filter-btn.active[data-sort="surprise"]{background:var(--purple);border-color:var(--purple);}
-.filter-btn.active[data-cat="Libros"]{background:var(--cat-libros);border-color:var(--cat-libros);}
-.filter-btn.active[data-cat="Juegos de mesa"]{background:var(--cat-juegos);border-color:var(--cat-juegos);}
-.filter-btn.active[data-cat="Cartas y coleccionables"]{background:var(--cat-cartas);border-color:var(--cat-cartas);}
-.filter-btn.active[data-cat="Videojuegos"]{background:var(--cat-videojuegos);border-color:var(--cat-videojuegos);}
+.filter-btn.active[data-cat="Electrónica"]{background:var(--cat-electronica);border-color:var(--cat-electronica);}
 .filter-btn.active[data-cat="Música"]{background:var(--cat-musica);border-color:var(--cat-musica);}
-.filter-btn.active[data-cat="Hogar y muebles"]{background:var(--cat-hogar);border-color:var(--cat-hogar);}
+.filter-btn.active[data-cat="Deporte"]{background:var(--cat-deporte);border-color:var(--cat-deporte);}
+.filter-btn.active[data-cat="Libros"]{background:var(--cat-libros);border-color:var(--cat-libros);}
 .filter-btn.active[data-cat="Servicios"]{background:var(--cat-servicios);border-color:var(--cat-servicios);}
-.filter-btn.active[data-cat="Otros"]{background:var(--cat-otros);border-color:var(--cat-otros);}
+.filter-btn.active[data-cat="Ropa"]{background:var(--cat-ropa);border-color:var(--cat-ropa);}
+.filter-btn.active[data-cat="Hogar"]{background:var(--cat-hogar);border-color:var(--cat-hogar);}
 .filter-btn:hover:not(.active){border-color:var(--border2);background:var(--bg2);}
 
 /* ── PREMIUM explore toggle ── */
@@ -1180,7 +1173,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .fd-cat-ico{font-size:1.4rem;line-height:1;}
 .fd-cat-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;transition:transform .2s;}
 .fd-cat-btn:hover .fd-cat-img{transform:scale(1.05);}
-.fd-cat-lbl{font-size:9px;font-weight:700;color:var(--text2);text-align:center;line-height:1.2;padding:5px 4px 6px;width:100%;}
+.fd-cat-lbl{font-size:11px;font-weight:700;color:var(--text2);text-align:center;line-height:1.3;padding:6px 4px 7px;width:100%;}
 /* Chips multi-select */
 .fd-chips{display:flex;gap:7px;flex-wrap:wrap;}
 .fd-chip{padding:7px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--white);color:var(--text2);transition:all .14s;user-select:none;}
@@ -2581,7 +2574,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <div class="lp-cat-label">Juegos de mesa</div>
         </div>
         <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&q=80" alt="Cartas y coleccionables" loading="lazy">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1530259152377-3a014e1092c6?w=300&q=80" alt="Cartas y coleccionables" loading="lazy">
           <div class="lp-cat-label">Cartas y coleccionables</div>
         </div>
         <div class="lp-cat" onclick="showAuthScreen()">
@@ -3682,12 +3675,12 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div class="fd-cat-grid">
         <button class="fd-cat-btn" data-val="Libros" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&q=80" alt="Libros" loading="lazy"><span class="fd-cat-lbl">Libros</span></button>
         <button class="fd-cat-btn" data-val="Juegos de mesa" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=200&q=80" alt="Juegos de mesa" loading="lazy"><span class="fd-cat-lbl">Juegos de mesa</span></button>
-        <button class="fd-cat-btn" data-val="Cartas y coleccionables" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&q=80" alt="Cartas y coleccionables" loading="lazy"><span class="fd-cat-lbl">Cartas y coleccionables</span></button>
+        <button class="fd-cat-btn" data-val="Cartas y coleccionables" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1530259152377-3a014e1092c6?w=200&q=80" alt="Cartas y coleccionables" loading="lazy"><span class="fd-cat-lbl">Cartas y coleccionables</span></button>
         <button class="fd-cat-btn" data-val="Videojuegos" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=200&q=80" alt="Videojuegos" loading="lazy"><span class="fd-cat-lbl">Videojuegos</span></button>
         <button class="fd-cat-btn" data-val="Música" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1461360228754-6e81c478b882?w=200&q=80" alt="Música" loading="lazy"><span class="fd-cat-lbl">Música</span></button>
         <button class="fd-cat-btn" data-val="Hogar y muebles" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&q=80" alt="Hogar y muebles" loading="lazy"><span class="fd-cat-lbl">Hogar y muebles</span></button>
         <button class="fd-cat-btn" data-val="Servicios" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=200&q=80" alt="Servicios" loading="lazy"><span class="fd-cat-lbl">Servicios</span></button>
-        <button class="fd-cat-btn" data-val="Otros" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=200&q=80" alt="Otros" loading="lazy"><span class="fd-cat-lbl">Otros</span></button>
+        <button class="fd-cat-btn" data-val="Otros" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1573867639040-6dd25fa5f597?w=200&q=80" alt="Otros" loading="lazy"><span class="fd-cat-lbl">Otros</span></button>
       </div>
     </div>
 
@@ -4638,8 +4631,8 @@ const SERVICE_SUBCATS = ['Salud · Dentista','Salud · Médico general','Salud �
 const EMOJIS = ['🎸','📸','🚲','💻','📱','🎮','🎹','⌚','📺','🎧','🏋️','🧳','🛵','📚','👟','🪴','🎨','🔭','🩺','🔧','⚖️','✂️','🌿','📖','🔬','🍳'];
 
 const WISHLIST_DATA = [
-  {id:'w1',emoji:'🎲',name:'Catan edición especial',cat:'Juegos de mesa',addedDate:'Hace 3 días',notify:true,hasMatch:true,hasSupply:false,matchCount:2},
-  {id:'w2',emoji:'🎮',name:'Nintendo Switch OLED',cat:'Videojuegos',addedDate:'Hace 1 semana',notify:true,hasMatch:false,hasSupply:true,matchCount:0},
+  {id:'w1',emoji:'💻',name:'MacBook Pro M1 o M2',cat:'Electrónica',addedDate:'Hace 3 días',notify:true,hasMatch:true,hasSupply:false,matchCount:2},
+  {id:'w2',emoji:'📷',name:'Cámara mirrorless Sony A7',cat:'Electrónica',addedDate:'Hace 1 semana',notify:true,hasMatch:false,hasSupply:true,matchCount:0},
   {id:'w3',emoji:'🎹',name:'Teclado MIDI controlador',cat:'Música',addedDate:'Hace 2 semanas',notify:false,hasMatch:false,hasSupply:false,matchCount:0},
   {id:'w4',emoji:'🩺',name:'Clases de inglés conversacional',cat:'Servicios',addedDate:'Hace 4 días',notify:true,hasMatch:true,hasSupply:false,matchCount:1},
 ];
@@ -7074,7 +7067,7 @@ function _renderDemandList(list) {
     // Icono izquierdo: foto del primer objeto si existe, sino color por categoría
     const firstPhoto = d.thumbItems[0]?.item_photo;
     const catColors = {
-      'Libros':'#f2e3c0','Juegos de mesa':'#ede9fe','Cartas y coleccionables':'#fce7f3','Videojuegos':'#e0f2fe','Música':'#ece7f9','Hogar y muebles':'#edf4f9',
+      'Electrónica':'#dde8f8','Libros':'#f2e3c0','Deporte':'#d6f0e6',
       'Ropa':'#f0e4f7','Hogar':'#fde8d8','Cartas':'#fef3c7',
       'Juegos de mesa':'#e0f2fe','Música':'#e5ddf7','Servicios':'#cceee9','Otros':'#f0f0f0'
     };
@@ -12258,12 +12251,14 @@ function updateSubcat() {
 
 // Subcategorías para formulario publicar
 const PUB_SUBCATS = {
-  'Libros': ['Novela','Ciencia ficción','Fantasía','Terror','Romance','Historia','Biografía','Infantil','Cómic / Manga','Autoayuda','No ficción / Economía','Universitario','Escolar / Bachillerato','Técnico / Programación','Otros'],
-  'Juegos de mesa': ['Estrategia','Party / Familiar','Cooperativo','Puzzle','Dados / Azar','Cartas no coleccionables','Otros'],
-  'Cartas y coleccionables': ['Pokémon','Magic: The Gathering','Yu-Gi-Oh','One Piece','Cromos deportivos','Cromos infantiles','Otras'],
-  'Videojuegos': ['Nintendo Switch','PlayStation','Xbox','PC','Retro','Otros'],
-  'Música': ['Vinilo','CD','Cassette','Instrumentos','Otros'],
-  'Hogar y muebles': ['Muebles','Cocina','Decoración','Herramientas','Iluminación','Otros'],
+  'Electrónica': ['Móviles','Tablets','Ordenadores y portátiles','Consolas','Videojuegos','Audio (auriculares, altavoces)','Fotografía (cámaras, drones)','Smart home','Accesorios','Otro'],
+  'Ropa': ['Ropa hombre','Ropa mujer','Ropa infantil','Zapatos','Bolsos','Joyería','Relojes','Gafas','Accesorios','Otro'],
+  'Hogar': ['Muebles','Decoración','Iluminación','Textil hogar','Cocina','Organización','Electrodomésticos','Jardín','Otro'],
+  'Libros': ['Ficción','Thriller y suspense','Terror','Romance','Historia y biografía','Desarrollo personal','Infantil y juvenil','Cómics y manga','Cocina','Economía / Financiero','Salud / Deporte','Idiomas','Universidad','Otro'],
+  'Juguetes': ['Juguetes infantiles','Puzzles','Figuras coleccionables','Construcción','Electrónicos','Otro'],
+  'Deporte': ['Bicicletas','Fitness (pesas, máquinas)','Running','Deportes de equipo','Camping','Surf / skate / nieve','Raqueta','Artes marciales','Natación','Otro'],
+  'Cartas': ['Magic: The Gathering','Pokémon','One Piece','Yu-Gi-Oh','Coleccionables (cromos, Panini...)','Otro'],
+  'Juegos de mesa': ['Estrategia','Cooperativos','Familiares','Rol (D&D...)','Party games','Abstractos','Wargames','Otro'],
   'Servicios': [
     'Educación · Clases particulares','Educación · Idiomas','Educación · Apoyo escolar','Educación · Música','Educación · Formación profesional','Educación · Coaching',
     'Tecnología · Desarrollo web','Tecnología · Diseño UX/UI','Tecnología · Reparación dispositivos','Tecnología · Soporte técnico','Tecnología · Automatizaciones',
