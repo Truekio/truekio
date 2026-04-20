@@ -6352,14 +6352,6 @@ async function loadProposals() {
     .in('status', ['pending', 'countered'])
     .order('created_at', { ascending: false });
 
-  // Cargar conversaciones asociadas para enlazar directamente
-  const proposalIds = (data || []).map(p => p.id);
-  let convByProposal = {};
-  if (proposalIds.length) {
-    const { data: convs } = await db.from('conversations').select('id,proposal_id').in('proposal_id', proposalIds);
-    if (convs) convs.forEach(c => { convByProposal[c.proposal_id] = c.id; });
-  }
-
   if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
 
   // Cargar fotos de todos los items involucrados
@@ -6457,14 +6449,13 @@ async function loadProposals() {
       </div>
       ${counterItemsHtml}
       ${p.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${p.message}"</div>` : ''}
-      <div style="margin-top:10px">
-        ${convByProposal[p.id] ? `
-          <button onclick="navToMessages();setTimeout(()=>openConv('${convByProposal[p.id]}'),400)" style="width:100%;background:var(--accent);color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
-            💬 Ir a la conversación
-          </button>
-        ` : `
-          <div style="font-size:11px;color:var(--muted);text-align:center">💬 Gestiona esta propuesta desde <strong>Mensajes</strong></div>
-        `}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        ${(p.status === 'pending' && isOwner) || myTurnToRespond ? `
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','accepted')">✅ Aceptar</button>
+          <button class="btn btn-secondary btn-sm" onclick="openCounterModal('${p.id}','${isOwner ? p.offerer_id : p.owner_id}','${(isOwner ? p.offerer_name : p.owner_id).replace(/'/g,"\\'")}')">🔄 Contraoferta</button>
+          <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none" onclick="respondProposal('${p.id}','rejected')">❌ Rechazar</button>
+        ` : ''}
+        ${!isOwner && p.status === 'pending' ? `<button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="deleteProposal('${p.id}')">🗑 Retirar</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -8079,7 +8070,12 @@ async function renderConfirmations() {
           ⏳ Esperando que ${otherName} también confirme. Te avisaremos cuando lo haga.
         </div>` : ''}
 
-        <!-- Cancelar trueque disponible desde el chat en Mensajes -->
+        ${!done ? `
+        <div style="margin-top:12px;text-align:right">
+          <button onclick="cancelTrade('${c.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;cursor:pointer;font-family:inherit">
+            ✕ Cancelar trueque
+          </button>
+        </div>` : ''}
 
         ${done ? `
         <div style="padding:12px 14px;background:var(--green-l);border:1px solid #86efac;border-radius:var(--r);font-size:13px;color:#166534;font-weight:700;text-align:center;margin-bottom:10px">
@@ -9122,46 +9118,48 @@ async function openConv(convId) {
 async function cancelTrade(convId) {
   showAppConfirm('¿Cancelar este trueque?', 'Los objetos volverán a estar disponibles.', async () => {
 
-    // Navegar al explorador inmediatamente — antes de las operaciones async
-    showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
-    navTo('explore');
+  const { data: conv } = await db.from('conversations')
+    .select('id,proposal_id')
+    .eq('id', convId).single();
+  if (!conv) return;
 
-    // Operaciones en Supabase en segundo plano
-    const { data: conv } = await db.from('conversations')
-      .select('id,proposal_id')
-      .eq('id', convId).single();
-    if (!conv) return;
+  // Cambiar propuesta a cancelled y liberar items
+  if (conv.proposal_id) {
+    const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
+    if (prop) {
+      await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
 
-    if (conv.proposal_id) {
-      const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
-      if (prop) {
-        await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
-
-        let offeredId = prop.offered_item_id;
-        if (!offeredId && prop.offered_item_title && prop.offerer_id) {
-          const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
-          offeredId = fi?.id || null;
-        }
-
-        const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
-        if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
-        await Promise.all(updates);
+      // Resolver offered_item_id si es null
+      let offeredId = prop.offered_item_id;
+      if (!offeredId && prop.offered_item_title && prop.offerer_id) {
+        const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
+        offeredId = fi?.id || null;
       }
+
+      const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
+      if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
+      await Promise.all(updates);
     }
+  }
 
-    await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
+  // Recargar items y confirmaciones
+  await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
 
-    try {
-      const { data: cHide } = await db.from('conversations').select('user1_id').eq('id', convId).single();
-      if (cHide) {
-        const field = cHide.user1_id === currentUser.id ? 'hidden_user1' : 'hidden_user2';
-        await db.from('conversations').update({ [field]: true }).eq('id', convId);
-      }
-    } catch(e) {}
+  // Marcar conversación como cancelled
+  await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
 
-    // Refrescar items en segundo plano
-    loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
+  // Ocultar conversación en Supabase (funciona en todos los dispositivos)
+  try {
+    const { data: cHide } = await db.from('conversations').select('user1_id').eq('id', convId).single();
+    if (cHide) {
+      const field = cHide.user1_id === currentUser.id ? 'hidden_user1' : 'hidden_user2';
+      await db.from('conversations').update({ [field]: true }).eq('id', convId);
+    }
+  } catch(e) {}
 
+  renderConfirmations();
+  loadConversations();
+  showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
   }); // fin showAppConfirm
 }
 
@@ -9182,6 +9180,7 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       .eq('id', freshConv.proposal_id).single();
     prop = p;
     proposalStatus = p?.status;
+    window._activeConvProposalStatus = proposalStatus; // guardar para loadMessages
     propItemId = p?.item_id;
     propOfferedItemId = p?.offered_item_id;
     propId = p?.id;
@@ -9214,21 +9213,20 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
     html = `<div style="padding:12px 16px;background:#fffbeb;border-bottom:1px solid #fde68a">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
-          ${offeredPhoto ? `<img src="${offeredPhoto}" onclick="openDetail(${prop.offered_item_id})" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;cursor:pointer" title="${prop.offered_item_title}">` : `<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1rem">📦</div>`}
+          ${offeredPhoto ? `<img src="${offeredPhoto}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0">` : `<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1rem">📦</div>`}
           <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prop.offered_item_title}</div>
         </div>
         <span style="color:var(--muted);flex-shrink:0">↔</span>
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
-          ${itemPhoto ? `<img src="${itemPhoto}" onclick="openDetail(${prop.item_id})" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;cursor:pointer" title="${prop.item_title}">` : `<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1rem">📦</div>`}
+          ${itemPhoto ? `<img src="${itemPhoto}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0">` : `<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1rem">📦</div>`}
           <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prop.item_title}</div>
         </div>
       </div>
       ${prop.message ? `<div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:8px">"${prop.message}"</div>` : ''}
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px">
         ${amIOwner ? `
           <button onclick="respondProposal('${prop.id}','accepted')" style="flex:1;background:var(--accent);color:#fff;border:none;padding:9px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✅ Aceptar</button>
-          <button onclick="openCounterModal('${prop.id}','${prop.offerer_id}','${(prop.offerer_name||'').replace(/'/g,"\\'")}')" style="background:none;border:1.5px solid var(--border2);color:var(--text);padding:9px 12px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🔄 Contraoferta</button>
-          <button onclick="respondProposal('${prop.id}','rejected')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:9px 12px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">❌ Rechazar</button>
+          <button onclick="respondProposal('${prop.id}','rejected')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:9px 14px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">❌ Rechazar</button>
         ` : `
           <div style="flex:1;font-size:12px;color:#92400e;font-weight:600;display:flex;align-items:center">⏳ Esperando respuesta...</div>
           <button onclick="deleteProposal('${prop.id}')" style="background:none;border:1.5px solid #fca5a5;color:#ef4444;padding:7px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Retirar</button>
@@ -9304,14 +9302,16 @@ async function loadMessages(convId) {
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
   const otherAvatarChat = otherUserId ? (items.find(i => i.user_id === otherUserId)?.userAvatar || null) : null;
 
-  // Mensaje inicial del sistema
-  const systemMsg = `
+  // Mensaje inicial del sistema — solo si el trueque sigue activo
+  const _propStatus = window._activeConvProposalStatus;
+  const _showAccepted = !_propStatus || _propStatus === 'accepted';
+  const systemMsg = _showAccepted ? `
     <div style="text-align:center;padding:16px 20px;margin-bottom:8px">
       <div style="display:inline-block;background:var(--green-l);color:var(--green);font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px">
         🤝 Trueque aceptado — coordinad el punto de encuentro
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${conv ? conv.item1_title + ' ↔ ' + conv.item2_title : ''}</div>
-    </div>`;
+    </div>` : '';
 
   if (!data || !data.length) {
     el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
