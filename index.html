@@ -9118,48 +9118,46 @@ async function openConv(convId) {
 async function cancelTrade(convId) {
   showAppConfirm('¿Cancelar este trueque?', 'Los objetos volverán a estar disponibles.', async () => {
 
-  const { data: conv } = await db.from('conversations')
-    .select('id,proposal_id')
-    .eq('id', convId).single();
-  if (!conv) return;
+    // Navegar al explorador inmediatamente — antes de las operaciones async
+    showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
+    navTo('explore');
 
-  // Cambiar propuesta a cancelled y liberar items
-  if (conv.proposal_id) {
-    const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
-    if (prop) {
-      await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
+    // Operaciones en Supabase en segundo plano
+    const { data: conv } = await db.from('conversations')
+      .select('id,proposal_id')
+      .eq('id', convId).single();
+    if (!conv) return;
 
-      // Resolver offered_item_id si es null
-      let offeredId = prop.offered_item_id;
-      if (!offeredId && prop.offered_item_title && prop.offerer_id) {
-        const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
-        offeredId = fi?.id || null;
+    if (conv.proposal_id) {
+      const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
+      if (prop) {
+        await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
+
+        let offeredId = prop.offered_item_id;
+        if (!offeredId && prop.offered_item_title && prop.offerer_id) {
+          const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
+          offeredId = fi?.id || null;
+        }
+
+        const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
+        if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
+        await Promise.all(updates);
       }
-
-      const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
-      if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
-      await Promise.all(updates);
     }
-  }
 
-  // Recargar items y confirmaciones
-  await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
+    await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
 
-  // Marcar conversación como cancelled
-  await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
+    try {
+      const { data: cHide } = await db.from('conversations').select('user1_id').eq('id', convId).single();
+      if (cHide) {
+        const field = cHide.user1_id === currentUser.id ? 'hidden_user1' : 'hidden_user2';
+        await db.from('conversations').update({ [field]: true }).eq('id', convId);
+      }
+    } catch(e) {}
 
-  // Ocultar conversación en Supabase (funciona en todos los dispositivos)
-  try {
-    const { data: cHide } = await db.from('conversations').select('user1_id').eq('id', convId).single();
-    if (cHide) {
-      const field = cHide.user1_id === currentUser.id ? 'hidden_user1' : 'hidden_user2';
-      await db.from('conversations').update({ [field]: true }).eq('id', convId);
-    }
-  } catch(e) {}
+    // Refrescar items en segundo plano
+    loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
 
-  showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
-  // Navegar al explorador — solución limpia al problema del nav inferior
-  navTo('explore');
   }); // fin showAppConfirm
 }
 
