@@ -6352,6 +6352,14 @@ async function loadProposals() {
     .in('status', ['pending', 'countered'])
     .order('created_at', { ascending: false });
 
+  // Cargar conversaciones asociadas para enlazar directamente
+  const proposalIds = (data || []).map(p => p.id);
+  let convByProposal = {};
+  if (proposalIds.length) {
+    const { data: convs } = await db.from('conversations').select('id,proposal_id').in('proposal_id', proposalIds);
+    if (convs) convs.forEach(c => { convByProposal[c.proposal_id] = c.id; });
+  }
+
   if (error || !data) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Error al cargar propuestas.</div>'; return; }
 
   // Cargar fotos de todos los items involucrados
@@ -6449,8 +6457,14 @@ async function loadProposals() {
       </div>
       ${counterItemsHtml}
       ${p.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${p.message}"</div>` : ''}
-      <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">
-        💬 Gestiona esta propuesta desde <strong>Mensajes</strong>
+      <div style="margin-top:10px">
+        ${convByProposal[p.id] ? `
+          <button onclick="navToMessages();setTimeout(()=>openConv('${convByProposal[p.id]}'),400)" style="width:100%;background:var(--accent);color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+            💬 Ir a la conversación
+          </button>
+        ` : `
+          <div style="font-size:11px;color:var(--muted);text-align:center">💬 Gestiona esta propuesta desde <strong>Mensajes</strong></div>
+        `}
       </div>
     </div>`;
   }).join('');
