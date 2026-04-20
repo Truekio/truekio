@@ -1173,12 +1173,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .fd-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;}
 /* Categorías: grid de iconos */
 .fd-cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.fd-cat-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px 10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);cursor:pointer;transition:all .14s;user-select:none;}
-.fd-cat-btn:hover{border-color:var(--border2);background:var(--white);}
-.fd-cat-btn.on{border-color:var(--accent);background:var(--accent-l);}
-.fd-cat-btn.on .fd-cat-lbl{color:var(--accent);}
+.fd-cat-btn{display:flex;flex-direction:column;align-items:center;gap:0;padding:0;border:2px solid var(--border);border-radius:var(--r);background:var(--bg);cursor:pointer;transition:all .14s;user-select:none;overflow:hidden;}
+.fd-cat-btn:hover{border-color:var(--accent-mid);box-shadow:0 2px 8px rgba(78,143,186,.15);}
+.fd-cat-btn.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(78,143,186,.25);}
+.fd-cat-btn.on .fd-cat-lbl{color:var(--accent);background:var(--accent-l);}
 .fd-cat-ico{font-size:1.4rem;line-height:1;}
-.fd-cat-lbl{font-size:9px;font-weight:700;color:var(--text2);text-align:center;line-height:1.2;}
+.fd-cat-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;transition:transform .2s;}
+.fd-cat-btn:hover .fd-cat-img{transform:scale(1.05);}
+.fd-cat-btn-all{padding:0 6px;justify-content:center;min-height:72px;}
+.fd-cat-lbl{font-size:9px;font-weight:700;color:var(--text2);text-align:center;line-height:1.2;padding:5px 4px 6px;width:100%;}
 /* Chips multi-select */
 .fd-chips{display:flex;gap:7px;flex-wrap:wrap;}
 .fd-chip{padding:7px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;background:var(--white);color:var(--text2);transition:all .14s;user-select:none;}
@@ -2571,32 +2574,32 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <h2 class="lp-section-title">¿Qué puedes intercambiar?</h2>
       <div class="lp-cats-grid">
         <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1498049794561-7780e7231661?w=300&q=80" alt="Electrónica" loading="lazy">
-          <div class="lp-cat-label">Electrónica</div>
-        </div>
-        <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=300&q=80" alt="Libros" loading="lazy">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&q=80" alt="Libros" loading="lazy">
           <div class="lp-cat-label">Libros</div>
         </div>
         <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=300&q=80" alt="Deporte" loading="lazy">
-          <div class="lp-cat-label">Deporte</div>
-        </div>
-        <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=300&q=80" alt="Ropa" loading="lazy">
-          <div class="lp-cat-label">Ropa</div>
-        </div>
-        <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&q=80" alt="Hogar" loading="lazy">
-          <div class="lp-cat-label">Hogar</div>
-        </div>
-        <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=300&q=80" alt="Cartas" loading="lazy">
-          <div class="lp-cat-label">Cartas</div>
-        </div>
-        <div class="lp-cat" onclick="showAuthScreen()">
-          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=300&q=80" alt="Juegos" loading="lazy">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=300&q=80" alt="Juegos de mesa" loading="lazy">
           <div class="lp-cat-label">Juegos de mesa</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=300&q=80" alt="Cartas y coleccionables" loading="lazy">
+          <div class="lp-cat-label">Cartas y coleccionables</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=300&q=80" alt="Videojuegos" loading="lazy">
+          <div class="lp-cat-label">Videojuegos</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1461360228754-6e81c478b882?w=300&q=80" alt="Música" loading="lazy">
+          <div class="lp-cat-label">Música</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&q=80" alt="Hogar y muebles" loading="lazy">
+          <div class="lp-cat-label">Hogar y muebles</div>
+        </div>
+        <div class="lp-cat" onclick="showAuthScreen()">
+          <img class="lp-cat-img" src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=300&q=80" alt="Servicios" loading="lazy">
+          <div class="lp-cat-label">Servicios</div>
         </div>
         <div class="lp-cat lp-cat-more" onclick="showAuthScreen()"><span>✦</span><div>Ver todo</div></div>
       </div>
@@ -3678,15 +3681,15 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <div class="fd-section">
       <div class="fd-label">Categoría</div>
       <div class="fd-cat-grid">
-        <button class="fd-cat-btn on" data-val="" onclick="fdSelectCat(this)"><span class="fd-cat-ico">✦</span><span class="fd-cat-lbl">Todas</span></button>
-        <button class="fd-cat-btn" data-val="Libros" onclick="fdSelectCat(this)"><span class="fd-cat-ico">📚</span><span class="fd-cat-lbl">Libros</span></button>
-        <button class="fd-cat-btn" data-val="Juegos de mesa" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🎲</span><span class="fd-cat-lbl">Juegos de mesa</span></button>
-        <button class="fd-cat-btn" data-val="Cartas y coleccionables" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🃏</span><span class="fd-cat-lbl">Cartas y coleccionables</span></button>
-        <button class="fd-cat-btn" data-val="Videojuegos" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🎮</span><span class="fd-cat-lbl">Videojuegos</span></button>
-        <button class="fd-cat-btn" data-val="Música" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🎵</span><span class="fd-cat-lbl">Música</span></button>
-        <button class="fd-cat-btn" data-val="Hogar y muebles" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🏠</span><span class="fd-cat-lbl">Hogar y muebles</span></button>
-        <button class="fd-cat-btn" data-val="Servicios" onclick="fdSelectCat(this)"><span class="fd-cat-ico">🤝</span><span class="fd-cat-lbl">Servicios</span></button>
-        <button class="fd-cat-btn" data-val="Otros" onclick="fdSelectCat(this)"><span class="fd-cat-ico">📦</span><span class="fd-cat-lbl">Otros</span></button>
+        <button class="fd-cat-btn fd-cat-btn-all on" data-val="" onclick="fdSelectCat(this)"><span class="fd-cat-ico">✦</span><span class="fd-cat-lbl">Todas</span></button>
+        <button class="fd-cat-btn" data-val="Libros" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&q=80" alt="Libros" loading="lazy"><span class="fd-cat-lbl">Libros</span></button>
+        <button class="fd-cat-btn" data-val="Juegos de mesa" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=200&q=80" alt="Juegos de mesa" loading="lazy"><span class="fd-cat-lbl">Juegos de mesa</span></button>
+        <button class="fd-cat-btn" data-val="Cartas y coleccionables" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1611996575749-79a3a250f948?w=200&q=80" alt="Cartas y coleccionables" loading="lazy"><span class="fd-cat-lbl">Cartas y coleccionables</span></button>
+        <button class="fd-cat-btn" data-val="Videojuegos" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=200&q=80" alt="Videojuegos" loading="lazy"><span class="fd-cat-lbl">Videojuegos</span></button>
+        <button class="fd-cat-btn" data-val="Música" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1461360228754-6e81c478b882?w=200&q=80" alt="Música" loading="lazy"><span class="fd-cat-lbl">Música</span></button>
+        <button class="fd-cat-btn" data-val="Hogar y muebles" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&q=80" alt="Hogar y muebles" loading="lazy"><span class="fd-cat-lbl">Hogar y muebles</span></button>
+        <button class="fd-cat-btn" data-val="Servicios" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=200&q=80" alt="Servicios" loading="lazy"><span class="fd-cat-lbl">Servicios</span></button>
+        <button class="fd-cat-btn" data-val="Otros" onclick="fdSelectCat(this)"><img class="fd-cat-img" src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&q=80" alt="Otros" loading="lazy"><span class="fd-cat-lbl">Otros</span></button>
       </div>
     </div>
 
