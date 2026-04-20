@@ -8485,8 +8485,42 @@ function updateMsgBadge(count) {
     webMsg.style.display = count > 0 ? 'inline-flex' : 'none';
     webMsg.textContent = count > 9 ? '9+' : count;
   }
-  // Actualizar el badge global de actividad
+  // Actualizar badge global de actividad (bottom nav)
+  updateActivityNavBadge();
   if (typeof updateActivityBadge === 'function') updateActivityBadge();
+}
+
+async function updateActivityNavBadge() {
+  if (!currentUser) return;
+  try {
+    // Contar mensajes no leídos
+    const { data: convs } = await db.from('conversations')
+      .select('unread_user1,unread_user2,user1_id')
+      .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
+    const unreadMsgs = (convs || []).reduce((total, c) => {
+      return total + (c.user1_id === currentUser.id ? (c.unread_user1 || 0) : (c.unread_user2 || 0));
+    }, 0);
+
+    // Contar propuestas pendientes
+    const { data: proposals } = await db.from('proposals')
+      .select('id')
+      .eq('owner_id', currentUser.id)
+      .eq('status', 'pending');
+    const pendingProposals = (proposals || []).length;
+
+    const total = unreadMsgs + pendingProposals;
+    const badge = document.getElementById('bnav-activity-badge');
+    if (badge) {
+      badge.style.display = total > 0 ? '' : 'none';
+      badge.textContent = total > 9 ? '9+' : total;
+    }
+    // También actualizar tab de propuestas
+    const proposalTab = document.getElementById('mtab-proposals-count');
+    if (proposalTab) {
+      proposalTab.style.display = pendingProposals > 0 ? '' : 'none';
+      proposalTab.textContent = pendingProposals > 9 ? '9+' : pendingProposals;
+    }
+  } catch(e) {}
 }
 
 // ── Indicador visual de estado Realtime (solo aparece si hay error) ──
@@ -8530,6 +8564,9 @@ async function startBgPolling() {
   _bgRealtimeReady = false;
 
   if (!currentUser) return;
+
+  // Actualizar badge de actividad al arrancar
+  updateActivityNavBadge();
 
   // ── 1. Canal mensajes: detecta INSERT en messages de nuestras conversaciones ──
   // Primero cargamos las conversaciones actuales para tener el contexto
@@ -8588,6 +8625,7 @@ async function startBgPolling() {
       }
       lastProposalCount = n;
       window._pendingProposalCount = n;
+      updateActivityNavBadge();
       if (typeof updateActivityBadge === 'function') updateActivityBadge();
     })
     .subscribe((status, err) => {
@@ -13148,7 +13186,10 @@ document.addEventListener('mouseup', e => {
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
-    <button class="bnav-btn" id="bnav-activity" onclick="navToMessages()"><span>💬</span><span class="bnav-label">Mensajes</span></button>
+    <button class="bnav-btn" id="bnav-activity" onclick="navToMessages()" style="position:relative">
+      <span style="position:relative;display:inline-block">💬<span id="bnav-activity-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:#e53e3e;color:#fff;font-size:9px;font-weight:800;padding:1px 4px;border-radius:99px;min-width:14px;text-align:center;line-height:1.4"></span></span>
+      <span class="bnav-label">Mensajes</span>
+    </button>
     <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
       <span class="bnav-publish-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
