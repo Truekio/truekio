@@ -2879,7 +2879,9 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           🤝
           <span id="activity-dot-explore" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;background:#e53e3e;border-radius:50%;border:1.5px solid var(--white)"></span>
         </button>
-        <button onclick="openTruquoPoints()" class="filter-toggle-btn" style="color:var(--accent);border-color:var(--accent-mid)">📍 Puntos</button>
+        <button class="filter-toggle-btn" id="sort-toggle" onclick="toggleSortDropdown()">
+          ↕ <span id="sort-label">Relevancia</span>
+        </button>
         <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
           ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
         </button>
@@ -2888,7 +2890,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <!-- Active filter chips -->
       <div class="active-filters" id="active-filters"></div>
       <!-- Sort pills -->
-      <div class="filter-row" id="filter-row"></div>
+      <!-- sort-dropdown renderizado dinámicamente -->
     </div>
   </div>
 
@@ -3708,9 +3710,14 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       </div>
     </div>
   </div>
-  <div class="fd-foot">
-    <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar filtros</button>
-    <button class="btn btn-primary btn-md" style="flex:1" onclick="fdApply(true)">Aplicar</button>
+  <div class="fd-foot" style="flex-direction:column;gap:8px">
+    <button onclick="closeFd();setTimeout(openTruquoPoints,250)" style="width:100%;background:var(--accent-l);color:var(--accent);border:1.5px solid var(--accent-mid);border-radius:var(--r);padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+      📍 Ver Puntos Truquo cercanos
+    </button>
+    <div style="display:flex;gap:10px;width:100%">
+      <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar filtros</button>
+      <button class="btn btn-primary btn-md" style="flex:1" onclick="fdApply(true)">Aplicar</button>
+    </div>
   </div>
 </div>
 
@@ -3800,6 +3807,11 @@ function _fdSyncUI() {
   _fdRenderSubcatFilters(fdState.cat);
   document.querySelectorAll('#fd-subcat-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.subcat));
   document.querySelectorAll('#fd-lang-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.lang));
+}
+function closeFd() {
+  const drawer = document.getElementById('filter-drawer');
+  if (drawer) drawer.classList.remove('open');
+  document.getElementById('fd-overlay')?.classList.remove('open');
 }
 function fdApply(closeDrawer = false) {
 
@@ -6099,32 +6111,51 @@ function showAppConfirm(title, body, onConfirm) {
   document.getElementById('app-confirm-cancel').onclick = close;
   document.getElementById('app-confirm-ok').onclick = () => { close(); onConfirm(); };
 }
+const SORT_OPTIONS = [
+  { val: 'relevance', icon: '✦', label: 'Relevancia' },
+  { val: 'match',     icon: '⚡', label: '% Match' },
+  { val: 'distance',  icon: '📍', label: 'Distancia' },
+  { val: 'recent',    icon: '🕒', label: 'Reciente' },
+  { val: 'cafe',      icon: '☕', label: 'Café' },
+  { val: 'surprise',  icon: '🎲', label: 'Sorpréndeme' },
+];
+
 function buildFilters() {
-  const row = document.getElementById('filter-row');
-  row.className = 'filter-scroll';
-  const sorts = [
-    { val: 'relevance', icon: '✦', label: 'Relevancia' },
-    { val: 'match',     icon: '⚡', label: '% Match' },
-    { val: 'distance',  icon: '📍', label: 'Distancia' },
-    { val: 'recent',    icon: '🕒', label: 'Reciente' },
-    { val: 'cafe',      icon: '☕', label: 'Café' },
-    { val: 'surprise',  icon: '🎲', label: 'Sorpréndeme' },
-  ];
-  row.innerHTML = sorts.map(s => `
-    <button class="filter-btn${s.val==='relevance'?' active':''}" data-sort="${s.val}" onclick="setSortFilter(this,'${s.val}')">
-      ${s.icon} ${s.label}
+  // Pills eliminadas — ordenación vía dropdown
+}
+
+function toggleSortDropdown() {
+  let dd = document.getElementById('sort-dropdown');
+  if (dd) { dd.remove(); return; }
+  const btn = document.getElementById('sort-toggle');
+  const rect = btn.getBoundingClientRect();
+  dd = document.createElement('div');
+  dd.id = 'sort-dropdown';
+  dd.style.cssText = `position:fixed;top:${rect.bottom+4}px;left:${rect.left}px;z-index:9999;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:180px;overflow:hidden`;
+  dd.innerHTML = SORT_OPTIONS.map(s => `
+    <button onclick="setSortFromDropdown('${s.val}','${s.label}')" style="display:flex;align-items:center;gap:10px;width:100%;background:${spFilters.sort===s.val?'var(--accent-l)':'none'};border:none;padding:12px 16px;font-size:13px;font-weight:${spFilters.sort===s.val?'700':'500'};cursor:pointer;font-family:inherit;color:${spFilters.sort===s.val?'var(--accent)':'var(--text)'};text-align:left" onmouseover="if('${s.val}'!==spFilters.sort)this.style.background='var(--bg2)'" onmouseout="if('${s.val}'!==spFilters.sort)this.style.background='none'">
+      <span style="font-size:14px;width:20px;text-align:center">${s.icon}</span> ${s.label}
+      ${spFilters.sort===s.val ? '<span style="margin-left:auto;color:var(--accent);font-size:14px">✓</span>' : ''}
     </button>`).join('');
+  document.body.appendChild(dd);
+  setTimeout(() => document.addEventListener('click', () => document.getElementById('sort-dropdown')?.remove(), { once: true }), 50);
+}
+
+function setSortFromDropdown(val, label) {
+  document.getElementById('sort-dropdown')?.remove();
+  spFilters.sort = val;
+  fdState.sort = val;
+  document.getElementById('sort-label').textContent = label;
+  const btn = document.getElementById('sort-toggle');
+  if (btn) btn.style.color = val === 'relevance' ? '' : 'var(--accent)';
+  document.querySelectorAll('#fd-sort-chips .fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === val));
+  applyFilter(document.getElementById('search-input')?.value || '', currentFilter);
 }
 
 function setSortFilter(btn, sortVal) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  spFilters.sort = sortVal;
-  fdState.sort = sortVal;
-  // Sincronizar el sort en el drawer también
-  document.querySelectorAll('#fd-sort-chips .fd-cat-btn').forEach(b => b.classList.toggle('on', b.dataset.val === sortVal));
-  const q = document.getElementById('search-input')?.value || '';
-  applyFilter(q, currentFilter);
+  // Compatibilidad legacy — redirigir al nuevo sistema
+  const opt = SORT_OPTIONS.find(s => s.val === sortVal);
+  if (opt) setSortFromDropdown(sortVal, opt.label);
 }
 
 function searchItems(q) { applyFilter(q, currentFilter); }
