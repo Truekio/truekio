@@ -2879,6 +2879,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           🤝
           <span id="activity-dot-explore" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;background:#e53e3e;border-radius:50%;border:1.5px solid var(--white)"></span>
         </button>
+        <button onclick="openTruquoPoints()" class="filter-toggle-btn" style="color:var(--accent);border-color:var(--accent-mid)">📍 Puntos</button>
         <button class="filter-toggle-btn" id="filter-toggle" onclick="openFilterDrawer()">
           ⚙ Filtros <span id="filter-count-badge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:2px">0</span>
         </button>
@@ -5401,6 +5402,88 @@ async function submitReport() {
 // ═══ ADMIN PANEL ═══
 let _adminUsers = [], _adminItems = [], _adminReports = [];
 
+async function loadAdminPoints() {
+  const el = document.getElementById('admin-points-list');
+  if (!el) return;
+  const { data, error } = await db.from('truquo_points').select('*').order('city').order('name');
+  if (error || !data) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Error al cargar puntos.</div>'; return; }
+  if (!data.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">No hay puntos todavía. Añade el primero.</div>'; return; }
+  el.innerHTML = data.map(p => `
+    <div style="border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:12px;background:var(--white);display:flex;gap:14px;align-items:flex-start">
+      ${p.photo_url ? `<img src="${p.photo_url}" style="width:64px;height:64px;border-radius:var(--r);object-fit:cover;flex-shrink:0">` : `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">📍</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:14px">${p.name}</div>
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:${p.active ? 'var(--green-l)' : 'var(--bg2)'};color:${p.active ? 'var(--green)' : 'var(--muted)'}">${p.active ? 'Activo' : 'Inactivo'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
+        ${p.schedule ? `<div style="font-size:12px;color:var(--muted);margin-bottom:2px">🕐 ${p.schedule}</div>` : ''}
+        ${p.description ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">${p.description}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button onclick="togglePoint('${p.id}',${!p.active})" style="background:none;border:1px solid var(--border);border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">${p.active ? 'Desactivar' : 'Activar'}</button>
+        <button onclick="deletePoint('${p.id}')" style="background:none;border:1px solid #fca5a5;border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function togglePoint(id, active) {
+  await db.from('truquo_points').update({ active }).eq('id', id);
+  loadAdminPoints();
+}
+
+async function deletePoint(id) {
+  showAppConfirm('¿Eliminar este punto?', 'Se eliminará permanentemente.', async () => {
+    await db.from('truquo_points').delete().eq('id', id);
+    showToast('Punto eliminado');
+    loadAdminPoints();
+  });
+}
+
+function openAddPointModal() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+      <div style="font-weight:700;font-size:1rem;margin-bottom:16px">📍 Añadir Punto Truquo</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input id="pt-name" placeholder="Nombre del establecimiento" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <input id="pt-address" placeholder="Dirección" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <input id="pt-city" placeholder="Ciudad" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <div style="display:flex;gap:8px">
+          <input id="pt-lat" placeholder="Latitud (ej: 41.5376)" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+          <input id="pt-lng" placeholder="Longitud (ej: 2.4448)" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        </div>
+        <input id="pt-schedule" placeholder="Horario (ej: Lun-Vie 9:00-20:00)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <input id="pt-photo" placeholder="URL de foto (opcional)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <textarea id="pt-desc" placeholder="Descripción / instrucciones" rows="2" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;resize:none;color:var(--text)"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;background:var(--bg2);border:none;padding:11px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Cancelar</button>
+        <button onclick="saveNewPoint(this)" style="flex:1;background:var(--accent);color:#fff;border:none;padding:11px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveNewPoint(btn) {
+  const name = document.getElementById('pt-name').value.trim();
+  const address = document.getElementById('pt-address').value.trim();
+  const city = document.getElementById('pt-city').value.trim();
+  const lat = parseFloat(document.getElementById('pt-lat').value);
+  const lng = parseFloat(document.getElementById('pt-lng').value);
+  const schedule = document.getElementById('pt-schedule').value.trim();
+  const photo_url = document.getElementById('pt-photo').value.trim();
+  const description = document.getElementById('pt-desc').value.trim();
+  if (!name || !address || !city || isNaN(lat) || isNaN(lng)) { showToast('⚠️ Rellena los campos obligatorios'); return; }
+  btn.textContent = 'Guardando...';
+  const { error } = await db.from('truquo_points').insert([{ name, address, city, lat, lng, schedule: schedule||null, photo_url: photo_url||null, description: description||null, active: true }]);
+  if (error) { showToast('⚠️ Error: ' + error.message); btn.textContent = 'Guardar'; return; }
+  btn.closest('div[style*="fixed"]').remove();
+  showToast('✅ Punto añadido');
+  loadAdminPoints();
+}
+
 async function loadAdminPanel() {
   // Verificar que es admin
   const { data: profile } = await db.from('profiles').select('is_admin').eq('id', currentUser.id).maybeSingle();
@@ -5410,6 +5493,7 @@ async function loadAdminPanel() {
   if (adminBtn) adminBtn.style.display = '';
   // Cargar datos
   await Promise.all([loadAdminReports(), loadAdminUsers(), loadAdminItems()]);
+  // Points se carga bajo demanda al cambiar de tab
 }
 
 async function loadAdminReports() {
@@ -5543,11 +5627,13 @@ async function adminDismissReport(reportId) {
 }
 
 function switchAdminTab(tab) {
-  ['reports','users','items'].forEach(t => {
-    document.getElementById(`admin-content-${t}`).style.display = t === tab ? '' : 'none';
-    const btn = document.getElementById(`admin-tab-${t}`);
-    if (btn) { btn.style.background = t === tab ? 'var(--white)' : 'none'; btn.style.color = t === tab ? 'var(--accent)' : 'var(--muted)'; btn.style.fontWeight = t === tab ? '700' : '600'; }
-  });
+  document.querySelectorAll('[id^="admin-content-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('[id^="admin-tab-"]').forEach(b => { b.style.background = 'none'; b.style.fontWeight = '600'; b.style.color = 'var(--muted)'; });
+  const el = document.getElementById(`admin-content-${tab}`);
+  if (el) el.style.display = '';
+  const btn = document.getElementById(`admin-tab-${tab}`);
+  if (btn) { btn.style.background = 'var(--white)'; btn.style.fontWeight = '700'; btn.style.color = 'var(--accent)'; }
+  if (tab === 'points') loadAdminPoints();
 }
 
 // Screenshots carousel
@@ -9163,6 +9249,38 @@ async function cancelTrade(convId) {
   }); // fin showAppConfirm
 }
 
+async function openTruquoPoints(cityHint) {
+  const { data: points } = await db.from('truquo_points').select('*').eq('active', true).order('city').order('name');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+  const list = (points||[]).map(p => `
+    <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+      ${p.photo_url ? `<img src="${p.photo_url}" style="width:56px;height:56px;border-radius:var(--r);object-fit:cover;flex-shrink:0">` : `<div style="width:56px;height:56px;border-radius:var(--r);background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📍</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14px;margin-bottom:2px">${p.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
+        ${p.schedule ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px">🕐 ${p.schedule}</div>` : ''}
+        ${p.description ? `<div style="font-size:12px;color:var(--text2);line-height:1.5">${p.description}</div>` : ''}
+        <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.address+', '+p.city)}','_blank')" style="margin-top:6px;background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent)">🗺 Cómo llegar</button>
+      </div>
+    </div>`).join('');
+
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:20px 20px 32px">
+      <div style="width:40px;height:4px;background:var(--border2);border-radius:99px;margin:0 auto 16px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem">📍 Puntos Truquo</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Establecimientos colaboradores para tus trueques</div>
+        </div>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--bg2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      ${points && points.length ? list : '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Próximamente habrá puntos en tu ciudad</div>'}
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
 async function renderTradeStatus(conv, otherName, otherUserId) {
   const el = document.getElementById('chat-action-banner');
   if (!el || !conv) return;
@@ -9180,7 +9298,6 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       .eq('id', freshConv.proposal_id).single();
     prop = p;
     proposalStatus = p?.status;
-    window._activeConvProposalStatus = proposalStatus; // guardar para loadMessages
     propItemId = p?.item_id;
     propOfferedItemId = p?.offered_item_id;
     propId = p?.id;
@@ -9239,6 +9356,10 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       html = `<div style="padding:10px 16px;background:#fffbeb;display:flex;align-items:center;justify-content:space-between;gap:10px">
         <div style="font-size:12px;font-weight:700;color:#92400e">⏳ Esperando confirmación de ${otherName}</div>
         <button onclick="cancelTrade('${conv.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>
+      </div>
+      <div style="padding:8px 16px;background:var(--accent-l);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--accent)">📍 Puntos Truquo cercanos</div>
+        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver mapa</button>
       </div>`;
     } else {
       html = `<div style="padding:10px 16px;background:#eff6ff;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -9248,6 +9369,10 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
           <button onclick="openConfirmModal('${conv.id}','issue','${otherName}','${myItemTitle}','${theirItemTitle}')" style="background:none;border:1px solid #fde68a;color:#92400e;padding:6px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">⚠️ Problema</button>
           <button onclick="cancelTrade('${conv.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:6px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✕</button>
         </div>
+      </div>
+      <div style="padding:8px 16px;background:var(--accent-l);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--accent)">📍 Puntos Truquo cercanos</div>
+        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver mapa</button>
       </div>`;
     }
   } else if (bothConfirmed) {
@@ -9302,16 +9427,14 @@ async function loadMessages(convId) {
   const bg = `linear-gradient(135deg,hsl(${strHash(otherName)%360},55%,70%),hsl(${strHash(otherName+'x')%360},55%,60%))`;
   const otherAvatarChat = otherUserId ? (items.find(i => i.user_id === otherUserId)?.userAvatar || null) : null;
 
-  // Mensaje inicial del sistema — solo si el trueque sigue activo
-  const _propStatus = window._activeConvProposalStatus;
-  const _showAccepted = _propStatus === 'accepted';
-  const systemMsg = _showAccepted ? `
+  // Mensaje inicial del sistema
+  const systemMsg = `
     <div style="text-align:center;padding:16px 20px;margin-bottom:8px">
       <div style="display:inline-block;background:var(--green-l);color:var(--green);font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px">
         🤝 Trueque aceptado — coordinad el punto de encuentro
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${conv ? conv.item1_title + ' ↔ ' + conv.item2_title : ''}</div>
-    </div>` : '';
+    </div>`;
 
   if (!data || !data.length) {
     el.innerHTML = systemMsg + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sé el primero en escribir 👋</div>';
@@ -13366,6 +13489,7 @@ document.addEventListener('mouseup', e => {
       <button id="admin-tab-reports" onclick="switchAdminTab('reports')" style="background:var(--white);border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--accent)">📋 Reportes</button>
       <button id="admin-tab-users" onclick="switchAdminTab('users')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">👥 Usuarios</button>
       <button id="admin-tab-items" onclick="switchAdminTab('items')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📦 Objetos</button>
+      <button id="admin-tab-points" onclick="switchAdminTab('points')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📍 Puntos Truquo</button>
     </div>
 
     <!-- Reportes -->
@@ -13387,6 +13511,15 @@ document.addEventListener('mouseup', e => {
         <input id="admin-item-search" placeholder="Buscar por título..." oninput="filterAdminItems(this.value)" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
       </div>
       <div id="admin-items-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Cargando...</div></div>
+    </div>
+
+    <!-- Puntos Truquo -->
+    <div id="admin-content-points" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="font-size:13px;color:var(--muted)">Gestiona los puntos de depósito y encuentro</div>
+        <button onclick="openAddPointModal()" style="background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Añadir punto</button>
+      </div>
+      <div id="admin-points-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Cargando...</div></div>
     </div>
   </div>
 </div>
