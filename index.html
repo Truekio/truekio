@@ -8834,7 +8834,7 @@ function renderConvList(data) {
         </div>
         ${isUnread ? `<div class="conv-unread">${unread}</div>` : ''}
       </div>
-      <button onclick="openConvMenu(event,'${c.id}',${isUnread},${unread})" style="flex-shrink:0;background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;padding:6px 10px;border-radius:6px" onmouseover="this.style.color='var(--muted)';this.style.background='var(--bg2)'" onmouseout="this.style.color='#ccc';this.style.background='none'" title="Opciones">⋮</button>
+      <button onclick="openConvMenu(event,'${c.id}',${isUnread})" style="flex-shrink:0;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:6px 10px;border-radius:6px;line-height:1" title="Opciones">⋮</button>
     </div>`;
   }).join('');
 
@@ -8842,28 +8842,23 @@ function renderConvList(data) {
   updateMsgBadge(totalUnread);
 }
 
-function openConvMenu(e, convId, isUnread, unreadCount) {
+function openConvMenu(e, convId, isUnread) {
   e.stopPropagation();
-  // Eliminar menú anterior si existe
   document.getElementById('conv-ctx-menu')?.remove();
-
   const menu = document.createElement('div');
   menu.id = 'conv-ctx-menu';
-  const rect = e.target.getBoundingClientRect();
-  menu.style.cssText = `position:fixed;top:${rect.bottom + 4}px;right:16px;z-index:9999;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:180px;overflow:hidden`;
-
+  const rect = e.currentTarget.getBoundingClientRect();
+  menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;right:16px;z-index:9999;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:190px;overflow:hidden`;
   menu.innerHTML = `
-    <button onclick="markConvUnread('${convId}',${!isUnread});document.getElementById('conv-ctx-menu')?.remove()" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='none'">
+    <button onclick="markConvUnread('${convId}',${!isUnread});this.closest('#conv-ctx-menu').remove()" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='none'">
       ${isUnread ? '✅ Marcar como leído' : '🔵 Marcar como no leído'}
     </button>
     <div style="height:1px;background:var(--border)"></div>
-    <button onclick="deleteConversation('${convId}');document.getElementById('conv-ctx-menu')?.remove()" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
+    <button onclick="deleteConversation('${convId}');this.closest('#conv-ctx-menu').remove()" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
       🗑 Ocultar conversación
     </button>`;
-
   document.body.appendChild(menu);
-  // Cerrar al hacer click fuera
-  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 10);
+  setTimeout(() => document.addEventListener('click', () => document.getElementById('conv-ctx-menu')?.remove(), { once: true }), 50);
 }
 
 async function markConvUnread(convId, markAsUnread) {
@@ -8876,6 +8871,8 @@ async function markConvUnread(convId, markAsUnread) {
   loadConversations();
   updateActivityNavBadge();
 }
+
+async function deleteConversation(convId) {
   if (!currentUser) return;
 
   const confirmed = await new Promise(resolve => {
@@ -8897,12 +8894,11 @@ async function markConvUnread(convId, markAsUnread) {
 
   if (!confirmed) return;
 
-  // Limpiar contador de no leídos antes de ocultar
+  // Limpiar contador de no leídos al ocultar
   try {
     const { data: conv } = await db.from('conversations').select('user1_id').eq('id', convId).single();
     if (conv) {
-      const isUser1 = conv.user1_id === currentUser.id;
-      const field = isUser1 ? 'unread_user1' : 'unread_user2';
+      const field = conv.user1_id === currentUser.id ? 'unread_user1' : 'unread_user2';
       await db.from('conversations').update({ [field]: 0 }).eq('id', convId);
     }
   } catch(e) {}
@@ -13235,10 +13231,7 @@ document.addEventListener('mouseup', e => {
   <div class="bottom-nav-inner">
     <button class="bnav-btn active" id="bnav-explore" onclick="navTo('explore')"><span>🔍</span><span class="bnav-label">Explorar</span></button>
     <button class="bnav-btn" id="bnav-activity" onclick="navToMessages()" style="position:relative">
-      <span style="position:relative;display:inline-block">
-        💬
-        <span id="bnav-activity-badge" style="display:none;position:absolute;top:-6px;right:-8px;background:#e53e3e;color:#fff;font-size:9px;font-weight:900;padding:2px 5px;border-radius:99px;min-width:16px;text-align:center;line-height:1.4;border:1.5px solid var(--white);box-shadow:0 1px 4px rgba(0,0,0,.25);filter:none !important"></span>
-      </span>
+      <span style="position:relative;display:inline-block">💬<span id="bnav-activity-badge" style="display:none;position:absolute;top:-6px;right:-8px;background:#e53e3e;color:#fff;font-size:9px;font-weight:900;padding:2px 5px;border-radius:99px;min-width:16px;text-align:center;line-height:1.4;border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)"></span></span>
       <span class="bnav-label">Mensajes</span>
     </button>
     <button class="bnav-publish" id="bnav-publish" onclick="navTo('publish')">
