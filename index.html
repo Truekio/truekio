@@ -5407,21 +5407,21 @@ async function loadAdminPoints() {
   if (!el) return;
   const { data, error } = await db.from('truquo_points').select('*').order('city').order('name');
   if (error || !data) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Error al cargar puntos.</div>'; return; }
-  if (!data.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">No hay puntos todavía. Añade el primero.</div>'; return; }
+  if (!data.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">No hay puntos todavía.</div>'; return; }
   el.innerHTML = data.map(p => `
     <div style="border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:12px;background:var(--white);display:flex;gap:14px;align-items:flex-start">
       ${p.photo_url ? `<img src="${p.photo_url}" style="width:64px;height:64px;border-radius:var(--r);object-fit:cover;flex-shrink:0">` : `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">📍</div>`}
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <div style="font-weight:700;font-size:14px">${p.name}</div>
-          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:${p.active ? 'var(--green-l)' : 'var(--bg2)'};color:${p.active ? 'var(--green)' : 'var(--muted)'}">${p.active ? 'Activo' : 'Inactivo'}</span>
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:${p.active?'var(--green-l)':'var(--bg2)'};color:${p.active?'var(--green)':'var(--muted)'}">${p.active?'Activo':'Inactivo'}</span>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
-        ${p.schedule ? `<div style="font-size:12px;color:var(--muted);margin-bottom:2px">🕐 ${p.schedule}</div>` : ''}
-        ${p.description ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">${p.description}</div>` : ''}
+        ${p.schedule?`<div style="font-size:12px;color:var(--muted)">🕐 ${p.schedule}</div>`:''}
+        ${p.description?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${p.description}</div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-        <button onclick="togglePoint('${p.id}',${!p.active})" style="background:none;border:1px solid var(--border);border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">${p.active ? 'Desactivar' : 'Activar'}</button>
+        <button onclick="togglePoint('${p.id}',${!p.active})" style="background:none;border:1px solid var(--border);border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">${p.active?'Desactivar':'Activar'}</button>
         <button onclick="deletePoint('${p.id}')" style="background:none;border:1px solid #fca5a5;border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444">Eliminar</button>
       </div>
     </div>`).join('');
@@ -5447,12 +5447,12 @@ function openAddPointModal() {
     <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
       <div style="font-weight:700;font-size:1rem;margin-bottom:16px">📍 Añadir Punto Truquo</div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <input id="pt-name" placeholder="Nombre del establecimiento" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
-        <input id="pt-address" placeholder="Dirección" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
-        <input id="pt-city" placeholder="Ciudad" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <input id="pt-name" placeholder="Nombre del establecimiento *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <input id="pt-address" placeholder="Dirección *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+        <input id="pt-city" placeholder="Ciudad *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
         <div style="display:flex;gap:8px">
-          <input id="pt-lat" placeholder="Latitud (ej: 41.5376)" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
-          <input id="pt-lng" placeholder="Longitud (ej: 2.4448)" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+          <input id="pt-lat" placeholder="Latitud * (ej: 41.5376)" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
+          <input id="pt-lng" placeholder="Longitud * (ej: 2.4448)" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
         </div>
         <input id="pt-schedule" placeholder="Horario (ej: Lun-Vie 9:00-20:00)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
         <input id="pt-photo" placeholder="URL de foto (opcional)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text)">
@@ -5477,11 +5477,66 @@ async function saveNewPoint(btn) {
   const description = document.getElementById('pt-desc').value.trim();
   if (!name || !address || !city || isNaN(lat) || isNaN(lng)) { showToast('⚠️ Rellena los campos obligatorios'); return; }
   btn.textContent = 'Guardando...';
-  const { error } = await db.from('truquo_points').insert([{ name, address, city, lat, lng, schedule: schedule||null, photo_url: photo_url||null, description: description||null, active: true }]);
+  const { error } = await db.from('truquo_points').insert([{ name, address, city, lat, lng, schedule:schedule||null, photo_url:photo_url||null, description:description||null, active:true }]);
   if (error) { showToast('⚠️ Error: ' + error.message); btn.textContent = 'Guardar'; return; }
   btn.closest('div[style*="fixed"]').remove();
   showToast('✅ Punto añadido');
   loadAdminPoints();
+}
+
+async function openTruquoPoints() {
+  const { data: points } = await db.from('truquo_points').select('*').eq('active', true);
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+
+  // Ordenar por distancia si hay ubicación
+  const sorted = (points || []).map(p => {
+    const dist = (userCoords && p.lat && p.lng)
+      ? distanceKm(userCoords.lat, userCoords.lng, parseFloat(p.lat), parseFloat(p.lng))
+      : null;
+    return { ...p, _dist: dist };
+  }).sort((a, b) => {
+    if (a._dist === null && b._dist === null) return 0;
+    if (a._dist === null) return 1;
+    if (b._dist === null) return -1;
+    return a._dist - b._dist;
+  });
+
+  const distLabel = d => d === null ? '' : d < 1 ? `${Math.round(d*1000)} m` : `${d.toFixed(1)} km`;
+
+  const list = sorted.map((p, idx) => `
+    <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+      ${p.photo_url ? `<img src="${p.photo_url}" style="width:56px;height:56px;border-radius:var(--r);object-fit:cover;flex-shrink:0">` : `<div style="width:56px;height:56px;border-radius:var(--r);background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📍</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:14px">${p.name}</div>
+          ${p._dist !== null ? `<span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-l);padding:2px 7px;border-radius:99px">${distLabel(p._dist)}</span>` : ''}
+          ${idx === 0 && sorted.length > 1 && p._dist !== null ? `<span style="font-size:10px;font-weight:700;color:var(--green);background:var(--green-l);padding:2px 7px;border-radius:99px">⭐ Más cercano</span>` : ''}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
+        ${p.schedule ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px">🕐 ${p.schedule}</div>` : ''}
+        ${p.description ? `<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:6px">${p.description}</div>` : ''}
+        <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address+', '+p.city)}','_blank')" style="background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent)">🗺 Cómo llegar</button>
+      </div>
+    </div>`).join('');
+
+  const noLocNote = !userCoords ? `<div style="background:var(--gold-l);border:1px solid rgba(176,125,42,.2);border-radius:var(--r);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--gold)">📍 Activa tu ubicación para ver los puntos ordenados por cercanía</div>` : '';
+
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:20px 20px 32px">
+      <div style="width:40px;height:4px;background:var(--border2);border-radius:99px;margin:0 auto 16px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem">📍 Puntos Truquo</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Establecimientos colaboradores · ordenados por distancia</div>
+        </div>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--bg2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      ${noLocNote}
+      ${sorted.length ? list : '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Próximamente habrá puntos en tu ciudad</div>'}
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
 async function loadAdminPanel() {
@@ -5493,7 +5548,6 @@ async function loadAdminPanel() {
   if (adminBtn) adminBtn.style.display = '';
   // Cargar datos
   await Promise.all([loadAdminReports(), loadAdminUsers(), loadAdminItems()]);
-  // Points se carga bajo demanda al cambiar de tab
 }
 
 async function loadAdminReports() {
@@ -5627,13 +5681,11 @@ async function adminDismissReport(reportId) {
 }
 
 function switchAdminTab(tab) {
-  document.querySelectorAll('[id^="admin-content-"]').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('[id^="admin-tab-"]').forEach(b => { b.style.background = 'none'; b.style.fontWeight = '600'; b.style.color = 'var(--muted)'; });
-  const el = document.getElementById(`admin-content-${tab}`);
-  if (el) el.style.display = '';
-  const btn = document.getElementById(`admin-tab-${tab}`);
-  if (btn) { btn.style.background = 'var(--white)'; btn.style.fontWeight = '700'; btn.style.color = 'var(--accent)'; }
-  if (tab === 'points') loadAdminPoints();
+  ['reports','users','items'].forEach(t => {
+    document.getElementById(`admin-content-${t}`).style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById(`admin-tab-${t}`);
+    if (btn) { btn.style.background = t === tab ? 'var(--white)' : 'none'; btn.style.color = t === tab ? 'var(--accent)' : 'var(--muted)'; btn.style.fontWeight = t === tab ? '700' : '600'; }
+  });
 }
 
 // Screenshots carousel
@@ -9249,38 +9301,6 @@ async function cancelTrade(convId) {
   }); // fin showAppConfirm
 }
 
-async function openTruquoPoints(cityHint) {
-  const { data: points } = await db.from('truquo_points').select('*').eq('active', true).order('city').order('name');
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
-  const list = (points||[]).map(p => `
-    <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start">
-      ${p.photo_url ? `<img src="${p.photo_url}" style="width:56px;height:56px;border-radius:var(--r);object-fit:cover;flex-shrink:0">` : `<div style="width:56px;height:56px;border-radius:var(--r);background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📍</div>`}
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:14px;margin-bottom:2px">${p.name}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
-        ${p.schedule ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px">🕐 ${p.schedule}</div>` : ''}
-        ${p.description ? `<div style="font-size:12px;color:var(--text2);line-height:1.5">${p.description}</div>` : ''}
-        <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.address+', '+p.city)}','_blank')" style="margin-top:6px;background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent)">🗺 Cómo llegar</button>
-      </div>
-    </div>`).join('');
-
-  overlay.innerHTML = `
-    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:20px 20px 32px">
-      <div style="width:40px;height:4px;background:var(--border2);border-radius:99px;margin:0 auto 16px"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div>
-          <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem">📍 Puntos Truquo</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Establecimientos colaboradores para tus trueques</div>
-        </div>
-        <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--bg2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
-      </div>
-      ${points && points.length ? list : '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Próximamente habrá puntos en tu ciudad</div>'}
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-}
-
 async function renderTradeStatus(conv, otherName, otherUserId) {
   const el = document.getElementById('chat-action-banner');
   if (!el || !conv) return;
@@ -9359,7 +9379,7 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       </div>
       <div style="padding:8px 16px;background:var(--accent-l);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="font-size:12px;font-weight:700;color:var(--accent)">📍 Puntos Truquo cercanos</div>
-        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver mapa</button>
+        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver puntos</button>
       </div>`;
     } else {
       html = `<div style="padding:10px 16px;background:#eff6ff;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -9372,7 +9392,7 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       </div>
       <div style="padding:8px 16px;background:var(--accent-l);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="font-size:12px;font-weight:700;color:var(--accent)">📍 Puntos Truquo cercanos</div>
-        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver mapa</button>
+        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver puntos</button>
       </div>`;
     }
   } else if (bothConfirmed) {
