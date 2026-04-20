@@ -3179,6 +3179,8 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <div class="trust-metric"><div class="trust-metric-n" id="tm-ratio">—</div><div class="trust-metric-l">Valoración</div></div>
         <div class="trust-metric"><div class="trust-metric-n" id="tm-tiempo">—</div><div class="trust-metric-l">Resp. media</div></div>
       </div>
+      <!-- Badge de nivel -->
+      <div id="my-level-badge" style="margin-top:10px"></div>
     </div>
 
     <!-- PROFILE SECTIONS — desplegables -->
@@ -5850,7 +5852,7 @@ function renderTradeChains(chains) {
     }).join('')}`;
 }
 
-async function openChainChat(userId, userName, theirItemTitle, myItemTitle) {
+function cookieChoice(choice) {
   if (!currentUser || !userId) return;
   // Navegar a mensajes
   navToMessages();
@@ -5881,6 +5883,50 @@ async function dismissChain(chainId) {
   await db.from('trade_chains').update({ status: 'dismissed' }).eq('id', chainId);
   showToast('Cadena descartada');
   loadTradeChains();
+}
+
+// ═══ SISTEMA DE NIVELES ═══
+function getUserLevel(trades) {
+  if (trades >= 25) return { emoji:'🔥', label:'Maestro del trueque', color:'#7c3aed', bg:'#f5f3ff', next:null, nextAt:null };
+  if (trades >= 10) return { emoji:'🏆', label:'Experto', color:'#b45309', bg:'#fffbeb', next:'Maestro del trueque', nextAt:25 };
+  if (trades >= 3)  return { emoji:'⭐', label:'Habitual', color:'#1d4ed8', bg:'#eff6ff', next:'Experto', nextAt:10 };
+  if (trades >= 1)  return { emoji:'🔄', label:'Truequeador', color:'#16a34a', bg:'#f0fdf4', next:'Habitual', nextAt:3 };
+  return { emoji:'🌱', label:'Semilla', color:'var(--muted)', bg:'var(--bg2)', next:'Truequeador', nextAt:1 };
+}
+
+function renderLevelBadge(trades, large = false) {
+  const lvl = getUserLevel(trades);
+  const size = large ? 'font-size:13px;padding:5px 14px' : 'font-size:11px;padding:3px 10px';
+  return `<span style="display:inline-flex;align-items:center;gap:5px;background:${lvl.bg};color:${lvl.color};border-radius:99px;font-weight:700;${size}">${lvl.emoji} ${lvl.label}</span>`;
+}
+
+function checkLevelUp(previousTrades, newTrades) {
+  const prev = getUserLevel(previousTrades);
+  const curr = getUserLevel(newTrades);
+  if (prev.label !== curr.label) {
+    setTimeout(() => showToast(`🎉 ¡Has subido a ${curr.emoji} ${curr.label}!`), 1000);
+  }
+}
+
+async function openChainChat(userId, userName, theirItemTitle, myItemTitle) {
+  if (!currentUser || !userId) return;
+  navToMessages();
+  setTimeout(async () => {
+    const { data: convs } = await db.from('conversations')
+      .select('id')
+      .or(`and(user1_id.eq.${currentUser.id},user2_id.eq.${userId}),and(user1_id.eq.${userId},user2_id.eq.${currentUser.id})`)
+      .limit(1);
+    const chainMsg = `🔗 Hola ${userName}! He detectado una posible cadena de trueque: yo te daría "${myItemTitle}" y tú me darías "${theirItemTitle}". ¿Te interesa coordinarlo?`;
+    if (convs && convs.length) {
+      openConv(convs[0].id);
+      setTimeout(() => {
+        const input = document.getElementById('chat-input');
+        if (input) { input.value = chainMsg; input.focus(); }
+      }, 800);
+    } else {
+      showToast(`💬 Busca a ${userName} en el explorador para iniciar el chat`);
+    }
+  }, 600);
 }
 
 function cookieChoice(choice) {
@@ -8208,7 +8254,9 @@ async function confirmReceipt(cfId) {
     await loadProfileStats();
     await loadReviews();
     await loadMyItems();
+    const prevTrades = myCompletedTrades;
     renderProfile();
+    checkLevelUp(prevTrades, myCompletedTrades);
     await renderConfirmations();
 
     // Solo abrir modal de valoración si no ha valorado ya
@@ -9420,6 +9468,9 @@ async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
     avatarEl.textContent = userName?.charAt(0)?.toUpperCase();
   }
   document.getElementById('up-name').textContent = userName;
+  // Badge de nivel
+  const upTrust = document.getElementById('up-trust');
+  if (upTrust) upTrust.innerHTML = renderLevelBadge(tradesCount);
   document.getElementById('up-trust').innerHTML = `<span style="color:${trustColors[uLevel]};font-weight:700">${trustIcons[uLevel]} ${uLevelData.label}</span>${uScore > 0 ? ` · <span style="color:var(--muted)">${uScore} puntos de confianza</span>` : ''}`;
 
   // Stats placeholder mientras carga
@@ -10019,6 +10070,9 @@ function renderProfile() {
   if (trustReviewCount) trustReviewCount.textContent = realReviews.length;
   const tmCompletados = document.getElementById('tm-completados');
   if(tmCompletados) tmCompletados.textContent = myCompletedTrades;
+  // Badge de nivel
+  const myLevelBadge = document.getElementById('my-level-badge');
+  if (myLevelBadge) myLevelBadge.innerHTML = renderLevelBadge(myCompletedTrades, true);
   const tmPublicados = document.getElementById('tm-publicados');
   if(tmPublicados) tmPublicados.textContent = myItems.length;
   const tmRatio = document.getElementById('tm-ratio');
