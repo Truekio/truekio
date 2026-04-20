@@ -2956,30 +2956,54 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <!-- ACTIVITY HUB -->
 <div class="view" id="view-activity">
-  <!-- Cabecera sticky solo con título -->
+  <!-- Barra de tabs sticky -->
   <div class="activity-sticky">
     <div class="wrap">
-      <div style="padding:10px 0 6px">
-        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.1rem;color:var(--text)">🔗 Cadenas de trueque</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">Intercambios en cadena donde todos ganan</div>
+      <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
+        <div style="display:flex;gap:0;min-width:max-content">
+          <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
+          <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')" style="display:none">📦 Confirmaciones <span class="nav-badge" style="background:var(--green);display:none" id="mtab-confirm-count"></span></button>
+          <button class="match-tab" id="mtab-messages" onclick="switchMatchTab('messages')" style="display:none">💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="mtab-messages-count"></span></button>
+        </div>
       </div>
     </div>
   </div>
-  <!-- Contenido: solo cadenas -->
-  <div class="wrap page-pad" style="padding-top:16px">
-    <div id="trade-chains-section" style="background:var(--white);border:1.5px solid var(--accent);border-radius:var(--r-lg);margin-bottom:16px;overflow:hidden;display:none"></div>
-    <div id="trade-chains-empty" style="display:none;padding:60px 20px;text-align:center;color:var(--muted)">
-      <div style="font-size:2.5rem;margin-bottom:12px">🔗</div>
-      <div style="font-weight:700;font-size:.95rem;color:var(--text);margin-bottom:6px">Sin cadenas de trueque</div>
-      <div style="font-size:13px;line-height:1.6">Cuando detectemos una cadena de intercambio contigo aparecerá aquí.</div>
-    </div>
-    <!-- Contenedores fantasma para no romper código legacy -->
+  <!-- Contenido -->
+  <div class="wrap page-pad" style="padding-top:24px">
     <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
-    <div id="matches-proposals" style="display:none"><div id="proposals-list"></div></div>
-    <div id="matches-confirm" style="display:none"><div id="confirmations-list"></div></div>
-    <div id="matches-wishlist-act" style="display:none"><div id="activity-wishlist-content"></div></div>
-    <div id="matches-messages" style="display:none"></div>
-  </div>
+    <div id="matches-proposals" class="match-tab-content active">
+      <!-- Sección de cadenas de trueque -->
+      <div id="trade-chains-section" style="display:none;background:var(--white);border:1.5px solid var(--accent);border-radius:var(--r-lg);margin-bottom:16px;overflow:hidden"></div>
+      <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
+    </div>
+    <div id="matches-confirm" class="match-tab-content" style="display:none">
+      <div style="background:var(--green-l);border:1px solid rgba(45,158,95,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
+        <div style="font-size:1.6rem;flex-shrink:0">🛡️</div>
+        <div><div style="font-weight:700;font-size:.92rem;margin-bottom:3px;color:var(--green)">Confirmación de recepción</div><div style="font-size:12px;color:var(--green);opacity:.8;line-height:1.6">El trueque no se cierra hasta que ambas partes confirman la recepción.</div></div>
+      </div>
+      <div id="confirmations-list"></div>
+    </div>
+    <div id="matches-wishlist-act" class="match-tab-content" style="display:none">
+      <div id="activity-wishlist-content"></div>
+    </div>
+    <div id="matches-messages" class="match-tab-content" style="display:none;padding:0;margin:-24px">
+      <div class="messages-layout" style="height:calc(100vh - 116px)">
+        <div class="conv-list" id="activity-conv-list">
+          <div class="conv-head">
+            <div class="conv-search"><span style="color:var(--muted)">🔍</span><input placeholder="Buscar conversación..." oninput="filterConvList(this.value)"></div>
+          </div>
+          <div id="conv-list-items"></div>
+        </div>
+        <div class="chat-main" id="chat-main">
+          <div class="chat-empty">
+            <div class="ce-icon">💬</div>
+            <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div>
+            <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- end contenido -->
 </div><!-- end view-activity -->
 
 <!-- MATCHES (legacy alias) -->
@@ -4944,8 +4968,25 @@ function navTo(v) {
   if(v === 'demand') { loadPublicDemand(); }
 }
 
-// (navToActivity primera definición eliminada — ver definición activa más abajo)
-function _legacyNavToActivityRemoved() {} // placeholder para no romper parsers
+function navToActivity(tab) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-activity').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const nt = document.getElementById('ntab-activity');
+  if(nt) nt.classList.add('active');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bn = document.getElementById('bnav-activity');
+  if(bn) bn.classList.add('active');
+  switchMatchTab(tab || 'proposals');
+  if (currentUser) setTimeout(() => loadMatches(), 500); // actualizar badges de match en explorador
+  closeNotif();
+  (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
+  // Rutas que requieren autenticación
+  const authRequired = ['publish','activity','messages','profile','favorites','admin'];
+  if (authRequired.includes(v) && !currentUser) {
+    requireAuth(v);
+    return;
+  }
 
   if(v === 'publish') {
     pubCurrentScreen = 1;
@@ -5198,6 +5239,13 @@ function navToMessagesWeb() {
   }, 50);
 }
 function navToActivity(tab) {
+  // Restaurar sticky siempre
+  const _sticky = document.querySelector(".activity-sticky");
+  if (_sticky) _sticky.style.display = "";
+  const _wpad = document.querySelector("#view-activity .wrap.page-pad");
+  if (_wpad) _wpad.style.paddingTop = "";
+  const _convList = document.getElementById('activity-conv-list');
+  if (_convList) _convList.style.paddingTop = "";
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById('view-activity').classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
@@ -5206,13 +5254,14 @@ function navToActivity(tab) {
   document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
   const bn = document.getElementById('bnav-activity');
   if(bn) bn.classList.add('active');
+  switchMatchTab(tab || 'proposals');
+  if (currentUser) setTimeout(() => loadMatches(), 500);
   closeNotif();
   (document.getElementById('app-scroll')||window).scrollTo({top:0,behavior:'instant'});
   if (!currentUser) { requireAuth('activity'); return; }
-  // Asegurar nav visible
-  restoreMobileNav();
-  // Cargar solo cadenas de trueque
-  loadTradeChains();
+  const _bn = document.querySelector('.bottom-nav');
+  if (_bn && window.innerWidth <= 640) _bn.style.display = 'block';
+  setTimeout(() => loadProposals(), 600);
 }
 
 // ═══ ONBOARDING (eliminado del MVP v1) ═══
@@ -5722,21 +5771,22 @@ async function loadTradeChains() {
 
 function renderTradeChains(chains) {
   const el = document.getElementById('trade-chains-section');
-  const emptyEl = document.getElementById('trade-chains-empty');
   if (!el) return;
 
-  if (!chains.length) {
-    el.style.display = 'none';
-    if (emptyEl) emptyEl.style.display = '';
-    return;
-  }
-  if (emptyEl) emptyEl.style.display = 'none';
+  if (!chains.length) { el.style.display = 'none'; return; }
 
   const catEmoji = { 'Libros':'📚','Juegos de mesa':'🎲','Cartas y coleccionables':'🃏','Videojuegos':'🎮','Música':'🎵','Hogar y muebles':'🏠','Servicios':'🤝','Otros':'📦' };
   const emoji = cat => catEmoji[cat] || '📦';
 
   el.style.display = '';
   el.innerHTML = `
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.2rem">🔗</span>
+      <div>
+        <div style="font-weight:800;font-size:14px">Cadenas de trueque</div>
+        <div style="font-size:11px;color:var(--muted)">Intercambios en cadena donde todos ganan</div>
+      </div>
+    </div>
     ${chains.map(c => {
       const isA = c.user_a_id === currentUser.id;
       const isB = c.user_b_id === currentUser.id;
@@ -6440,7 +6490,6 @@ async function deleteProposal(proposalId) {
     showToast('🗑 Propuesta retirada');
     loadProposals();
     loadConversations();
-    restoreMobileNav();
   });
 }
 
@@ -9041,77 +9090,50 @@ async function openConv(convId) {
     });
 }
 
-function restoreMobileNav() {
-  if (window.innerWidth > 640) return;
-  const bn = document.querySelector('.bottom-nav');
-  if (!bn) return;
-  bn.style.display = 'block';
-}
-
 async function cancelTrade(convId) {
-  showAppConfirm('\u00bfCancelar este trueque?', 'Los objetos volver\u00e1n a estar disponibles.', async () => {
+  showAppConfirm('¿Cancelar este trueque?', 'Los objetos volverán a estar disponibles.', async () => {
 
-    // Restaurar UI siempre, venga del flujo que venga (chat abierto o tab confirmaciones)
-    const _finalizeCancelUI = () => {
-      restoreMobileNav();
-      const convList = document.querySelector('.conv-list');
-      if (convList) convList.classList.remove('mobile-hidden');
-      const main = document.getElementById('chat-main');
-      if (main) {
-        main.classList.remove('mobile-open');
-        main.innerHTML = '<div class="chat-empty"><div class="ce-icon">\ud83d\udcac</div><div style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div><p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversaci\u00f3n para empezar</p></div>';
+  const { data: conv } = await db.from('conversations')
+    .select('id,proposal_id')
+    .eq('id', convId).single();
+  if (!conv) return;
+
+  // Cambiar propuesta a cancelled y liberar items
+  if (conv.proposal_id) {
+    const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
+    if (prop) {
+      await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
+
+      // Resolver offered_item_id si es null
+      let offeredId = prop.offered_item_id;
+      if (!offeredId && prop.offered_item_title && prop.offerer_id) {
+        const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
+        offeredId = fi?.id || null;
       }
-      activeConvId = null;
-    };
 
-    const { data: conv } = await db.from('conversations')
-      .select('id,proposal_id')
-      .eq('id', convId).single();
-
-    if (!conv) {
-      showToast('\u26a0\ufe0f No se encontr\u00f3 el trueque');
-      _finalizeCancelUI();
-      return;
+      const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
+      if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
+      await Promise.all(updates);
     }
+  }
 
-    // Cambiar propuesta a cancelled y liberar items
-    if (conv.proposal_id) {
-      const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
-      if (prop) {
-        await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
+  // Recargar items y confirmaciones
+  await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
 
-        // Resolver offered_item_id si es null
-        let offeredId = prop.offered_item_id;
-        if (!offeredId && prop.offered_item_title && prop.offerer_id) {
-          const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
-          offeredId = fi?.id || null;
-        }
+  // Marcar conversación como cancelled
+  await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
 
-        const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
-        if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
-        await Promise.all(updates);
-      }
-    }
+  // Ocultar la conversación
+  try {
+    const key = `truquo_hidden_convs_${currentUser.id}`;
+    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!hidden.includes(convId)) hidden.push(convId);
+    localStorage.setItem(key, JSON.stringify(hidden));
+  } catch(e) {}
 
-    // Recargar items y confirmaciones
-    await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
-
-    // Marcar conversaci\u00f3n como cancelled
-    await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
-
-    // Ocultar la conversaci\u00f3n del listado local
-    try {
-      const key = `truquo_hidden_convs_${currentUser.id}`;
-      const hidden = JSON.parse(localStorage.getItem(key) || '[]');
-      if (!hidden.includes(convId)) hidden.push(convId);
-      localStorage.setItem(key, JSON.stringify(hidden));
-    } catch(e) {}
-
-    renderConfirmations();
-    loadConversations();
-    showToast('\u2715 Trueque cancelado \u2014 objetos disponibles de nuevo');
-    _finalizeCancelUI();
-
+  renderConfirmations();
+  loadConversations();
+  showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
   }); // fin showAppConfirm
 }
 
