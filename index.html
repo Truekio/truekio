@@ -6449,13 +6449,8 @@ async function loadProposals() {
       </div>
       ${counterItemsHtml}
       ${p.message ? `<div style="font-size:12px;color:var(--text2);background:var(--bg);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;line-height:1.5">"${p.message}"</div>` : ''}
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-        ${(p.status === 'pending' && isOwner) || myTurnToRespond ? `
-          <button class="btn btn-primary btn-sm" style="flex:1" onclick="respondProposal('${p.id}','accepted')">✅ Aceptar</button>
-          <button class="btn btn-secondary btn-sm" onclick="openCounterModal('${p.id}','${isOwner ? p.offerer_id : p.owner_id}','${(isOwner ? p.offerer_name : p.owner_id).replace(/'/g,"\\'")}')">🔄 Contraoferta</button>
-          <button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none" onclick="respondProposal('${p.id}','rejected')">❌ Rechazar</button>
-        ` : ''}
-        ${!isOwner && p.status === 'pending' ? `<button class="btn btn-sm" style="color:#ef4444;border-color:#fca5a5;background:none;margin-left:auto" onclick="deleteProposal('${p.id}')">🗑 Retirar</button>` : ''}
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">
+        💬 Gestiona esta propuesta desde <strong>Mensajes</strong>
       </div>
     </div>`;
   }).join('');
