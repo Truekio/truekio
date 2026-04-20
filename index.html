@@ -6490,6 +6490,7 @@ async function deleteProposal(proposalId) {
     showToast('🗑 Propuesta retirada');
     loadProposals();
     loadConversations();
+    restoreMobileNav();
   });
 }
 
@@ -9090,6 +9091,11 @@ async function openConv(convId) {
     });
 }
 
+function restoreMobileNav() {
+  const bn = document.querySelector('.bottom-nav');
+  if (bn && window.innerWidth <= 640) bn.style.display = '';
+}
+
 async function cancelTrade(convId) {
   showAppConfirm('¿Cancelar este trueque?', 'Los objetos volverán a estar disponibles.', async () => {
 
@@ -9136,8 +9142,7 @@ async function cancelTrade(convId) {
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
 
   // Restaurar nav inferior y volver a la lista de conversaciones
-  const bn = document.querySelector('.bottom-nav');
-  if (bn) bn.style.display = '';
+  restoreMobileNav();
   const convList = document.querySelector('.conv-list');
   if (convList) convList.classList.remove('mobile-hidden');
   const main = document.getElementById('chat-main');
