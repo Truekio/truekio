@@ -9157,9 +9157,9 @@ async function cancelTrade(convId) {
     }
   } catch(e) {}
 
-  renderConfirmations();
-  loadConversations();
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
+  // Navegar al explorador — solución limpia al problema del nav inferior
+  navTo('explore');
   }); // fin showAppConfirm
 }
 
