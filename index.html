@@ -9092,69 +9092,76 @@ async function openConv(convId) {
 }
 
 function restoreMobileNav() {
+  if (window.innerWidth > 640) return;
   const bn = document.querySelector('.bottom-nav');
-  if (bn && window.innerWidth <= 640) bn.style.display = '';
+  if (!bn) return;
+  bn.style.display = 'block';
 }
 
 async function cancelTrade(convId) {
-  showAppConfirm('¿Cancelar este trueque?', 'Los objetos volverán a estar disponibles.', async () => {
+  showAppConfirm('\u00bfCancelar este trueque?', 'Los objetos volver\u00e1n a estar disponibles.', async () => {
 
-  const { data: conv } = await db.from('conversations')
-    .select('id,proposal_id')
-    .eq('id', convId).single();
-  if (!conv) return;
-
-  // Cambiar propuesta a cancelled y liberar items
-  if (conv.proposal_id) {
-    const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
-    if (prop) {
-      await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
-
-      // Resolver offered_item_id si es null
-      let offeredId = prop.offered_item_id;
-      if (!offeredId && prop.offered_item_title && prop.offerer_id) {
-        const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
-        offeredId = fi?.id || null;
+    // Restaurar UI siempre, venga del flujo que venga (chat abierto o tab confirmaciones)
+    const _finalizeCancelUI = () => {
+      restoreMobileNav();
+      const convList = document.querySelector('.conv-list');
+      if (convList) convList.classList.remove('mobile-hidden');
+      const main = document.getElementById('chat-main');
+      if (main) {
+        main.classList.remove('mobile-open');
+        main.innerHTML = '<div class="chat-empty"><div class="ce-icon">\ud83d\udcac</div><div style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div><p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversaci\u00f3n para empezar</p></div>';
       }
+      activeConvId = null;
+    };
 
-      const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
-      if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
-      await Promise.all(updates);
+    const { data: conv } = await db.from('conversations')
+      .select('id,proposal_id')
+      .eq('id', convId).single();
+
+    if (!conv) {
+      showToast('\u26a0\ufe0f No se encontr\u00f3 el trueque');
+      _finalizeCancelUI();
+      return;
     }
-  }
 
-  // Recargar items y confirmaciones
-  await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
+    // Cambiar propuesta a cancelled y liberar items
+    if (conv.proposal_id) {
+      const { data: prop } = await db.from('proposals').select('item_id, offered_item_id, offered_item_title, offerer_id').eq('id', conv.proposal_id).single();
+      if (prop) {
+        await db.from('proposals').update({ status: 'cancelled' }).eq('id', conv.proposal_id);
 
-  // Marcar conversación como cancelled
-  await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
+        // Resolver offered_item_id si es null
+        let offeredId = prop.offered_item_id;
+        if (!offeredId && prop.offered_item_title && prop.offerer_id) {
+          const { data: fi } = await db.from('items').select('id').eq('user_id', prop.offerer_id).ilike('title', prop.offered_item_title).limit(1).single();
+          offeredId = fi?.id || null;
+        }
 
-  // Ocultar la conversación
-  try {
-    const key = `truquo_hidden_convs_${currentUser.id}`;
-    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
-    if (!hidden.includes(convId)) hidden.push(convId);
-    localStorage.setItem(key, JSON.stringify(hidden));
-  } catch(e) {}
+        const updates = [db.from('items').update({ status: 'available' }).eq('id', prop.item_id)];
+        if (offeredId) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredId));
+        await Promise.all(updates);
+      }
+    }
 
-  renderConfirmations();
-  loadConversations();
-  showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
+    // Recargar items y confirmaciones
+    await loadItemsFromSupabase().then(data => { if(data) { items = data; applyFilter('', currentFilter); } });
 
-  // Restaurar nav inferior y volver a la lista de conversaciones
-  restoreMobileNav();
-  const convList = document.querySelector('.conv-list');
-  if (convList) convList.classList.remove('mobile-hidden');
-  const main = document.getElementById('chat-main');
-  if (main) {
-    main.classList.remove('mobile-open');
-    main.innerHTML = `<div class="chat-empty">
-      <div class="ce-icon">💬</div>
-      <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div>
-      <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p>
-    </div>`;
-  }
-  activeConvId = null;
+    // Marcar conversaci\u00f3n como cancelled
+    await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
+
+    // Ocultar la conversaci\u00f3n del listado local
+    try {
+      const key = `truquo_hidden_convs_${currentUser.id}`;
+      const hidden = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!hidden.includes(convId)) hidden.push(convId);
+      localStorage.setItem(key, JSON.stringify(hidden));
+    } catch(e) {}
+
+    renderConfirmations();
+    loadConversations();
+    showToast('\u2715 Trueque cancelado \u2014 objetos disponibles de nuevo');
+    _finalizeCancelUI();
+
   }); // fin showAppConfirm
 }
 
