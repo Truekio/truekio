@@ -8499,13 +8499,18 @@ async function updateActivityNavBadge() {
       return total + (c.user1_id === currentUser.id ? (c.unread_user1 || 0) : (c.unread_user2 || 0));
     }, 0);
 
+    // Añadir los marcados manualmente como no leídos
+    const manualKey = `truquo_manual_unread_${currentUser.id}`;
+    const manual = (() => { try { return JSON.parse(localStorage.getItem(manualKey) || '[]'); } catch(e) { return []; } })();
+    const manualCount = manual.filter(id => !(convs||[]).find(c => (c.user1_id === currentUser.id ? c.unread_user1 : c.unread_user2) > 0 && c.id === id)).length;
+
     const { data: proposals } = await db.from('proposals')
       .select('id')
       .eq('owner_id', currentUser.id)
       .eq('status', 'pending');
     const pendingProposals = (proposals || []).length;
 
-    const total = unreadMsgs + pendingProposals;
+    const total = unreadMsgs + manualCount + pendingProposals;
     const badge = document.getElementById('bnav-activity-badge');
     if (badge) {
       if (total > 0) {
@@ -8787,6 +8792,10 @@ function renderConvList(data) {
   const hidden = (() => { try { return JSON.parse(localStorage.getItem(hiddenKey) || '[]'); } catch(e) { return []; } })();
   const visibleData = data.filter(c => !hidden.includes(c.id));
 
+  // Leer marcados manualmente como no leídos
+  const manualUnreadKey = `truquo_manual_unread_${currentUser?.id}`;
+  const manualUnread = (() => { try { return JSON.parse(localStorage.getItem(manualUnreadKey) || '[]'); } catch(e) { return []; } })();
+
   // Calcular total de no leídos para el badge del nav
   let totalUnread = 0;
 
@@ -8804,8 +8813,9 @@ function renderConvList(data) {
     const time = new Date(c.last_message_at).toLocaleDateString('es-ES', { day:'numeric', month:'short' });
     const bg = `linear-gradient(135deg,hsl(${strHash(otherName||'')%360},55%,70%),hsl(${strHash((otherName||'')+'x')%360},55%,60%))`;
     const unread = isUser1 ? (c.unread_user1 || 0) : (c.unread_user2 || 0);
-    totalUnread += unread;
-    const isUnread = unread > 0;
+    const isManualUnread = manualUnread.includes(c.id);
+    totalUnread += unread + (isManualUnread && unread === 0 ? 1 : 0);
+    const isUnread = unread > 0 || isManualUnread;
     // Buscar foto del objeto del trueque (el objeto del otro usuario)
     const otherItemTitle = isUser1 ? c.item2_title : c.item1_title;
     const otherItemPhoto = (() => {
@@ -8863,11 +8873,18 @@ function openConvMenu(e, convId, isUnread) {
 
 async function markConvUnread(convId, markAsUnread) {
   if (!currentUser) return;
-  const { data: conv } = await db.from('conversations').select('user1_id').eq('id', convId).single();
-  if (!conv) return;
-  const isUser1 = conv.user1_id === currentUser.id;
-  const field = isUser1 ? 'unread_user1' : 'unread_user2';
-  await db.from('conversations').update({ [field]: markAsUnread ? 1 : 0 }).eq('id', convId);
+  // Usamos localStorage para no disparar notificaciones push al otro usuario
+  const key = `truquo_manual_unread_${currentUser.id}`;
+  try {
+    const manual = JSON.parse(localStorage.getItem(key) || '[]');
+    if (markAsUnread) {
+      if (!manual.includes(convId)) manual.push(convId);
+    } else {
+      const idx = manual.indexOf(convId);
+      if (idx > -1) manual.splice(idx, 1);
+    }
+    localStorage.setItem(key, JSON.stringify(manual));
+  } catch(e) {}
   loadConversations();
   updateActivityNavBadge();
 }
@@ -8958,6 +8975,13 @@ function closeMobileChat() {
 
 async function openConv(convId) {
   activeConvId = convId;
+  // Limpiar marcado manual de no leído al abrir
+  try {
+    const mk = `truquo_manual_unread_${currentUser?.id}`;
+    const manual = JSON.parse(localStorage.getItem(mk) || '[]');
+    const idx = manual.indexOf(convId);
+    if (idx > -1) { manual.splice(idx, 1); localStorage.setItem(mk, JSON.stringify(manual)); }
+  } catch(e) {}
 
   // Cargar datos de la conversación
   const { data: conv } = await db.from('conversations')
