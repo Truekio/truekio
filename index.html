@@ -9134,6 +9134,22 @@ async function cancelTrade(convId) {
   renderConfirmations();
   loadConversations();
   showToast('✕ Trueque cancelado — objetos disponibles de nuevo');
+
+  // Restaurar nav inferior y volver a la lista de conversaciones
+  const bn = document.querySelector('.bottom-nav');
+  if (bn) bn.style.display = '';
+  const convList = document.querySelector('.conv-list');
+  if (convList) convList.classList.remove('mobile-hidden');
+  const main = document.getElementById('chat-main');
+  if (main) {
+    main.classList.remove('mobile-open');
+    main.innerHTML = `<div class="chat-empty">
+      <div class="ce-icon">💬</div>
+      <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--text);margin-bottom:6px">Tus conversaciones</div>
+      <p style="font-size:13px;text-align:center;max-width:220px;color:var(--muted);line-height:1.6">Selecciona una conversación para empezar</p>
+    </div>`;
+  }
+  activeConvId = null;
   }); // fin showAppConfirm
 }
 
