@@ -9304,7 +9304,7 @@ async function loadMessages(convId) {
 
   // Mensaje inicial del sistema — solo si el trueque sigue activo
   const _propStatus = window._activeConvProposalStatus;
-  const _showAccepted = !_propStatus || _propStatus === 'accepted';
+  const _showAccepted = _propStatus === 'accepted';
   const systemMsg = _showAccepted ? `
     <div style="text-align:center;padding:16px 20px;margin-bottom:8px">
       <div style="display:inline-block;background:var(--green-l);color:var(--green);font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px">
