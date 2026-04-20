@@ -8070,12 +8070,7 @@ async function renderConfirmations() {
           ⏳ Esperando que ${otherName} también confirme. Te avisaremos cuando lo haga.
         </div>` : ''}
 
-        ${!done ? `
-        <div style="margin-top:12px;text-align:right">
-          <button onclick="cancelTrade('${c.id}')" style="background:none;border:1px solid #fca5a5;color:#ef4444;font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;cursor:pointer;font-family:inherit">
-            ✕ Cancelar trueque
-          </button>
-        </div>` : ''}
+        <!-- Cancelar trueque disponible desde el chat en Mensajes -->
 
         ${done ? `
         <div style="padding:12px 14px;background:var(--green-l);border:1px solid #86efac;border-radius:var(--r);font-size:13px;color:#166534;font-weight:700;text-align:center;margin-bottom:10px">
