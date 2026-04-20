@@ -6477,15 +6477,13 @@ async function deleteProposal(proposalId) {
     const { error } = await db.from('proposals').delete().eq('id', proposalId).eq('offerer_id', currentUser.id);
     if (error) { showToast('⚠️ Error: ' + error.message); return; }
     // Ocultar conversación pendiente si existe
-    const { data: conv } = await db.from('conversations').select('id').eq('proposal_id', proposalId).maybeSingle();
+    const { data: conv } = await db.from('conversations').select('id,user1_id').eq('proposal_id', proposalId).maybeSingle();
     if (conv) {
-      try {
-        const key = `truquo_hidden_convs_${currentUser.id}`;
-        const hidden = JSON.parse(localStorage.getItem(key) || '[]');
-        if (!hidden.includes(conv.id)) hidden.push(conv.id);
-        localStorage.setItem(key, JSON.stringify(hidden));
-      } catch(e) {}
-      await db.from('conversations').update({ status: 'cancelled' }).eq('id', conv.id);
+      const isUser1 = conv.user1_id === currentUser.id;
+      await db.from('conversations').update({
+        status: 'cancelled',
+        [isUser1 ? 'hidden_user1' : 'hidden_user2']: true
+      }).eq('id', conv.id);
     }
     showToast('🗑 Propuesta retirada');
     loadProposals();
@@ -7905,7 +7903,7 @@ async function renderConfirmations() {
   // Cargar conversaciones aceptadas (= trueques en curso)
   const { data: convs, error } = await db
     .from('conversations')
-    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,proposal_id,confirmed_by,created_at,status')
+    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,proposal_id,confirmed_by,created_at,status,hidden_user1,hidden_user2')
     .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
     .not('status', 'in', '("cancelled","rejected","pending")')
     .order('created_at', { ascending: false });
@@ -7957,13 +7955,14 @@ async function renderConfirmations() {
 
   // Filtrar: mostrar solo las pendientes de confirmar O de valorar (excluyendo descartadas)
   const dismissed = (() => { try { return JSON.parse(localStorage.getItem('truquo_dismissed_trades') || '[]'); } catch(e) { return []; } })();
-  const hiddenConvs = (() => { try { return JSON.parse(localStorage.getItem(`truquo_hidden_convs_${currentUser.id}`) || '[]'); } catch(e) { return []; } })();
+  // hidden_convs ahora viene de los campos Supabase — se filtra inline abajo
 
   // Calcular badge: solo conversaciones pendientes de confirmar por el usuario actual
   const pendingMe = convs.filter(c => {
     if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
     if (dismissed.includes(c.id)) return false;
-    if (hiddenConvs.includes(c.id)) return false;
+    const isHid1 = c.user1_id === currentUser.id ? c.hidden_user1 : c.hidden_user2;
+    if (isHid1) return false;
     const confirmed = getConfirmed(c);
     return !confirmed.includes(currentUser.id);
   });
@@ -7981,7 +7980,8 @@ async function renderConfirmations() {
     if (c.proposal_id && cancelledProposalIds.has(c.proposal_id)) return false;
     // Excluir descartados manualmente
     if (dismissed.includes(c.id)) return false;
-    if (hiddenConvs.includes(c.id)) return false;
+    const _isHid = c.user1_id === currentUser.id ? c.hidden_user1 : c.hidden_user2;
+    if (_isHid) return false;
     const confirmed = getConfirmed(c);
     const myConfirmed = confirmed.includes(currentUser.id);
     // Si el usuario no ha confirmado aún → mostrar
@@ -8714,7 +8714,7 @@ async function loadConversations() {
   if (!currentUser) return;
   const { data, error } = await db
     .from('conversations')
-    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,last_message,last_message_at,unread_user1,unread_user2,proposal_id,confirmed_by')
+    .select('id,user1_id,user2_id,user1_name,user2_name,item1_title,item2_title,last_message,last_message_at,unread_user1,unread_user2,proposal_id,confirmed_by,hidden_user1,hidden_user2')
     .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
     .order('last_message_at', { ascending: false });
 
@@ -8787,10 +8787,30 @@ function renderConvList(data) {
     return;
   }
 
-  // Filtrar conversaciones ocultas por este usuario
-  const hiddenKey = `truquo_hidden_convs_${currentUser?.id}`;
-  const hidden = (() => { try { return JSON.parse(localStorage.getItem(hiddenKey) || '[]'); } catch(e) { return []; } })();
-  const visibleData = data.filter(c => !hidden.includes(c.id));
+  // Filtrar conversaciones ocultas usando campos de Supabase (hidden_user1/hidden_user2)
+  // Si hay mensaje nuevo en una conv oculta, se des-oculta automáticamente en Supabase
+  const isUser1Check = c => c.user1_id === currentUser.id;
+  const toUnhide = data.filter(c => {
+    const amUser1 = isUser1Check(c);
+    const isHidden = amUser1 ? c.hidden_user1 : c.hidden_user2;
+    if (!isHidden) return false;
+    const myUnread = amUser1 ? (c.unread_user1 || 0) : (c.unread_user2 || 0);
+    return myUnread > 0; // oculta pero con mensaje nuevo → des-ocultar
+  });
+  if (toUnhide.length) {
+    toUnhide.forEach(c => {
+      const field = isUser1Check(c) ? 'hidden_user1' : 'hidden_user2';
+      db.from('conversations').update({ [field]: false }).eq('id', c.id).then(() => {});
+    });
+  }
+  const visibleData = data.filter(c => {
+    const amUser1 = isUser1Check(c);
+    const isHidden = amUser1 ? c.hidden_user1 : c.hidden_user2;
+    if (!isHidden) return true;
+    // Si está oculta pero tiene mensaje nuevo, mostrar (ya se des-ocultó arriba)
+    const myUnread = amUser1 ? (c.unread_user1 || 0) : (c.unread_user2 || 0);
+    return myUnread > 0;
+  });
 
   // Leer marcados manualmente como no leídos
   const manualUnreadKey = `truquo_manual_unread_${currentUser?.id}`;
@@ -8901,7 +8921,7 @@ async function deleteConversation(convId) {
   // Bloquear si la conversación tiene mensajes no leídos
   try {
     const { data: convCheck } = await db.from('conversations')
-      .select('unread_user1,unread_user2,user1_id')
+      .select('unread_user1,unread_user2,user1_id,hidden_user1,hidden_user2')
       .eq('id', convId).single();
     if (convCheck) {
       const myUnread = convCheck.user1_id === currentUser.id ? (convCheck.unread_user1 || 0) : (convCheck.unread_user2 || 0);
@@ -8931,21 +8951,16 @@ async function deleteConversation(convId) {
 
   if (!confirmed) return;
 
-  // Limpiar contador de no leídos al ocultar
+  // Ocultar en Supabase y limpiar no leídos — funciona en todos los dispositivos
   try {
     const { data: conv } = await db.from('conversations').select('user1_id').eq('id', convId).single();
     if (conv) {
-      const field = conv.user1_id === currentUser.id ? 'unread_user1' : 'unread_user2';
-      await db.from('conversations').update({ [field]: 0 }).eq('id', convId);
+      const isUser1 = conv.user1_id === currentUser.id;
+      await db.from('conversations').update({
+        [isUser1 ? 'hidden_user1' : 'hidden_user2']: true,
+        [isUser1 ? 'unread_user1' : 'unread_user2']: 0
+      }).eq('id', convId);
     }
-  } catch(e) {}
-
-  // Guardar en localStorage — solo oculto para este usuario, no se borra nada
-  try {
-    const key = `truquo_hidden_convs_${currentUser.id}`;
-    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
-    if (!hidden.includes(convId)) hidden.push(convId);
-    localStorage.setItem(key, JSON.stringify(hidden));
   } catch(e) {}
 
   // Si era la activa, limpiar el chat
@@ -9143,12 +9158,13 @@ async function cancelTrade(convId) {
   // Marcar conversación como cancelled
   await db.from('conversations').update({ status: 'cancelled' }).eq('id', convId);
 
-  // Ocultar la conversación
+  // Ocultar conversación en Supabase (funciona en todos los dispositivos)
   try {
-    const key = `truquo_hidden_convs_${currentUser.id}`;
-    const hidden = JSON.parse(localStorage.getItem(key) || '[]');
-    if (!hidden.includes(convId)) hidden.push(convId);
-    localStorage.setItem(key, JSON.stringify(hidden));
+    const { data: cHide } = await db.from('conversations').select('user1_id').eq('id', convId).single();
+    if (cHide) {
+      const field = cHide.user1_id === currentUser.id ? 'hidden_user1' : 'hidden_user2';
+      await db.from('conversations').update({ [field]: true }).eq('id', convId);
+    }
   } catch(e) {}
 
   renderConfirmations();
