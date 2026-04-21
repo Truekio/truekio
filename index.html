@@ -492,7 +492,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 /* ── CHAT ── */
 .messages-layout{display:grid;grid-template-columns:290px 1fr;gap:16px;min-height:560px;}
 .conv-list{display:flex;flex-direction:column;overflow-y:auto;}
-.conv-head{padding:16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--white);z-index:10;}
+.conv-head{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--white);z-index:10;}
 .conv-head h3{font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;margin-bottom:12px;}
 .conv-search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;}
 .conv-search input{background:none;border:none;color:var(--text);font-size:13px;outline:none;width:100%;}
@@ -8957,9 +8957,33 @@ function stopConvPolling() {
   }
 }
 
+let _allConvsData = []; // cache para el buscador
+
+function filterConvList(q) {
+  if (!q || !q.trim()) {
+    renderConvList(_allConvsData);
+    return;
+  }
+  const term = q.toLowerCase().trim();
+  const filtered = _allConvsData.filter(c => {
+    const other = (c.user1_id === (window.currentUser?.id) ? c.user2_name : c.user1_name) || '';
+    const item1 = c.item1_title || '';
+    const item2 = c.item2_title || '';
+    const last = c.last_message || '';
+    return other.toLowerCase().includes(term)
+      || item1.toLowerCase().includes(term)
+      || item2.toLowerCase().includes(term)
+      || last.toLowerCase().includes(term);
+  });
+  renderConvList(filtered);
+}
+
 function renderConvList(data) {
   const list = document.getElementById('conv-list-items');
   if (!list) return;
+
+  // Guardar para el buscador (solo cuando llegan datos frescos de Supabase)
+  if (data && data.length) _allConvsData = data;
 
   if (!data || !data.length) {
     list.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">Aún no tienes conversaciones.<br><span style="font-size:12px">Aparecerán cuando se acepte un trueque.</span></div>';
