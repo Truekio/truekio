@@ -5979,39 +5979,38 @@ function renderTradeChains(chains) {
       return `
       <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
 
-        <!-- Flujo visual -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <!-- Flujo visual — imágenes más grandes y clicables -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;justify-content:center">
           ${[
             {item: c.item_a, id: c.item_a_id, isMe: isA},
             {item: c.item_b, id: c.item_b_id, isMe: isB},
             {item: c.item_c, id: c.item_c_id, isMe: isC}
           ].map((entry, idx) => {
             const photo = entry.item?.photo_urls?.[0] || entry.item?.photos?.[0] || null;
-            const border = entry.isMe ? '2px solid var(--accent)' : '1.5px solid var(--border)';
+            const border = entry.isMe ? '3px solid var(--accent)' : '1.5px solid var(--border)';
             return `
-            ${idx > 0 ? '<span style="color:var(--muted)">→</span>' : ''}
-            <div style="text-align:center;cursor:pointer" onclick="openDetail(${entry.id})">
-              <div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:${border};background:var(--bg2);display:flex;align-items:center;justify-content:center;margin:0 auto 3px">
-                ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:1.3rem">${emoji(entry.item?.category)}</span>`}
+            ${idx > 0 ? '<span style="color:var(--muted);font-size:1.2rem">→</span>' : ''}
+            <div style="text-align:center;cursor:pointer" onclick="openDetail(${entry.id})" title="Ver detalle">
+              <div style="width:72px;height:72px;border-radius:12px;overflow:hidden;border:${border};background:var(--bg2);display:flex;align-items:center;justify-content:center;margin:0 auto 5px;transition:transform .15s" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''">
+                ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:1.8rem">${emoji(entry.item?.category)}</span>`}
               </div>
-              <div style="font-size:10px;font-weight:700;color:${entry.isMe?'var(--accent)':'var(--text)'};max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.item?.title||'—'}</div>
-              <div style="font-size:9px;color:var(--muted)">${entry.isMe?'tú':entry.item?.user_name||''}</div>
+              <div style="font-size:10px;font-weight:700;color:${entry.isMe?'var(--accent)':'var(--text)'};max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.item?.title||'—'}</div>
+              <div style="font-size:9px;color:var(--muted);margin-top:1px">${entry.isMe?'tú':entry.item?.user_name||''}</div>
             </div>`;
           }).join('')}
-          <span style="color:var(--muted)">→ 🔄</span>
+          <span style="color:var(--muted);font-size:1.2rem">→ 🔄</span>
         </div>
 
         <!-- Resumen claro -->
         <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.8">
           <div>📤 <strong>Tú das:</strong> ${iGive?.title||'—'}</div>
           <div>📥 <strong>Recibes:</strong> ${iReceive?.title||'—'} <span style="color:var(--muted)">(de ${iReceiveFrom||'—'})</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">💡 Pulsa una imagen para ver el objeto y proponer el trueque</div>
         </div>
 
-        <!-- Botones -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="openChainChat('${otherId1}','${otherUser1}','${otherUser1Item?.title||''}','${iGive?.title||''}')" style="flex:1;background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💬 Contactar a ${otherUser1||'—'}</button>
-          <button onclick="openChainChat('${otherId2}','${otherUser2}','${otherUser2Item?.title||''}','${iGive?.title||''}')" style="flex:1;background:none;border:1.5px solid var(--accent);color:var(--accent);padding:8px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💬 Contactar a ${otherUser2||'—'}</button>
-          <button onclick="dismissChain('${c.id}')" style="background:none;border:1px solid var(--border);padding:8px 12px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">✕</button>
+        <!-- Solo botón descartar -->
+        <div style="display:flex;justify-content:flex-end">
+          <button onclick="dismissChain('${c.id}')" style="background:none;border:1px solid var(--border);padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">✕ Descartar</button>
         </div>
       </div>`;
     }).join('')}`;
