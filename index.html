@@ -9912,8 +9912,7 @@ async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
   document.getElementById('up-name').textContent = userName;
   // Badge de nivel
   const upTrust = document.getElementById('up-trust');
-  if (upTrust) upTrust.innerHTML = renderLevelBadge(tradesCount);
-  document.getElementById('up-trust').innerHTML = `<span style="color:${trustColors[uLevel]};font-weight:700">${trustIcons[uLevel]} ${uLevelData.label}</span>${uScore > 0 ? ` · <span style="color:var(--muted)">${uScore} puntos de confianza</span>` : ''}`;
+  if (upTrust) upTrust.innerHTML = `<span style="color:${trustColors[uLevel]};font-weight:700">${trustIcons[uLevel]} ${uLevelData.label}</span>${uScore > 0 ? ` · <span style="color:var(--muted)">${uScore} puntos de confianza</span>` : ''}`;
 
   // Stats placeholder mientras carga
   document.getElementById('up-stats').innerHTML = `
@@ -9922,26 +9921,27 @@ async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
   document.getElementById('up-items').innerHTML = `<div style="color:var(--muted);font-size:13px">Cargando...</div>`;
 
   // Cargar datos en paralelo
-  const queries = [
-    db.from('reviews').select('stars,comment,reviewer_name,created_at').eq('reviewed_user_id', userId || null).not('reviewer_id', 'eq', userId).order('created_at', { ascending: false }).limit(10),
-    db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls,status').eq('user_id', userId || null).eq('status','available').order('created_at', { ascending: false }).limit(20),
-  ];
+  let finalReviews = [];
+  let finalItems = [];
 
-  // Fallback por nombre si no hay userId
-  const nameQueries = userId ? [] : [
-    db.from('reviews').select('stars,comment,reviewer_name,created_at').eq('reviewed_user_name', userName).order('created_at', { ascending: false }).limit(10),
-    db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls').eq('user_name', userName).limit(8),
-  ];
+  if (userId) {
+    // Buscar por userId (más fiable)
+    const [{ data: reviews }, { data: userItems }] = await Promise.all([
+      db.from('reviews').select('stars,comment,reviewer_name,created_at').eq('reviewed_user_id', userId).order('created_at', { ascending: false }).limit(10),
+      db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls,status').eq('user_id', userId).eq('status','available').order('created_at', { ascending: false }).limit(20),
+    ]);
+    finalReviews = reviews || [];
+    finalItems = userItems || [];
+  }
 
-  const [{ data: reviews }, { data: userItems }] = await Promise.all(queries);
-  let finalReviews = reviews || [];
-  let finalItems = userItems || [];
-
-  // Fallback por nombre
-  if (!finalReviews.length && !finalItems.length && !userId) {
-    const [{ data: rByName }, { data: iByName }] = await Promise.all(nameQueries);
-    finalReviews = rByName || [];
-    finalItems = iByName || [];
+  // Fallback por nombre si no hay userId o no se encontró nada
+  if ((!finalReviews.length || !finalItems.length) && userName) {
+    const [{ data: rByName }, { data: iByName }] = await Promise.all([
+      finalReviews.length ? Promise.resolve({data:[]}) : db.from('reviews').select('stars,comment,reviewer_name,created_at').eq('reviewed_user_name', userName).order('created_at', { ascending: false }).limit(10),
+      finalItems.length ? Promise.resolve({data:[]}) : db.from('items').select('id,title,emoji,category,estimated_value,photos,photo_urls,status').eq('user_name', userName).eq('status','available').limit(20),
+    ]);
+    if (!finalReviews.length) finalReviews = rByName || [];
+    if (!finalItems.length) finalItems = iByName || [];
   }
 
   // Completados desde completed_trades
