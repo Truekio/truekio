@@ -491,8 +491,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 
 /* ── CHAT ── */
 .messages-layout{display:grid;grid-template-columns:290px 1fr;gap:16px;min-height:560px;}
-.conv-list{display:flex;flex-direction:column;overflow-y:auto;}
-.conv-head{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--white);z-index:10;}
+.conv-list{display:flex;flex-direction:column;overflow-y:auto;height:100%;}
+.conv-head{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--white);z-index:10;position:sticky;top:0;}
 .conv-head h3{font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;margin-bottom:12px;}
 .conv-search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;}
 .conv-search input{background:none;border:none;color:var(--text);font-size:13px;outline:none;width:100%;}
