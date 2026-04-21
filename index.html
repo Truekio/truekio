@@ -9691,8 +9691,8 @@ async function proposePoint(name, address, schedule, mapsUrl) {
   document.getElementById('truquo-points-overlay')?.remove();
   if (window._tpMap) { window._tpMap.remove(); window._tpMap = null; }
 
-  const scheduleText = schedule ? `\n🕐 ${schedule}` : '';
-  const text = `📍 Te propongo quedar en **${name}**\n📌 ${address}${scheduleText}\n🗺 ${mapsUrl}`;
+  const scheduleText = schedule ? `<br>🕐 ${schedule}` : '';
+  const text = `📍 Te propongo quedar en <strong>${name}</strong><br>📌 <a href="${mapsUrl}" target="_blank" style="color:inherit;text-decoration:underline">${address}</a>${scheduleText}`;
 
   const senderName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
   const { error } = await db.from('messages').insert([{
