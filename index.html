@@ -3715,7 +3715,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     </div>
   </div>
   <div class="fd-foot" style="flex-direction:column;gap:8px">
-    <button onclick="document.getElementById('filter-drawer').classList.remove('open');document.getElementById('fd-overlay')?.classList.remove('open');setTimeout(openTruquoPoints,250)" style="width:100%;background:var(--accent-l);color:var(--accent);border:1.5px solid var(--accent-mid);border-radius:var(--r);padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📍 Ver Puntos Truquo cercanos</button>
+    <button onclick="document.getElementById('filter-drawer').classList.remove('open');document.getElementById('fd-overlay')?.classList.remove('open');setTimeout(()=>openTruquoPoints('explore'),250)" style="width:100%;background:var(--accent-l);color:var(--accent);border:1.5px solid var(--accent-mid);border-radius:var(--r);padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📍 Ver Puntos Truquo cercanos</button>
     <div style="display:flex;gap:10px;width:100%">
       <button class="btn btn-ghost btn-md" style="flex:1" onclick="fdClearAll()">Limpiar filtros</button>
       <button class="btn btn-primary btn-md" style="flex:1" onclick="fdApply(true)">Aplicar</button>
@@ -5503,7 +5503,7 @@ async function saveNewPoint(btn) {
   loadAdminPoints();
 }
 
-async function openTruquoPoints() {
+async function openTruquoPoints(origen) {
   const { data: points } = await db.from('truquo_points').select('*').eq('active', true);
   const existing = document.getElementById('truquo-points-overlay');
   if (existing) existing.remove();
@@ -5536,18 +5536,26 @@ async function openTruquoPoints() {
         <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
         ${p.schedule?`<div style="font-size:12px;color:var(--muted);margin-bottom:4px">🕐 ${p.schedule}</div>`:''}
         ${p.description?`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:6px">${p.description}</div>`:''}
-        <button onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address+', '+p.city)}','_blank')" style="background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent)">🗺 Cómo llegar</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <button onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address+', '+p.city)}','_blank')" style="background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent)">🗺 Cómo llegar</button>
+          ${origen === 'chat' && activeConvId ? `<button onclick="event.stopPropagation();proposePoint('${p.name}','${p.address}, ${p.city}','${p.schedule||''}','https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address+', '+p.city)}')" style="background:var(--accent);color:#fff;border:none;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📍 Proponer este punto</button>` : ''}
+        </div>
       </div>
     </div>`).join('');
 
   const closeAndGoExplore = () => {
     if (window._tpMap) { window._tpMap.remove(); window._tpMap = null; }
     overlay.remove();
-    const chatMain = document.getElementById('chat-main');
-    if (chatMain) chatMain.classList.remove('mobile-open');
-    const convList = document.querySelector('.conv-list');
-    if (convList) convList.classList.remove('mobile-hidden');
-    navTo('explore');
+    if (origen === 'chat') {
+      // Volver al chat — no hacer nada, el chat sigue abierto
+    } else {
+      // Volver al explorador
+      const chatMain = document.getElementById('chat-main');
+      if (chatMain) chatMain.classList.remove('mobile-open');
+      const convList = document.querySelector('.conv-list');
+      if (convList) convList.classList.remove('mobile-hidden');
+      navTo('explore');
+    }
   };
 
   overlay.innerHTML = `
@@ -9543,7 +9551,7 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       </div>
       <div style="padding:8px 16px;background:var(--accent-l);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="font-size:12px;font-weight:700;color:var(--accent)">📍 Puntos Truquo cercanos</div>
-        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver puntos</button>
+        <button onclick="openTruquoPoints('chat')" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver puntos</button>
       </div>`;
     } else {
       html = `<div style="padding:10px 16px;background:#eff6ff;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -9556,7 +9564,7 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       </div>
       <div style="padding:8px 16px;background:var(--accent-l);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="font-size:12px;font-weight:700;color:var(--accent)">📍 Puntos Truquo cercanos</div>
-        <button onclick="openTruquoPoints()" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver puntos</button>
+        <button onclick="openTruquoPoints('chat')" style="background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Ver puntos</button>
       </div>`;
     }
   } else if (bothConfirmed) {
@@ -9676,6 +9684,42 @@ document.addEventListener('touchstart', e => {
     document.querySelectorAll('.msg-out.show-delete').forEach(m => m.classList.remove('show-delete'));
   }
 }, { passive: true });
+
+async function proposePoint(name, address, schedule, mapsUrl) {
+  if (!activeConvId || !currentUser) return;
+  // Cerrar el panel de puntos
+  document.getElementById('truquo-points-overlay')?.remove();
+  if (window._tpMap) { window._tpMap.remove(); window._tpMap = null; }
+
+  const scheduleText = schedule ? `\n🕐 ${schedule}` : '';
+  const text = `📍 Te propongo quedar en **${name}**\n📌 ${address}${scheduleText}\n🗺 ${mapsUrl}`;
+
+  const senderName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+  const { error } = await db.from('messages').insert([{
+    conversation_id: activeConvId,
+    sender_id: currentUser.id,
+    sender_name: senderName,
+    text,
+  }]);
+
+  if (error) { showToast('⚠️ Error al enviar'); return; }
+
+  // Actualizar last_message e incrementar unread
+  const conv = await db.from('conversations').select('user1_id,unread_user1,unread_user2').eq('id', activeConvId).single();
+  if (conv.data) {
+    const isUser1 = conv.data.user1_id === currentUser.id;
+    const unreadField = isUser1 ? 'unread_user2' : 'unread_user1';
+    await db.from('conversations').update({
+      last_message: `📍 Punto de encuentro: ${name}`,
+      last_message_at: new Date().toISOString(),
+      [unreadField]: (conv.data[unreadField] || 0) + 1,
+    }).eq('id', activeConvId);
+  }
+
+  showToast('📍 Punto de encuentro propuesto');
+  loadMessages(activeConvId);
+  loadConversations();
+}
 
 async function sendMessage() {
   if (!activeConvId || !currentUser) return;
