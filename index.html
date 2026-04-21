@@ -9094,6 +9094,8 @@ function renderConvList(data) {
     });
   }
   const visibleData = data.filter(c => {
+    // Ocultar conversaciones pending (propuesta no aceptada aún)
+    if (c.status === 'pending') return false;
     const amUser1 = isUser1Check(c);
     const isHidden = amUser1 ? c.hidden_user1 : c.hidden_user2;
     if (!isHidden) return true;
@@ -10259,26 +10261,7 @@ async function sendOffer() {
     .limit(1)
     .single();
 
-  // Crear conversación bloqueada
-  let newConvId = null;
-  if (newProp) {
-    const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
-    const ownerName = itemData?.user_name || 'Usuario';
-    const { data: newConv } = await db.from('conversations').insert([{
-      proposal_id: newProp.id,
-      user1_id: ownerId,
-      user1_name: ownerName,
-      user2_id: currentUser.id,
-      user2_name: myName,
-      item1_title: activeModalItem.name,
-      item2_title: offeredObj?.title || '☕ Sin objeto a cambio',
-      last_message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
-      last_message_at: new Date().toISOString(),
-      status: 'pending',
-      unread_user1: 1, // Marcar como no leído para el receptor (dueño del objeto)
-    }]).select('id').single();
-    newConvId = newConv?.id;
-  }
+  // La conversación se crea solo cuando se acepta la propuesta
 
   closeModal();
   showToast('✦ Propuesta enviada');
@@ -10301,13 +10284,8 @@ async function sendOffer() {
 
   loadProposals();
 
-  // Navegar a Mensajes y abrir la conversación
-  if (newConvId) {
-    navToActivity('messages');
-    setTimeout(() => openConv(newConvId), 400);
-  } else {
-    navToActivity('messages');
-  }
+  // Navegar a Actividad para ver la propuesta enviada
+  navToActivity('proposals');
 }
 
 // ═══ TRUST SYSTEM ═══
