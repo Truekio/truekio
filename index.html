@@ -11348,7 +11348,7 @@ function toggleProfileSection(section) {
   if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
   // Cargar contenido al abrir
   if (!isOpen) {
-    if (section === 'items')   renderMyItems();
+    if (section === 'items')   loadMyItems();
     if (section === 'favs')    renderFavorites();
     if (section === 'done')    renderDoneTrades();
     if (section === 'blocked') renderBlockedUsers();
@@ -11364,7 +11364,7 @@ function switchPTab(tab) {
     if(btn) btn.classList.toggle('active', t===tab);
     if(content) content.classList.toggle('active', t===tab);
   });
-  if (tab === 'items') renderMyItems();
+  if (tab === 'items') loadMyItems();
   if (tab === 'favs') renderFavorites();
   if (tab === 'done') renderDoneTrades();
 }
