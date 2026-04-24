@@ -9816,9 +9816,10 @@ function openDetail(itemId) {
   const cid = 'dtl';
   const wrap = document.getElementById('detail-carousel');
   if (photos.length) {
-    const photosJson = JSON.stringify(photos).replace(/'/g, "\'");
+    // Guardar fotos en variable global para el lightbox
+    window._detailPhotos = photos;
     const slides = photos.map((src,i) =>
-      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onclick="openLightbox(${i},${photosJson.replace(/"/g,'&quot;')})" style="width:100%;height:100%;object-fit:contain;background:var(--bg2);cursor:zoom-in"></div>`
+      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onclick="openLightbox(${i})" style="width:100%;height:100%;object-fit:contain;background:var(--bg2);cursor:zoom-in"></div>`
     ).join('');
     const dots = photos.length > 1 ? `<div class="carousel-dots" id="${cid}-dots">${photos.map((_,i)=>`<div class="carousel-dot${i===0?' active':''}"></div>`).join('')}</div>` : '';
     const arrows = photos.length > 1 ? `<button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button><button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
@@ -9966,7 +9967,9 @@ function closeUserProfile() {
   document.getElementById('user-profile-overlay').classList.remove('open');
 }
 
-function openLightbox(startIdx, photos) {
+function openLightbox(startIdx) {
+  const photos = window._detailPhotos || [];
+  if (!photos.length) return;
   const existing = document.getElementById('lightbox-overlay');
   if (existing) existing.remove();
 
