@@ -9364,11 +9364,18 @@ async function openConv(convId) {
     if (bn) bn.style.display = 'none';
   }
 
-  // Foto del objeto del trueque para el header
+  // Foto e IDs de los objetos para el header
   const myItemTitle = isUser1 ? conv.item1_title : conv.item2_title;
   const theirItemTitle = isUser1 ? conv.item2_title : conv.item1_title;
-  const theirItem = items.find(i => i.user_id === otherUserId && i.name === theirItemTitle);
+  const theirItem = items.find(i => i.user_id === otherUserId && (i.title === theirItemTitle || i.name === theirItemTitle));
+  const myItem = items.find(i => i.user_id === currentUser.id && (i.title === myItemTitle || i.name === myItemTitle));
   const theirItemPhoto = theirItem?.photos?.[0] || theirItem?.photo_urls?.[0] || null;
+  const myItemPhoto = myItem?.photos?.[0] || myItem?.photo_urls?.[0] || null;
+  const theirItemId = theirItem?.id || null;
+  const myItemId = myItem?.id || null;
+  // IDs de la propuesta (se rellenan en renderTradeStatus si hay propuesta)
+  const propItemId = null;
+  const propOfferedItemId = null;
 
   // Pill de estado
   const statusPill = conv.proposal_id
@@ -9379,7 +9386,7 @@ async function openConv(convId) {
 
   main.innerHTML = `
     <div class="chat-head" style="flex-direction:column;align-items:stretch;padding:0">
-      <div style="display:flex;align-items:center;gap:10px;padding:max(14px,calc(env(safe-area-inset-top) + 10px)) 16px 12px">
+      <div style="display:flex;align-items:center;gap:10px;padding:max(14px,calc(env(safe-area-inset-top) + 10px)) 16px 10px">
         ${isMobile ? `<button class="mobile-back-btn" onclick="closeMobileChat()" style="margin-right:4px">Volver</button>` : ''}
         ${theirItemPhoto
           ? `<img src="${theirItemPhoto}" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0">`
@@ -9389,6 +9396,24 @@ async function openConv(convId) {
           <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${theirItemTitle||subject}</div>
         </div>
         ${statusPill}
+      </div>
+      <!-- Franja de objetos — siempre visible -->
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg);border-top:1px solid var(--border)">
+        <div style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0" onclick="${propItemId ? `openDetail(${propItemId})` : ''}">
+          ${myItemPhoto ? `<img src="${myItemPhoto}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0;border:2px solid var(--accent)">` : `<div style="width:32px;height:32px;border-radius:6px;background:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">📦</div>`}
+          <div style="min-width:0">
+            <div style="font-size:9px;color:var(--accent);font-weight:700">TÚ OFRECES</div>
+            <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${myItemTitle||'—'}</div>
+          </div>
+        </div>
+        <span style="color:var(--muted);font-size:16px;flex-shrink:0">⇄</span>
+        <div style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0;justify-content:flex-end;text-align:right" onclick="${propOfferedItemId ? `openDetail(${propOfferedItemId})` : theirItemId ? `openDetail(${theirItemId})` : ''}">
+          <div style="min-width:0">
+            <div style="font-size:9px;color:var(--muted);font-weight:700">RECIBES</div>
+            <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${theirItemTitle||'—'}</div>
+          </div>
+          ${theirItemPhoto ? `<img src="${theirItemPhoto}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1.5px solid var(--border)">` : `<div style="width:32px;height:32px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">📦</div>`}
+        </div>
       </div>
     </div>
     <!-- Banner de acciones sticky -->
