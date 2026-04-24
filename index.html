@@ -6964,7 +6964,7 @@ function obGoTo(step) {
     1: { icon:'🔄', title:'Bienvenido a Truquo', sub:'Intercambia objetos sin dinero.<br>El trueque moderno.' },
     2: { icon:'📍', title:'¿Dónde estás?', sub:'Los matches cercanos tienen<br>más probabilidad de trueque.' },
     3: { icon:'📦', title:'Publica tu primer objeto', sub:'Cuantos más objetos publiques,<br>más matches encontrarás.' },
-    4: { icon:'🔍', title:'¿Qué estás buscando?', sub:'Añade tus deseos y el sistema<br>buscará matches automáticamente.' },
+
   };
   const h = headers[step];
   if (h) {
@@ -6975,7 +6975,7 @@ function obGoTo(step) {
     if (title) title.textContent = h.title;
     if (sub) sub.innerHTML = h.sub;
   }
-  [1,2,3,4].forEach(i => {
+  [1,2,3].forEach(i => {
     const s = document.getElementById('ob-step-' + i);
     const d = document.getElementById('ob-dot-' + i);
     if (s) s.style.display = i === step ? 'block' : 'none';
@@ -13871,27 +13871,10 @@ document.addEventListener('mouseup', e => {
         <button onclick="obPublish()" style="width:100%;background:#4a9cc5;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">📦 Publicar mi primer objeto</button>
         <div style="display:flex;justify-content:space-between;margin-top:8px">
           <button onclick="obGoTo(2)" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;font-family:inherit;padding:4px">← Atrás</button>
-          <button onclick="obGoTo(4)" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;font-family:inherit;padding:4px">Ahora no →</button>
+          <button onclick="closeOnboarding()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;font-family:inherit;padding:4px">Ahora no →</button>
         </div>
       </div>
 
-      <!-- Step 4: Qué buscas -->
-      <div class="ob-step" id="ob-step-4" style="display:none">
-        <div style="margin-bottom:14px">
-          <div style="display:flex;gap:8px;margin-bottom:10px">
-            <input id="ob-wish-input" placeholder="Ej: iPhone 14, bicicleta..."
-              style="flex:1;background:#f5f8fb;border:1.5px solid #e2e8f0;color:#1a2a3a;font-size:14px;padding:10px 12px;border-radius:10px;outline:none;font-family:inherit"
-              onkeydown="if(event.key==='Enter'){obAddWish()}"
-            >
-            <button onclick="obAddWish()" style="background:#4a9cc5;color:#fff;border:none;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
-          </div>
-          <div id="ob-wish-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-        </div>
-        <button onclick="closeOnboarding()" style="width:100%;background:#4a9cc5;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">✓ ¡Listo, empezar!</button>
-        <div style="display:flex;justify-content:space-between;margin-top:8px">
-          <button onclick="obGoTo(3)" style="background:none;border:none;color:#999;font-siz
-        </div>
-      </div>
     </div>
   </div>
 </div>
