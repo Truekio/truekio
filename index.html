@@ -11234,30 +11234,33 @@ async function saveEditItem() {
       const ext = file.type === 'image/png' ? 'png' : 'jpg';
       const fileName = `${userId}_${Date.now()}_${i}.${ext}`;
       
-      // Comprimir siempre a JPEG — resuelve HEIC/HEIF de iOS y reduce tamaño
-      let blob;
-      try {
-        blob = await compressToBlob(file);
-      } catch(compressErr) {
-        // Si falla compresión, convertir a JPEG via canvas igualmente
+      // Convertir HEIC/HEIF a JPEG si es necesario, luego comprimir
+      let fileToCompress = file;
+      if (file.type === 'image/heic' || file.type === 'image/heif' || 
+          file.name?.toLowerCase().endsWith('.heic') || file.name?.toLowerCase().endsWith('.heif')) {
         try {
-          blob = await new Promise((resolve, reject) => {
-            const img = new Image();
-            const url = URL.createObjectURL(file);
-            img.onload = () => {
-              URL.revokeObjectURL(url);
-              const canvas = document.createElement('canvas');
-              canvas.width = img.width; canvas.height = img.height;
-              canvas.getContext('2d').drawImage(img, 0, 0);
-              canvas.toBlob(b => b ? resolve(b) : reject(new Error('canvas toBlob failed')), 'image/jpeg', 0.85);
-            };
-            img.onerror = reject;
-            img.src = url;
-          });
-        } catch(e2) {
-          showToast('⚠️ No se puede procesar esta imagen. Prueba con otra.');
+          // Cargar heic2any dinámicamente
+          if (!window.heic2any) {
+            await new Promise((res, rej) => {
+              const s = document.createElement('script');
+              s.src = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
+              s.onload = res; s.onerror = rej;
+              document.head.appendChild(s);
+            });
+          }
+          const converted = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+          fileToCompress = converted instanceof Blob ? converted : converted[0];
+        } catch(heicErr) {
+          showToast('⚠️ Formato no soportado. Haz una captura de pantalla de la foto y súbela.');
           _resetBtn(); return;
         }
+      }
+
+      let blob;
+      try {
+        blob = await compressToBlob(fileToCompress);
+      } catch(compressErr) {
+        blob = fileToCompress;
       }
 
       const { data: upData, error: upErr } = await db.storage
