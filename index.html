@@ -11077,7 +11077,7 @@ function editImgSelected(input) {
   if (remaining <= 0) { showToast('Máximo 5 imágenes en total'); return; }
   let added = 0;
   files.slice(0, remaining).forEach(file => {
-    if (file.size > 5*1024*1024) { showToast('Imagen demasiado grande (max 5MB)'); return; }
+    if (file.size > 15*1024*1024) { showToast('⚠️ Imagen demasiado grande (max 15MB)'); return; }
     editItemNewPhotos.push(file);
     // Mostrar preview de la nueva foto
     const reader = new FileReader();
