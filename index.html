@@ -10323,11 +10323,12 @@ async function sendOffer() {
     .limit(1)
     .single();
 
-  // Crear conversación visible solo para A (offerer) hasta que B acepte
+  // Crear conversación visible para B (owner) con el mensaje de A
   if (newProp) {
     const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
     const ownerName = itemData?.user_name || 'Usuario';
-    await db.from('conversations').insert([{
+    const msgText = msg || '¡Hola! Me interesa hacer un trueque contigo.';
+    const { data: newConv } = await db.from('conversations').insert([{
       proposal_id: newProp.id,
       user1_id: ownerId,        // B = dueño del objeto
       user1_name: ownerName,
@@ -10335,13 +10336,23 @@ async function sendOffer() {
       user2_name: myName,
       item1_title: activeModalItem.name,
       item2_title: offeredObj?.title || '☕ Sin objeto a cambio',
-      last_message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
+      last_message: msgText,
       last_message_at: new Date().toISOString(),
       status: 'pending',
-      hidden_user1: false, // Visible para B (owner, quien recibe la propuesta)
-      hidden_user2: true,  // Oculto para A (offerer) hasta que B acepte
-      unread_user1: 1,     // Notificar a B que tiene una propuesta
-    }]);
+      hidden_user1: false, // Visible para B (owner, quien recibe)
+      hidden_user2: true,  // Oculto para A hasta que B acepte
+      unread_user1: 1,     // Notificar a B
+    }]).select('id').single();
+
+    // Insertar el mensaje de A en la tabla messages para que B lo vea
+    if (newConv?.id) {
+      await db.from('messages').insert([{
+        conversation_id: newConv.id,
+        sender_id: currentUser.id,
+        sender_name: myName,
+        text: msgText,
+      }]);
+    }
   }
 
   closeModal();
