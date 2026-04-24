@@ -11217,6 +11217,7 @@ async function saveEditItem() {
   }
 
   btn.textContent = 'Guardando...'; btn.disabled = true; errEl.style.display = 'none';
+  const _resetBtn = () => { btn.textContent = 'Guardar cambios'; btn.disabled = false; };
 
   // Fotos existentes
   const preview = document.getElementById('edit-item-photo-preview');
@@ -11226,14 +11227,29 @@ async function saveEditItem() {
   // Subir fotos nuevas — comprimidas a JPEG 1200px
   const newPhotoUrls = [];
   for(let i = 0; i < editItemNewPhotos.length; i++) {
-    const file = editItemNewPhotos[i];
-    const userId = currentUser ? currentUser.id : 'anon';
-    const fileName = `${userId}_${Date.now()}_${i}.jpg`;
-    const blob = await compressToBlob(file);
-    const { error: upErr } = await db.storage.from('photos').upload(fileName, blob, { contentType: 'image/jpeg' });
-    if (!upErr) {
-      const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
-      newPhotoUrls.push(urlData.publicUrl);
+    try {
+      const file = editItemNewPhotos[i];
+      const userId = currentUser ? currentUser.id : 'anon';
+      const fileName = `${userId}_${Date.now()}_${i}.jpg`;
+      let blob;
+      try {
+        blob = await compressToBlob(file);
+      } catch(compressErr) {
+        // Si falla la compresión, usar el archivo original
+        blob = file;
+      }
+      const { data: upData, error: upErr } = await db.storage.from('photos').upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+      if (upErr) {
+        console.error('Error subiendo foto:', upErr.message);
+        showToast('⚠️ Error subiendo foto ' + (i+1) + ': ' + upErr.message);
+        _resetBtn(); return;
+      } else {
+        const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
+        newPhotoUrls.push(urlData.publicUrl);
+      }
+    } catch(e) {
+      console.error('Error inesperado subiendo foto:', e);
+      showToast('⚠️ Error inesperado subiendo foto ' + (i+1));
     }
   }
 
@@ -11267,6 +11283,7 @@ async function saveEditItem() {
     btn.textContent = 'Guardar cambios'; btn.disabled = false;
     return;
   }
+  btn.textContent = 'Guardar cambios'; btn.disabled = false;
 
   btn.textContent = 'Guardar cambios'; btn.disabled = false;
   closeEditItemModal();
@@ -13149,22 +13166,31 @@ function compressImage(file) {
 
 // Versión que devuelve Blob para subir a Supabase Storage
 function compressToBlob(file) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const MAX_PX = 1200;
     const QUALITY = 0.82;
+    const timeout = setTimeout(() => reject(new Error('Timeout comprimiendo imagen')), 30000);
     const reader = new FileReader();
+    reader.onerror = () => { clearTimeout(timeout); reject(new Error('Error leyendo archivo')); };
     reader.onload = ev => {
       const img = new Image();
+      img.onerror = () => { clearTimeout(timeout); reject(new Error('Error cargando imagen')); };
       img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > MAX_PX || h > MAX_PX) {
-          if (w > h) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
-          else       { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        canvas.toBlob(blob => resolve(blob), 'image/jpeg', QUALITY);
+        try {
+          let w = img.width, h = img.height;
+          if (w > MAX_PX || h > MAX_PX) {
+            if (w > h) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
+            else       { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => {
+            clearTimeout(timeout);
+            if (blob) resolve(blob);
+            else reject(new Error('Error generando blob'));
+          }, 'image/jpeg', QUALITY);
+        } catch(e) { clearTimeout(timeout); reject(e); }
       };
       img.src = ev.target.result;
     };
