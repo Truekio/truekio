@@ -6798,7 +6798,7 @@ async function respondProposal(proposalId, status) {
         // Activar conversación y hacerla visible para B (owner)
         await db.from('conversations').update({
           status: 'active',
-          hidden_user1: false,  // B (owner) ahora puede verla
+          hidden_user2: false,  // A (offerer) ahora puede verla
           last_message: '🤝 Trueque aceptado — ¡coordinad el encuentro!',
           last_message_at: new Date().toISOString(),
           unread_user2: 1, // Notificar a A que fue aceptada
@@ -9106,9 +9106,9 @@ function renderConvList(data) {
   }
   const visibleData = data.filter(c => {
     const amUser1 = isUser1Check(c);
-    // Conversaciones pending: solo visible para quien propuso (user2)
+    // Conversaciones pending: solo visible para B (user1=owner, quien recibe)
     if (c.status === 'pending') {
-      return !amUser1; // user2 = quien propone, puede verla
+      return amUser1; // user1 = owner, quien recibe la propuesta y decide
     }
     const isHidden = amUser1 ? c.hidden_user1 : c.hidden_user2;
     if (!isHidden) return true;
@@ -10338,9 +10338,9 @@ async function sendOffer() {
       last_message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
       last_message_at: new Date().toISOString(),
       status: 'pending',
-      hidden_user1: true,  // Oculto para B hasta que acepte
-      hidden_user2: false, // Visible para A (quien propone)
-      unread_user2: 0,
+      hidden_user1: false, // Visible para B (owner, quien recibe la propuesta)
+      hidden_user2: true,  // Oculto para A (offerer) hasta que B acepte
+      unread_user1: 1,     // Notificar a B que tiene una propuesta
     }]);
   }
 
@@ -10365,19 +10365,8 @@ async function sendOffer() {
 
   loadProposals();
 
-  // Navegar a Mensajes — A puede ver y escribir en el chat pending
-  if (newProp) {
-    const { data: newConv } = await db.from('conversations')
-      .select('id').eq('proposal_id', newProp.id).single();
-    if (newConv) {
-      navToActivity('messages');
-      setTimeout(() => openConv(newConv.id), 400);
-    } else {
-      navToActivity('proposals');
-    }
-  } else {
-    navToActivity('proposals');
-  }
+  // A va a Actividad — el chat lo verá cuando B acepte
+  navToActivity('proposals');
 }
 
 // ═══ TRUST SYSTEM ═══
