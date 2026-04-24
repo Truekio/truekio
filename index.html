@@ -5600,7 +5600,7 @@ async function openTruquoPoints(origen) {
           <div style="border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-top:4px">
             <div style="font-weight:700;font-size:14px;margin-bottom:4px">🏪 ¿Tienes un negocio?</div>
             <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Únete a la red de Puntos Truquo y recibe visitas de nuevos clientes sin ningún compromiso.</div>
-            <button onclick="openPuntoTruquoForm()" style="width:100%;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✋ Quiero ser Punto Truquo</button>
+            <button onclick="openPuntoTruquoForm()" style="width:100%;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✉️ Quiero ser Punto Truquo</button>
           </div>
         `}
       </div>
@@ -5615,73 +5615,19 @@ async function openTruquoPoints(origen) {
 }
 
 function openPuntoTruquoForm() {
-  const existing = document.getElementById('punto-form-overlay');
-  if (existing) existing.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'punto-form-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML = `
-    <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
-      <div style="font-weight:800;font-size:1.1rem;font-family:'Playfair Display',serif;margin-bottom:4px">🏪 Quiero ser Punto Truquo</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6">Rellena el formulario y nos pondremos en contacto contigo en menos de 48h.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <input id="ptf-name" placeholder="Nombre del negocio *" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
-        <input id="ptf-contact" placeholder="Nombre de contacto *" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
-        <input id="ptf-email" type="email" placeholder="Email de contacto *" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
-        <input id="ptf-phone" type="tel" placeholder="Teléfono (opcional)" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
-        <input id="ptf-address" placeholder="Dirección del negocio *" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
-        <input id="ptf-city" placeholder="Ciudad *" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
-        <textarea id="ptf-msg" placeholder="Cuéntanos algo sobre tu negocio (tipo de establecimiento, horario...)" rows="3" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;resize:none;color:var(--text);background:var(--white)"></textarea>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button onclick="document.getElementById('punto-form-overlay').remove()" style="flex:1;background:var(--bg2);border:none;padding:12px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Cancelar</button>
-        <button onclick="submitPuntoForm(this)" style="flex:1;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Enviar solicitud</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
-}
-
-async function submitPuntoForm(btn) {
-  const name    = document.getElementById('ptf-name')?.value.trim();
-  const contact = document.getElementById('ptf-contact')?.value.trim();
-  const email   = document.getElementById('ptf-email')?.value.trim();
-  const phone   = document.getElementById('ptf-phone')?.value.trim();
-  const address = document.getElementById('ptf-address')?.value.trim();
-  const city    = document.getElementById('ptf-city')?.value.trim();
-  const msg     = document.getElementById('ptf-msg')?.value.trim();
-
-  if (!name || !contact || !email || !address || !city) {
-    showToast('⚠️ Rellena los campos obligatorios'); return;
-  }
-
-  btn.textContent = 'Enviando...'; btn.disabled = true;
-
-  // Enviar email a hola@truquo.com
-  try {
-    await sendEmail('punto_truquo_request', 'hola@truquo.com', {
-      businessName: name,
-      contactName: contact,
-      contactEmail: email,
-      phone: phone || 'No indicado',
-      address, city,
-      message: msg || 'Sin mensaje adicional',
-    });
-  } catch(e) {}
-
-  // Guardar en Supabase como registro
-  await db.from('punto_truquo_requests').insert([{
-    business_name: name,
-    contact_name: contact,
-    contact_email: email,
-    phone: phone || null,
-    address, city,
-    message: msg || null,
-    created_at: new Date().toISOString(),
-  }]).catch(() => {});
-
-  document.getElementById('punto-form-overlay').remove();
-  showToast('✅ ¡Solicitud enviada! Te contactaremos en menos de 48h.');
+  const subject = encodeURIComponent('Quiero ser Punto Truquo');
+  const body = encodeURIComponent(
+    'Hola equipo Truquo,\n\nMe gustaría ser un Punto Truquo. Os dejo mis datos:\n\n' +
+    'Nombre del negocio: \n' +
+    'Nombre de contacto: \n' +
+    'Teléfono: \n' +
+    'Dirección: \n' +
+    'Ciudad: \n' +
+    'Horario: \n\n' +
+    'Información adicional: \n\n' +
+    'Saludos'
+  );
+  window.location.href = `mailto:truquospain@gmail.com?subject=${subject}&body=${body}`;
 }
 
 function _initTruquoMap(points) {
