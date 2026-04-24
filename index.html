@@ -5787,7 +5787,7 @@ async function loadAdminUsers() {
 }
 
 async function loadAdminItems() {
-  const { data } = await db.from('items').select('id,title,user_name,user_id,status,created_at,photo_urls,photos,category').order('created_at', { ascending: false }).limit(200);
+  const { data } = await db.from('items').select('id,title,user_name,user_id,status,created_at,photo_urls,photos,category').in('status',['available','reserved']).order('created_at', { ascending: false }).limit(200);
   _adminItems = data || [];
   renderAdminItems(_adminItems);
 }
