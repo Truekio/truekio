@@ -9893,7 +9893,10 @@ function openDetail(itemId) {
   );
   const footerBtn = overlay.querySelector('[onclick="proposeFromDetail()"]');
   if (footerBtn) {
-    if (isOwn) {
+    // Si se abre desde un chat activo, ocultar el botón de proponer
+    if (activeConvId) {
+      footerBtn.style.display = 'none';
+    } else if (isOwn) {
       footerBtn.textContent = '✏️ Editar objeto';
       footerBtn.onclick = () => { closeDetail(); openEditItem(item.id); };
       footerBtn.className = 'btn btn-secondary btn-lg btn-full btn-r';
