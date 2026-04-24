@@ -6012,6 +6012,11 @@ async function detectTradeChains(newItemId) {
     const myItem = items.find(i => String(i.id) === String(newItemId));
     if (!myItem) return;
 
+    // Excluir objetos "Sorpréndeme" de las cadenas
+    const isSurpriseItem = w => w === '🎲 ¡Sorpréndeme!' || w.toLowerCase().includes('sorpréndeme');
+    const myWantsRaw = Array.isArray(myItem.wants) ? myItem.wants : (myItem.wants || '').split(',').map(w => w.trim());
+    if (myWantsRaw.some(isSurpriseItem)) return; // Mi objeto es Sorpréndeme, no participar en cadenas
+
     const myCat = myItem.cat || myItem.category || '';
     const myWants = Array.isArray(myItem.wants) ? myItem.wants : (myItem.wants || '').split(',').map(w => w.trim());
 
@@ -6020,6 +6025,10 @@ async function detectTradeChains(newItemId) {
     // Buscar cadenas A(yo) → B → C → yo
     for (const itemB of allItems) {
       if (itemB.user_id === currentUser.id) continue;
+
+      // Excluir Sorpréndeme
+      const bWantsRaw = (itemB.wants || '').split(',').map(w => w.trim());
+      if (bWantsRaw.some(isSurpriseItem)) continue;
 
       // ¿B tiene lo que yo quiero?
       const bCat = itemB.category || '';
@@ -6036,6 +6045,10 @@ async function detectTradeChains(newItemId) {
         if (itemC.user_id === currentUser.id) continue;
 
         const cCat = itemC.category || '';
+
+        // Excluir Sorpréndeme en C
+        const cWantsRaw2 = (itemC.wants || '').split(',').map(w => w.trim());
+        if (cWantsRaw2.some(isSurpriseItem)) continue;
 
         // ¿B quiere lo que tiene C?
         const bWantC = bWants.some(w => chainMatchCat(w, cCat)) || bWantsOpen;
@@ -6136,9 +6149,9 @@ async function loadTradeChains() {
   // Enriquecer cadenas con títulos y flag de propuesta activa
   const enriched = chains.map(c => ({
     ...c,
-    item_a: itemMap[c.item_a_id] || { title: 'Objeto A', category: '' },
-    item_b: itemMap[c.item_b_id] || { title: 'Objeto B', category: '' },
-    item_c: itemMap[c.item_c_id] || { title: 'Objeto C', category: '' },
+    item_a: itemMap[c.item_a_id] || { title: c.item_a_title || 'Sin datos', category: '' },
+    item_b: itemMap[c.item_b_id] || { title: c.item_b_title || 'Sin datos', category: '' },
+    item_c: itemMap[c.item_c_id] || { title: c.item_c_title || 'Sin datos', category: '' },
     hasActiveProposal: [c.item_a_id, c.item_b_id, c.item_c_id].some(id => activePropItemIds.has(id)),
     needsMyAction: !(c[`user_${c.user_a_id === currentUser.id ? 'a' : c.user_b_id === currentUser.id ? 'b' : 'c'}_accepted`]),
   }));
