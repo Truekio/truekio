@@ -6999,7 +6999,7 @@ async function respondProposal(proposalId, status) {
         itemTitle: p.item_title,
         offeredItem: p.offered_item_title,
       });
-      sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`);
+      sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`, '/?nav=messages');
     }
 
     // Recargar el chat actual sin salir
@@ -9068,7 +9068,7 @@ async function startBgPolling() {
       if (n > lastProposalCount) {
         pushNotif('🤝 Nueva propuesta de trueque', 'Alguien quiere intercambiar contigo');
         if (document.visibilityState === 'visible') playNotifSound();
-        sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo');
+        sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo', '/?nav=messages');
       }
       lastProposalCount = n;
       window._pendingProposalCount = n;
@@ -9182,7 +9182,7 @@ function startConvPolling() {
         updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
         pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
         if (document.visibilityState === 'visible') playNotifSound();
-        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje');
+        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje', '/?nav=messages');
       }
     }
     loadConversations();
