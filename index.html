@@ -2997,6 +2997,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <div style="overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px">
         <div style="display:flex;gap:0;min-width:max-content">
           <button class="match-tab active" id="mtab-proposals" onclick="switchMatchTab('proposals');loadProposals()">🤝 Propuestas <span class="nav-badge" style="background:#e53e3e;display:none" id="mtab-proposals-count">0</span></button>
+          <button class="match-tab" id="mtab-chains" onclick="switchMatchTab('chains');loadTradeChains()">🔗 Cadenas</button>
           <button class="match-tab" id="mtab-confirm" onclick="switchMatchTab('confirm')" style="display:none">📦 Confirmaciones <span class="nav-badge" style="background:var(--green);display:none" id="mtab-confirm-count"></span></button>
           <button class="match-tab" id="mtab-messages" onclick="switchMatchTab('messages')" style="display:none">💬 Mensajes <span class="nav-badge bnav-badge-msg" style="background:#e53e3e;display:none" id="mtab-messages-count"></span></button>
         </div>
@@ -3007,9 +3008,16 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   <div class="wrap page-pad" style="padding-top:24px">
     <div id="matches-direct" style="display:none"><div id="matches-list"></div></div>
     <div id="matches-proposals" class="match-tab-content active">
-      <!-- Sección de cadenas de trueque -->
-      <div id="trade-chains-section" style="display:none;background:var(--white);border:1.5px solid var(--accent);border-radius:var(--r-lg);margin-bottom:16px;overflow:hidden"></div>
       <div id="proposals-list" style="min-height:500px"><div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">⏳ Cargando propuestas...</div></div>
+    </div>
+    <!-- Tab Cadenas -->
+    <div id="matches-chains" class="match-tab-content" style="display:none">
+      <div id="trade-chains-section" style="display:none;background:var(--white);border:1.5px solid var(--accent);border-radius:var(--r-lg);margin-bottom:16px;overflow:hidden"></div>
+      <div id="trade-chains-empty" style="display:none;padding:60px 20px;text-align:center;color:var(--muted)">
+        <div style="font-size:2.5rem;margin-bottom:12px">🔗</div>
+        <div style="font-weight:700;font-size:.95rem;color:var(--text);margin-bottom:6px">Sin cadenas de trueque</div>
+        <div style="font-size:13px;line-height:1.6">Cuando detectemos una cadena de intercambio contigo aparecerá aquí.</div>
+      </div>
     </div>
     <div id="matches-confirm" class="match-tab-content" style="display:none">
       <div style="background:var(--green-l);border:1px solid rgba(45,158,95,.15);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:20px;display:flex;gap:13px;align-items:flex-start">
@@ -6194,8 +6202,8 @@ function renderTradeChains(chains) {
 
       return `
         ${showSeparator ? `<div style="padding:8px 20px;background:var(--bg2);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Otras cadenas disponibles</div>` : ''}
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);${c.needsMyAction ? 'background:#fefce8' : c.hasActiveProposal ? 'background:var(--accent-l)' : ''}">
-        ${c.needsMyAction ? `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:#92400e;background:#fef9c3;padding:3px 10px;border-radius:99px">🔔 Requiere tu aceptación</span></div>` : c.hasActiveProposal ? `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);background:rgba(78,143,186,.15);padding:3px 10px;border-radius:99px">✅ Propuesta en curso</span></div>` : ''}
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);${c.needsMyAction ? 'background:var(--accent-l)' : c.hasActiveProposal ? 'background:var(--accent-l)' : ''}">
+        ${c.needsMyAction ? `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);background:rgba(78,143,186,.15);padding:3px 10px;border-radius:99px">🔔 Requiere tu aceptación</span></div>` : c.hasActiveProposal ? `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);background:rgba(78,143,186,.15);padding:3px 10px;border-radius:99px">✅ Propuesta en curso</span></div>` : ''}
 
         <!-- Flujo visual — imágenes más grandes y clicables -->
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;justify-content:center">
@@ -7076,6 +7084,7 @@ function switchMatchTab(tab) {
   document.querySelectorAll('.match-tab-content').forEach(el=>el.style.display='none');
   const tabContent = document.getElementById('matches-'+tab);
   if(tabContent) tabContent.style.display='block';
+  if(tab === 'chains') { loadTradeChains(); return; }
   if(tab === 'wishlist-act') { renderActivityWishlist(); loadWishAlerts(); }
   if(tab === 'confirm') renderConfirmations();
   if(tab === 'direct') { loadMatches(); return; }
@@ -7085,8 +7094,7 @@ function switchMatchTab(tab) {
     startConvPolling();
   } else {
     stopConvPolling();
-  }
-}
+
 
 function renderActivityWishlist() {
   const el = document.getElementById('activity-wishlist-content');
