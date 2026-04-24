@@ -4811,7 +4811,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Todo listo — ocultar splash y mostrar app
-  setTimeout(() => {
+  // Esperar a que _enterApp haya terminado de renderizar
+  const _hideSplash = () => {
     const splash = document.getElementById('splash-screen');
     const appEl = document.getElementById('app');
     if (appEl) appEl.style.visibility = 'visible';
@@ -4819,7 +4820,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       splash.classList.add('hide');
       setTimeout(() => splash.remove(), 400);
     }
-  }, session ? 600 : 300);
+  };
+  if (session) {
+    // Con sesión: esperar a que los datos carguen (items + perfil)
+    setTimeout(_hideSplash, 1800);
+  } else {
+    // Sin sesión: mostrar landing rápido
+    setTimeout(_hideSplash, 500);
+  }
 
   // Escuchar cambios de sesión — refresco automático del token
   db.auth.onAuthStateChange((event, session) => {
