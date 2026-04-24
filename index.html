@@ -11061,13 +11061,35 @@ function removeExistingPhoto(idx) {
 function editImgSelected(input) {
   if (!input.files || !input.files[0]) return;
   const files = Array.from(input.files);
-  const remaining = 5 - (editItemNewPhotos.length + JSON.parse(document.getElementById('edit-item-photo-preview').dataset.existingPhotos || '[]').length);
+  const preview = document.getElementById('edit-item-photo-preview');
+  let existing = [];
+  try { existing = JSON.parse(preview.dataset.existingPhotos || '[]'); } catch(e) {}
+  const remaining = 5 - (editItemNewPhotos.length + existing.length);
   if (remaining <= 0) { showToast('Máximo 5 imágenes en total'); return; }
+  let added = 0;
   files.slice(0, remaining).forEach(file => {
     if (file.size > 5*1024*1024) { showToast('Imagen demasiado grande (max 5MB)'); return; }
     editItemNewPhotos.push(file);
+    // Mostrar preview de la nueva foto
+    const reader = new FileReader();
+    reader.onload = e => {
+      const idx = editItemNewPhotos.length - 1;
+      const div = document.createElement('div');
+      div.style.cssText = 'position:relative;width:60px;height:60px;border-radius:8px;overflow:hidden;flex-shrink:0;border:2px solid var(--accent)';
+      div.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">
+        <button onclick="removeNewPhoto(${idx},this.parentNode)" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>`;
+      preview.appendChild(div);
+      preview.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;width:auto;height:auto;border-radius:0;background:none;margin-bottom:8px';
+    };
+    reader.readAsDataURL(file);
+    added++;
   });
-  showToast(`✓ ${Math.min(files.length, remaining)} foto(s) añadida(s)`);
+  if (added) showToast(`✓ ${added} foto(s) añadida(s)`);
+}
+
+function removeNewPhoto(idx, el) {
+  editItemNewPhotos.splice(idx, 1);
+  el.remove();
 }
 
 function editImgDrop(e) {
