@@ -6117,13 +6117,25 @@ async function loadTradeChains() {
   const itemMap = {};
   (itemsData || []).forEach(i => { itemMap[i.id] = i; });
 
-  // Enriquecer cadenas con títulos
+  // Comprobar propuestas activas para cada cadena
+  const chainItemIds = chains.flatMap(c => [c.item_a_id, c.item_b_id, c.item_c_id]).filter(Boolean);
+  const { data: activeProps } = await db.from('proposals')
+    .select('item_id,offered_item_id,status')
+    .in('status', ['pending','countered','accepted'])
+    .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`);
+  const activePropItemIds = new Set((activeProps||[]).flatMap(p => [p.item_id, p.offered_item_id]));
+
+  // Enriquecer cadenas con títulos y flag de propuesta activa
   const enriched = chains.map(c => ({
     ...c,
     item_a: itemMap[c.item_a_id] || { title: 'Objeto A', category: '' },
     item_b: itemMap[c.item_b_id] || { title: 'Objeto B', category: '' },
     item_c: itemMap[c.item_c_id] || { title: 'Objeto C', category: '' },
+    hasActiveProposal: [c.item_a_id, c.item_b_id, c.item_c_id].some(id => activePropItemIds.has(id)),
   }));
+
+  // Ordenar: primero las que tienen propuesta activa
+  enriched.sort((a, b) => (b.hasActiveProposal ? 1 : 0) - (a.hasActiveProposal ? 1 : 0));
 
   renderTradeChains(enriched);
 }
@@ -6146,7 +6158,9 @@ function renderTradeChains(chains) {
         <div style="font-size:11px;color:var(--muted)">Intercambios en cadena donde todos ganan</div>
       </div>
     </div>
-    ${chains.map(c => {
+    ${chains.map((c, cidx) => {
+      const isFirst = cidx === 0 && c.hasActiveProposal;
+      const showSeparator = cidx > 0 && !c.hasActiveProposal && chains[cidx-1]?.hasActiveProposal;
       const isA = c.user_a_id === currentUser.id;
       const isB = c.user_b_id === currentUser.id;
       const isC = c.user_c_id === currentUser.id;
@@ -6172,7 +6186,9 @@ function renderTradeChains(chains) {
       const otherId2 = isA ? c.user_c_id : isB ? c.user_c_id : c.user_b_id;
 
       return `
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+        ${showSeparator ? `<div style="padding:8px 20px;background:var(--bg2);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Otras cadenas disponibles</div>` : ''}
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);${c.hasActiveProposal ? 'background:var(--accent-l)' : ''}">
+        ${c.hasActiveProposal ? `<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--accent);background:rgba(78,143,186,.15);padding:3px 10px;border-radius:99px">🔔 Propuesta en curso</span></div>` : ''}
 
         <!-- Flujo visual — imágenes más grandes y clicables -->
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;justify-content:center">
