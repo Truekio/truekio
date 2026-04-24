@@ -9091,6 +9091,7 @@ function renderConvList(data) {
   // Si hay mensaje nuevo en una conv oculta, se des-oculta automáticamente en Supabase
   const isUser1Check = c => c.user1_id === currentUser.id;
   const toUnhide = data.filter(c => {
+    if (c.status === 'pending') return false; // pending nunca se auto-des-oculta
     const amUser1 = isUser1Check(c);
     const isHidden = amUser1 ? c.hidden_user1 : c.hidden_user2;
     if (!isHidden) return false;
