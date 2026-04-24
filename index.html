@@ -6795,11 +6795,13 @@ async function respondProposal(proposalId, status) {
       // Actualizar conversación existente a active, o crear si no existe
       const { data: existing } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
       if (existing) {
-        // Actualizar la conversación pending a active
+        // Activar conversación y hacerla visible para B (owner)
         await db.from('conversations').update({
           status: 'active',
+          hidden_user1: false,  // B (owner) ahora puede verla
           last_message: '🤝 Trueque aceptado — ¡coordinad el encuentro!',
           last_message_at: new Date().toISOString(),
+          unread_user2: 1, // Notificar a A que fue aceptada
         }).eq('id', existing.id);
       } else {
         const ownerName = currentUser.id === p.owner_id
@@ -9102,12 +9104,14 @@ function renderConvList(data) {
     });
   }
   const visibleData = data.filter(c => {
-    // Ocultar conversaciones pending (propuesta no aceptada aún)
-    if (c.status === 'pending') return false;
     const amUser1 = isUser1Check(c);
+    // Conversaciones pending: solo visible para quien propuso (user2)
+    if (c.status === 'pending') {
+      return !amUser1; // user2 = quien propone, puede verla
+    }
     const isHidden = amUser1 ? c.hidden_user1 : c.hidden_user2;
     if (!isHidden) return true;
-    // Si está oculta pero tiene mensaje nuevo, mostrar (ya se des-ocultó arriba)
+    // Si está oculta pero tiene mensaje nuevo, mostrar
     const myUnread = amUser1 ? (c.unread_user1 || 0) : (c.unread_user2 || 0);
     return myUnread > 0;
   });
@@ -9568,15 +9572,28 @@ async function renderTradeStatus(conv, otherName, otherUserId) {
       </div>`;
     }
   } else if (bothConfirmed) {
+    // Deshabilitar input del chat
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.querySelector('.chat-send');
+    if (chatInput) { chatInput.disabled = true; chatInput.placeholder = 'Chat cerrado — trueque completado'; chatInput.style.opacity = '0.5'; }
+    if (chatSend) { chatSend.disabled = true; chatSend.style.opacity = '0.5'; }
+
     if (alreadyReviewed) {
-      html = `<div style="padding:10px 16px;background:#f0fdf4;display:flex;align-items:center;gap:8px">
-        <span style="font-size:16px">✅</span>
-        <div style="font-size:12px;font-weight:700;color:#16a34a">Trueque completado y valorado</div>
+      html = `<div style="padding:10px 16px;background:#f0fdf4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">✅</span><div style="font-size:12px;font-weight:700;color:#16a34a">Trueque completado y valorado</div></div>
+        <div style="display:flex;gap:6px">
+          <button onclick="deleteConversation('${conv.id}')" style="background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">Ocultar</button>
+          <button onclick="openReportModal('${conv.id}','${otherUserId}','${otherName}')" style="background:none;border:1px solid #fca5a5;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444">⚠️ Problema</button>
+        </div>
       </div>`;
     } else {
-      html = `<div style="padding:10px 16px;background:#f0fdf4;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      html = `<div style="padding:10px 16px;background:#f0fdf4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
         <div style="font-size:12px;font-weight:700;color:#16a34a">🎉 ¡Trueque completado!</div>
-        <button onclick="openReviewModal('${conv.id}')" style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⭐ Valorar</button>
+        <div style="display:flex;gap:6px">
+          <button onclick="openReviewModal('${conv.id}')" style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⭐ Valorar</button>
+          <button onclick="deleteConversation('${conv.id}')" style="background:none;border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">Ocultar</button>
+          <button onclick="openReportModal('${conv.id}','${otherUserId}','${otherName}')" style="background:none;border:1px solid #fca5a5;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444">⚠️ Problema</button>
+        </div>
       </div>`;
     }
   } else if (proposalStatus === 'rejected') {
@@ -10305,7 +10322,26 @@ async function sendOffer() {
     .limit(1)
     .single();
 
-  // La conversación se crea solo cuando se acepta la propuesta
+  // Crear conversación visible solo para A (offerer) hasta que B acepte
+  if (newProp) {
+    const myName = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    const ownerName = itemData?.user_name || 'Usuario';
+    await db.from('conversations').insert([{
+      proposal_id: newProp.id,
+      user1_id: ownerId,        // B = dueño del objeto
+      user1_name: ownerName,
+      user2_id: currentUser.id, // A = quien propone
+      user2_name: myName,
+      item1_title: activeModalItem.name,
+      item2_title: offeredObj?.title || '☕ Sin objeto a cambio',
+      last_message: msg || '¡Hola! Me interesa hacer un trueque contigo.',
+      last_message_at: new Date().toISOString(),
+      status: 'pending',
+      hidden_user1: true,  // Oculto para B hasta que acepte
+      hidden_user2: false, // Visible para A (quien propone)
+      unread_user2: 0,
+    }]);
+  }
 
   closeModal();
   showToast('✦ Propuesta enviada');
@@ -10328,8 +10364,19 @@ async function sendOffer() {
 
   loadProposals();
 
-  // Navegar a Actividad para ver la propuesta enviada
-  navToActivity('proposals');
+  // Navegar a Mensajes — A puede ver y escribir en el chat pending
+  if (newProp) {
+    const { data: newConv } = await db.from('conversations')
+      .select('id').eq('proposal_id', newProp.id).single();
+    if (newConv) {
+      navToActivity('messages');
+      setTimeout(() => openConv(newConv.id), 400);
+    } else {
+      navToActivity('proposals');
+    }
+  } else {
+    navToActivity('proposals');
+  }
 }
 
 // ═══ TRUST SYSTEM ═══
