@@ -6632,7 +6632,7 @@ async function loadProposals() {
   const { data, error } = await db
     .from('proposals')
     .select('id,item_id,item_title,item_emoji,offered_item_id,offered_item_title,offered_item_emoji,owner_id,offerer_id,offerer_name,status,counter_by,counter_offer,created_at,note')
-    .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
+    .eq('offerer_id', currentUser.id)
     .in('status', ['pending', 'countered'])
     .order('created_at', { ascending: false });
 
@@ -6651,7 +6651,7 @@ async function loadProposals() {
   }
 
   // Badge con pendientes recibidas (pending + countered donde me toca responder)
-  const pending = data.filter(p => p.owner_id === currentUser.id && p.status === 'pending');
+  const pending = []; // B gestiona desde el chat, no desde propuestas
   const myTurnCountered = data.filter(p => p.status === 'countered' && p.counter_by !== currentUser.id);
   const totalPending = pending.length + myTurnCountered.length;
   const badge = document.getElementById('mtab-proposals-count');
