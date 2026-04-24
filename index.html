@@ -6146,15 +6146,15 @@ async function loadTradeChains() {
     .or(`offerer_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`);
   const activePropItemIds = new Set((activeProps||[]).flatMap(p => [p.item_id, p.offered_item_id]));
 
-  // Enriquecer cadenas con títulos y flag de propuesta activa
+  // Enriquecer cadenas con títulos — filtrar las que tienen objetos eliminados
   const enriched = chains.map(c => ({
     ...c,
-    item_a: itemMap[c.item_a_id] || { title: c.item_a_title || 'Sin datos', category: '' },
-    item_b: itemMap[c.item_b_id] || { title: c.item_b_title || 'Sin datos', category: '' },
-    item_c: itemMap[c.item_c_id] || { title: c.item_c_title || 'Sin datos', category: '' },
+    item_a: itemMap[c.item_a_id] || null,
+    item_b: itemMap[c.item_b_id] || null,
+    item_c: itemMap[c.item_c_id] || null,
     hasActiveProposal: [c.item_a_id, c.item_b_id, c.item_c_id].some(id => activePropItemIds.has(id)),
     needsMyAction: !(c[`user_${c.user_a_id === currentUser.id ? 'a' : c.user_b_id === currentUser.id ? 'b' : 'c'}_accepted`]),
-  }));
+  })).filter(c => c.item_a && c.item_b && c.item_c); // solo cadenas con todos los objetos disponibles
 
   // Ordenar: primero las que requieren mi aceptación (yo no he aceptado aún)
   enriched.sort((a, b) => {
