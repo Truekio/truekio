@@ -9180,9 +9180,13 @@ function startConvPolling() {
         lastMsgCount[conv.id] = newUnread;
         const otherName = isUser1 ? conv.user2_name : conv.user1_name;
         updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
-        pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
-        if (document.visibilityState === 'visible') playNotifSound();
-        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje', '/?nav=messages');
+        // Solo notificar mensajes si el chat está activo (no pending)
+        // Las propuestas nuevas ya tienen su propia notificación
+        if (conv.status !== 'pending') {
+          pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
+          if (document.visibilityState === 'visible') playNotifSound();
+          sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje', '/?nav=messages');
+        }
       }
     }
     loadConversations();
