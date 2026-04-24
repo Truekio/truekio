@@ -44,7 +44,7 @@
 <meta name="twitter:title" content="Truquo — El trueque moderno">
 <meta name="twitter:description" content="Intercambia objetos sin dinero. Publica lo que ya no necesitas y consigue lo que quieres a cambio.">
 <meta name="twitter:image" content="https://truquo.com/og-image.png">
-<title>Truquo · Intercambia sin dinero</title>
+
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1070,6 +1070,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .lightbox-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .lightbox-arrow.prev{left:12px;}.lightbox-arrow.next{right:12px;}
 .lightbox-count{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px;font-weight:600;}
+.offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:#1a2a3a;color:#fff;padding:12px 20px;text-align:center;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;}
+.offline-banner.show{display:block;animation:slideDown .3s ease;}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
 .ob-step{display:none;animation:obStepIn .25s ease;}
 .ob-step.active{display:block;}
 .ob-eyebrow{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
@@ -1987,7 +1990,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
   "logo": "https://truquo.com/icon.png",
   "contactPoint": {
     "@type": "ContactPoint",
-    "email": "hola@truquo.com",
+    "email": "truquospain@gmail.com",
     "contactType": "customer support",
     "availableLanguage": "Spanish"
   },
@@ -2008,7 +2011,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     "https://truquo.com",
     "https://truquo.com/#como-funciona",
     "https://truquo.com/#faq",
-    "mailto:hola@truquo.com"
+    "mailto:truquospain@gmail.com"
   ]
 }
 </script>
@@ -2631,7 +2634,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           <h4>Empresa</h4>
           <a onclick="openLegalModal('about')">Quiénes somos</a>
           <a onclick="openLegalModal('how')">Cómo funciona</a>
-          <a href="mailto:hola@truquo.com">Contacto</a>
+          <a href="mailto:truquospain@gmail.com">Contacto</a>
         </div>
         <div class="lp-footer-col">
           <h4>Soporte</h4>
@@ -2668,7 +2671,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <h2>Condiciones de uso</h2>
     <p>Última actualización: abril 2026</p>
     <h3>1. Identificación del titular</h3>
-    <p>El presente sitio web <strong>truquo.com</strong> es titularidad de <strong>Carlos Lara</strong>, con NIF 38842748A y domicilio en Mataró (Barcelona), España. Email de contacto: <a href="mailto:hola@truquo.com">hola@truquo.com</a>.</p>
+    <p>El presente sitio web <strong>truquo.com</strong> es titularidad de <strong>Carlos Lara</strong>, con NIF 38842748A y domicilio en Mataró (Barcelona), España. Email de contacto: <a href="mailto:truquospain@gmail.com">truquospain@gmail.com</a>.</p>
     <h3>2. Descripción del servicio</h3>
     <p>Truquo es una plataforma digital gratuita que facilita el intercambio de objetos entre particulares sin transacciones monetarias. El titular actúa exclusivamente como intermediario tecnológico y no es parte en ningún intercambio entre usuarios.</p>
     <h3>3. Condiciones de acceso y registro</h3>
@@ -2700,7 +2703,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <h2>Política de privacidad</h2>
     <p>Última actualización: abril 2026</p>
     <h3>1. Responsable del tratamiento</h3>
-    <p><strong>Carlos Lara</strong>, NIF 38842748A, domicilio en Mataró (Barcelona), España.<br>Email: <a href="mailto:hola@truquo.com">hola@truquo.com</a></p>
+    <p><strong>Carlos Lara</strong>, NIF 38842748A, domicilio en Mataró (Barcelona), España.<br>Email: <a href="mailto:truquospain@gmail.com">truquospain@gmail.com</a></p>
     <h3>2. Datos que recopilamos</h3>
     <ul>
       <li><strong>Datos de registro:</strong> nombre, dirección de email y contraseña (almacenada de forma cifrada).</li>
@@ -2736,7 +2739,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
       <li><strong>Portabilidad:</strong> recibir tus datos en formato estructurado.</li>
       <li><strong>Oposición:</strong> oponerte al tratamiento de tus datos.</li>
     </ul>
-    <p>Para ejercer estos derechos escríbenos a <a href="mailto:hola@truquo.com">hola@truquo.com</a>. También tienes derecho a presentar una reclamación ante la <strong>Agencia Española de Protección de Datos</strong> (aepd.es).</p>
+    <p>Para ejercer estos derechos escríbenos a <a href="mailto:truquospain@gmail.com">truquospain@gmail.com</a>. También tienes derecho a presentar una reclamación ante la <strong>Agencia Española de Protección de Datos</strong> (aepd.es).</p>
     <h3>8. Menores de edad</h3>
     <p>El servicio está dirigido a mayores de 14 años. Si tienes entre 14 y 18 años, recomendamos que informes a tus tutores legales del uso del servicio.</p>
   </div>
@@ -2760,7 +2763,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <h3>Gestión de cookies</h3>
     <p>Puedes eliminar las cookies desde la configuración de tu navegador. Ten en cuenta que si eliminas las cookies técnicas, tendrás que iniciar sesión de nuevo y se perderán tus preferencias.</p>
     <h3>Más información</h3>
-    <p>Para cualquier consulta sobre el uso de cookies escríbenos a <a href="mailto:hola@truquo.com">hola@truquo.com</a>.</p>
+    <p>Para cualquier consulta sobre el uso de cookies escríbenos a <a href="mailto:truquospain@gmail.com">truquospain@gmail.com</a>.</p>
   </div>
 </div>
 
@@ -2772,7 +2775,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <p><strong>Titular:</strong> Carlos Lara<br>
     <strong>NIF:</strong> 38842748A<br>
     <strong>Domicilio:</strong> Mataró (Barcelona), España<br>
-    <strong>Email:</strong> <a href="mailto:hola@truquo.com">hola@truquo.com</a><br>
+    <strong>Email:</strong> <a href="mailto:truquospain@gmail.com">truquospain@gmail.com</a><br>
     <strong>Web:</strong> truquo.com</p>
     <h3>Objeto</h3>
     <p>El presente aviso legal regula el acceso y uso del sitio web truquo.com, plataforma digital de intercambio de objetos entre particulares sin transacciones monetarias.</p>
@@ -2795,7 +2798,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
     <h3>Nuestra misión</h3>
     <p>Reducir el desperdicio de objetos facilitando intercambios entre personas. Cada trueque es un paso hacia un consumo más consciente y sostenible.</p>
     <h3>Contacto</h3>
-    <p>¿Tienes ideas, sugerencias o simplemente quieres hablar? Escríbenos a <a href="mailto:hola@truquo.com" style="color:#4e8fba">hola@truquo.com</a></p>
+    <p>¿Tienes ideas, sugerencias o simplemente quieres hablar? Escríbenos a <a href="mailto:truquospain@gmail.com" style="color:#4e8fba">truquospain@gmail.com</a></p>
   </div>
 </div>
 
@@ -4905,6 +4908,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     el.style.paddingBottom = safePad;
   });
 });
+
+// ═══ CONEXIÓN ═══
+window.addEventListener('offline', () => {
+  document.getElementById('offline-banner')?.classList.add('show');
+});
+window.addEventListener('online', () => {
+  document.getElementById('offline-banner')?.classList.remove('show');
+  showToast('✅ Conexión restaurada');
+});
+// Verificar estado inicial
+if (!navigator.onLine) {
+  document.getElementById('offline-banner')?.classList.add('show');
+}
 
 // ═══ NAV ═══
 // ── requireAuth — redirige al registro si no hay sesión ──
