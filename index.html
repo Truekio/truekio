@@ -1064,6 +1064,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .ob-top{height:4px;background:var(--bg3);}
 .ob-progress{height:100%;background:var(--accent);transition:width .4s cubic-bezier(.22,1,.36,1);}
 .ob-body{padding:36px 40px 32px;}
+.lightbox-overlay{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease;}
+.lightbox-img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:4px;user-select:none;}
+.lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lightbox-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lightbox-arrow.prev{left:12px;}.lightbox-arrow.next{right:12px;}
+.lightbox-count{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px;font-weight:600;}
 .ob-step{display:none;animation:obStepIn .25s ease;}
 .ob-step.active{display:block;}
 .ob-eyebrow{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
@@ -9810,8 +9816,9 @@ function openDetail(itemId) {
   const cid = 'dtl';
   const wrap = document.getElementById('detail-carousel');
   if (photos.length) {
+    const photosJson = JSON.stringify(photos).replace(/'/g, "\'");
     const slides = photos.map((src,i) =>
-      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" style="width:100%;height:100%;object-fit:contain;background:var(--bg2)"></div>`
+      `<div class="carousel-slide"><img src="${src}" loading="${i===0?'eager':'lazy'}" onclick="openLightbox(${i},${photosJson.replace(/"/g,'&quot;')})" style="width:100%;height:100%;object-fit:contain;background:var(--bg2);cursor:zoom-in"></div>`
     ).join('');
     const dots = photos.length > 1 ? `<div class="carousel-dots" id="${cid}-dots">${photos.map((_,i)=>`<div class="carousel-dot${i===0?' active':''}"></div>`).join('')}</div>` : '';
     const arrows = photos.length > 1 ? `<button class="carousel-arrow prev" onclick="carouselPrev('${cid}',event)">‹</button><button class="carousel-arrow next" onclick="carouselNext('${cid}',event)">›</button>` : '';
@@ -9957,6 +9964,51 @@ function closeDetail() {
 
 function closeUserProfile() {
   document.getElementById('user-profile-overlay').classList.remove('open');
+}
+
+function openLightbox(startIdx, photos) {
+  const existing = document.getElementById('lightbox-overlay');
+  if (existing) existing.remove();
+
+  let idx = startIdx;
+  const overlay = document.createElement('div');
+  overlay.id = 'lightbox-overlay';
+  overlay.className = 'lightbox-overlay';
+
+  const render = () => {
+    overlay.innerHTML = `
+      <img class="lightbox-img" src="${photos[idx]}" id="lb-img">
+      <button class="lightbox-close" onclick="document.getElementById('lightbox-overlay').remove()">✕</button>
+      ${photos.length > 1 ? `
+        <button class="lightbox-arrow prev" onclick="lbPrev()">‹</button>
+        <button class="lightbox-arrow next" onclick="lbNext()">›</button>
+        <div class="lightbox-count">${idx+1} / ${photos.length}</div>
+      ` : ''}
+    `;
+  };
+
+  window.lbPrev = () => { idx = (idx - 1 + photos.length) % photos.length; render(); };
+  window.lbNext = () => { idx = (idx + 1) % photos.length; render(); };
+
+  render();
+  document.body.appendChild(overlay);
+
+  // Cerrar al pulsar fuera de la imagen
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.remove();
+  });
+
+  // Soporte swipe en móvil
+  let startX = 0;
+  overlay.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+  overlay.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) { dx < 0 ? lbNext() : lbPrev(); }
+  }, {passive:true});
+
+  // Cerrar con Escape
+  const onKey = e => { if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',onKey);} if(e.key==='ArrowLeft')lbPrev(); if(e.key==='ArrowRight')lbNext(); };
+  document.addEventListener('keydown', onKey);
 }
 
 async function openUserProfile(userId, userName, excludeItemId, avatarUrl) {
