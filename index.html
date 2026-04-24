@@ -6861,13 +6861,13 @@ async function respondProposal(proposalId, status) {
       if (offeredIdRej) updates.push(db.from('items').update({ status: 'available' }).eq('id', offeredIdRej));
       await Promise.all(updates);
     }
-    // Actualizar conversación a rechazada y recargar el chat
-    const { data: rejConv } = await db.from('conversations').select('id').eq('proposal_id', proposalId).single();
+    // Actualizar conversación a rechazada si existe
+    const { data: rejConv } = await db.from('conversations').select('id').eq('proposal_id', proposalId).maybeSingle();
     if (rejConv) {
       await db.from('conversations').update({ status: 'rejected' }).eq('id', rejConv.id);
-      loadConversations();
-      setTimeout(() => openConv(rejConv.id), 300);
     }
+    // Navegar al explorador — evita el problema del nav inferior
+    navTo('explore');
   }
 
   loadProposals();
