@@ -1070,7 +1070,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .lightbox-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .lightbox-arrow.prev{left:12px;}.lightbox-arrow.next{right:12px;}
 .lightbox-count{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px;font-weight:600;}
-#splash-screen{position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .5s ease;}
+#splash-screen{position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .4s ease;}
 #splash-screen.hide{opacity:0;pointer-events:none;}
 .splash-logo{font-family:'Playfair Display',serif;font-weight:800;font-size:2.2rem;color:#1a2a3a;letter-spacing:-.02em;}
 .splash-logo span{color:#4e8fba;}
@@ -2023,6 +2023,15 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 </script>
 </head>
 <body>
+<!-- SPLASH SCREEN — primer elemento del body, visible desde el frame 0 -->
+<div id="splash-screen" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+  <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:2.4rem;color:#1a2a3a;letter-spacing:-.02em">truequ<span style="color:#4e8fba">o</span></div>
+  <div style="width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#4e8fba;border-radius:50%;animation:splashSpin .8s linear infinite"></div>
+</div>
+<style>
+@keyframes splashSpin{to{transform:rotate(360deg)}}
+#splash-screen.hide{opacity:0;transition:opacity .4s ease;pointer-events:none;}
+</style>
 
 <!-- NAV -->
 <!-- NAV INVITADO — visible cuando explora sin cuenta -->
@@ -4733,9 +4742,9 @@ let spFilters = { cat:'', city:'', conditions:[], shipping:[], sort:'relevance',
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', async () => {
-  // Ocultar app completamente mientras carga
+  // Ocultar app mientras carga
   const appEl = document.getElementById('app');
-  if (appEl) appEl.style.display = 'none';
+  if (appEl) appEl.style.visibility = 'hidden';
 
   initCookieBanner();
   // ── SQL para crear la tabla completed_trades en Supabase (ejecutar una vez) ──
@@ -4811,23 +4820,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Todo listo — ocultar splash y mostrar app
-  // Esperar a que _enterApp haya terminado de renderizar
   const _hideSplash = () => {
     const splash = document.getElementById('splash-screen');
     const appEl = document.getElementById('app');
     if (appEl) appEl.style.display = '';
     if (splash) {
       splash.classList.add('hide');
-      setTimeout(() => splash.remove(), 400);
+      setTimeout(() => splash.remove(), 500);
     }
   };
-  if (session) {
-    // Con sesión: esperar a que los datos carguen (items + perfil)
-    setTimeout(_hideSplash, 1800);
-  } else {
-    // Sin sesión: mostrar landing rápido
-    setTimeout(_hideSplash, 500);
-  }
+  setTimeout(_hideSplash, session ? 1500 : 400);
 
   // Escuchar cambios de sesión — refresco automático del token
   db.auth.onAuthStateChange((event, session) => {
