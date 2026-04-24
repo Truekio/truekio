@@ -2023,15 +2023,6 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 </script>
 </head>
 <body>
-<!-- SPLASH SCREEN — primer elemento del body, visible desde el frame 0 -->
-<div id="splash-screen" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
-  <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:2.4rem;color:#1a2a3a;letter-spacing:-.02em">truqu<span style="color:#4e8fba">o</span></div>
-  <div style="width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#4e8fba;border-radius:50%;animation:splashSpin .8s linear infinite"></div>
-</div>
-<style>
-@keyframes splashSpin{to{transform:rotate(360deg)}}
-#splash-screen.hide{opacity:0;transition:opacity .4s ease;pointer-events:none;}
-</style>
 
 <!-- NAV -->
 <!-- NAV INVITADO — visible cuando explora sin cuenta -->
@@ -4820,16 +4811,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Todo listo — ocultar splash y mostrar app
-  const _hideSplash = () => {
+  setTimeout(() => {
     const splash = document.getElementById('splash-screen');
     const appEl = document.getElementById('app');
-    if (appEl) appEl.style.display = '';
+    if (appEl) appEl.style.visibility = 'visible';
     if (splash) {
       splash.classList.add('hide');
-      setTimeout(() => splash.remove(), 500);
+      setTimeout(() => splash.remove(), 400);
     }
-  };
-  setTimeout(_hideSplash, session ? 1500 : 400);
+  }, session ? 600 : 300);
 
   // Escuchar cambios de sesión — refresco automático del token
   db.auth.onAuthStateChange((event, session) => {
@@ -5787,7 +5777,7 @@ async function loadAdminUsers() {
 }
 
 async function loadAdminItems() {
-  const { data } = await db.from('items').select('id,title,user_name,user_id,status,created_at,photo_urls,photos,category').in('status',['available','reserved']).order('created_at', { ascending: false }).limit(200);
+  const { data } = await db.from('items').select('id,title,user_name,user_id,status,created_at,photo_urls,photos,category').order('created_at', { ascending: false }).limit(200);
   _adminItems = data || [];
   renderAdminItems(_adminItems);
 }
@@ -6999,7 +6989,7 @@ async function respondProposal(proposalId, status) {
         itemTitle: p.item_title,
         offeredItem: p.offered_item_title,
       });
-      sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`, '/?nav=messages');
+      sendPush(p.offerer_id, '✅ ¡Trueque aceptado!', `${ownerDisplayName} aceptó tu propuesta de ${p.offered_item_title} ↔ ${p.item_title}`);
     }
 
     // Recargar el chat actual sin salir
@@ -9068,7 +9058,7 @@ async function startBgPolling() {
       if (n > lastProposalCount) {
         pushNotif('🤝 Nueva propuesta de trueque', 'Alguien quiere intercambiar contigo');
         if (document.visibilityState === 'visible') playNotifSound();
-        sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo', '/?nav=messages');
+        sendPush(currentUser.id, '🤝 Nueva propuesta', 'Alguien quiere intercambiar contigo');
       }
       lastProposalCount = n;
       window._pendingProposalCount = n;
@@ -9180,13 +9170,9 @@ function startConvPolling() {
         lastMsgCount[conv.id] = newUnread;
         const otherName = isUser1 ? conv.user2_name : conv.user1_name;
         updateMsgBadge(Object.values(lastMsgCount).reduce((a, b) => a + b, 0));
-        // Solo notificar mensajes si el chat está activo (no pending)
-        // Las propuestas nuevas ya tienen su propia notificación
-        if (conv.status !== 'pending') {
-          pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
-          if (document.visibilityState === 'visible') playNotifSound();
-          sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje', '/?nav=messages');
-        }
+        pushNotif(`💬 Nuevo mensaje de ${otherName}`, conv.last_message || '');
+        if (document.visibilityState === 'visible') playNotifSound();
+        sendPush(currentUser.id, `💬 ${otherName}`, conv.last_message || 'Tienes un nuevo mensaje');
       }
     }
     loadConversations();
@@ -12855,14 +12841,12 @@ function updateSubcat() {
 
 // Subcategorías para formulario publicar
 const PUB_SUBCATS = {
-  'Electrónica': ['Móviles','Tablets','Ordenadores y portátiles','Consolas','Videojuegos','Audio (auriculares, altavoces)','Fotografía (cámaras, drones)','Smart home','Accesorios','Otro'],
-  'Ropa': ['Ropa hombre','Ropa mujer','Ropa infantil','Zapatos','Bolsos','Joyería','Relojes','Gafas','Accesorios','Otro'],
-  'Hogar': ['Muebles','Decoración','Iluminación','Textil hogar','Cocina','Organización','Electrodomésticos','Jardín','Otro'],
-  'Libros': ['Ficción','Thriller y suspense','Terror','Romance','Historia y biografía','Desarrollo personal','Infantil y juvenil','Cómics y manga','Cocina','Economía / Financiero','Salud / Deporte','Idiomas','Universidad','Otro'],
-  'Juguetes': ['Juguetes infantiles','Puzzles','Figuras coleccionables','Construcción','Electrónicos','Otro'],
-  'Deporte': ['Bicicletas','Fitness (pesas, máquinas)','Running','Deportes de equipo','Camping','Surf / skate / nieve','Raqueta','Artes marciales','Natación','Otro'],
-  'Cartas': ['Magic: The Gathering','Pokémon','One Piece','Yu-Gi-Oh','Coleccionables (cromos, Panini...)','Otro'],
-  'Juegos de mesa': ['Estrategia','Cooperativos','Familiares','Rol (D&D...)','Party games','Abstractos','Wargames','Otro'],
+  'Libros': ['Novela','Ciencia ficción','Fantasía','Terror','Romance','Historia','Biografía','Infantil','Cómic / Manga','Autoayuda','No ficción / Economía','Universitario','Escolar / Bachillerato','Técnico / Programación','Otros'],
+  'Juegos de mesa': ['Estrategia','Party / Familiar','Cooperativo','Puzzle','Dados / Azar','Cartas no coleccionables','Otros'],
+  'Cartas y coleccionables': ['Pokémon','Magic: The Gathering','Yu-Gi-Oh','One Piece','Cromos deportivos','Cromos infantiles','Otras'],
+  'Videojuegos': ['Nintendo Switch','PlayStation','Xbox','PC','Retro','Otros'],
+  'Música': ['Vinilo','CD','Cassette','Instrumentos','Otros'],
+  'Hogar y muebles': ['Muebles','Cocina','Decoración','Herramientas','Iluminación','Otros'],
   'Servicios': [
     'Educación · Clases particulares','Educación · Idiomas','Educación · Apoyo escolar','Educación · Música','Educación · Formación profesional','Educación · Coaching',
     'Tecnología · Desarrollo web','Tecnología · Diseño UX/UI','Tecnología · Reparación dispositivos','Tecnología · Soporte técnico','Tecnología · Automatizaciones',
