@@ -10472,10 +10472,19 @@ async function openModal(itemId) {
   } else {
     // Usar función unificada — mismo algoritmo que el explorador
     const scored = userObjects.map(o => {
-      const score = calcMatchScore(
-        { name: o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? o.wants.split(',').map(w=>w.trim()) : [], wants_open: o.wants_open || false, location: o.location },
-        { name: item.name, cat: item.cat, subcat: item.subcat, wants: item.wants, wants_open: item.wants_open || false, location: item.location }
+      // calcMatchScore(A, B) = ¿quiere A lo que tiene B?
+      // Queremos saber: ¿quiere el dueño (item) lo que tengo yo (o)?
+      // Y también: ¿quiero yo (o) lo que tiene el dueño (item)?
+      // Tomamos el máximo de ambas direcciones
+      const scoreAB = calcMatchScore(
+        { name: item.name || item.title, cat: item.cat || item.category, subcat: item.subcat || item.subcategory, wants: item.wants, wants_open: item.wants_open || false, location: item.location },
+        { name: o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? o.wants.split(',').map(w=>w.trim()) : [], wants_open: o.wants_open || false, location: o.location }
       );
+      const scoreBA = calcMatchScore(
+        { name: o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? o.wants.split(',').map(w=>w.trim()) : [], wants_open: o.wants_open || false, location: o.location },
+        { name: item.name || item.title, cat: item.cat || item.category, subcat: item.subcat || item.subcategory, wants: item.wants, wants_open: item.wants_open || false, location: item.location }
+      );
+      const score = Math.max(scoreAB, scoreBA);
       return { ...o, score };
     }).sort((a, b) => b.score - a.score);
     const goodMatch = scored.filter(o => o.score >= 30);
