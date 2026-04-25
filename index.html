@@ -2221,6 +2221,28 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         </select>
       </div>
 
+      <!-- Atributos Magic: The Gathering -->
+      <div id="edit-magic-fields" style="display:none">
+        <div class="field">
+          <label>Color (Magic)</label>
+          <select id="edit-magic-color">
+            <option value="">— Opcional —</option>
+            <option>Blanco</option><option>Azul</option><option>Negro</option>
+            <option>Rojo</option><option>Verde</option><option>Multicolor</option>
+            <option>Incoloro / Neutro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tipo de carta (Magic)</label>
+          <select id="edit-magic-type">
+            <option value="">— Opcional —</option>
+            <option>Criatura</option><option>Tierra</option><option>Instantáneo</option>
+            <option>Conjuro</option><option>Encantamiento</option><option>Artefacto</option>
+            <option>Planeswalker</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Descripción -->
       <div class="field">
         <label>Descripción</label>
@@ -11197,6 +11219,14 @@ async function openEditItem(itemId) {
     if (lang && document.getElementById('edit-book-lang')) {
       document.getElementById('edit-book-lang').value = lang;
     }
+    // Cargar atributos Magic
+    const isMagicEdit = (data.subcategory || '') === 'Magic: The Gathering';
+    const magicFieldsEl = document.getElementById('edit-magic-fields');
+    if (magicFieldsEl) magicFieldsEl.style.display = isMagicEdit ? '' : 'none';
+    const editMagicColorEl = document.getElementById('edit-magic-color');
+    const editMagicTypeEl = document.getElementById('edit-magic-type');
+    if (editMagicColorEl) editMagicColorEl.value = data.attributes?.magic_color || '';
+    if (editMagicTypeEl) editMagicTypeEl.value = data.attributes?.magic_type || '';
   }
 
   document.getElementById('edit-item-modal').classList.add('open');
@@ -11342,6 +11372,15 @@ function updateEditSubcat() {
     sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
     sub.disabled = true;
   }
+
+  // Mostrar/ocultar campos Magic según subcategoría
+  const subVal = sub.value || '';
+  _updateEditMagicFields(subVal);
+}
+
+function _updateEditMagicFields(subcat) {
+  const magicFields = document.getElementById('edit-magic-fields');
+  if (magicFields) magicFields.style.display = subcat === 'Magic: The Gathering' ? '' : 'none';
 }
 
 function closeEditItemModal() {
@@ -11453,6 +11492,10 @@ async function saveEditItem() {
     subcategory: (() => {
       const genre = document.getElementById('edit-item-subcat').value || '';
       const lang = document.getElementById('edit-book-lang')?.value || '';
+      const magicColorVal = document.getElementById('edit-magic-color')?.value || '';
+      const magicTypeVal = document.getElementById('edit-magic-type')?.value || '';
+      if (magicColorVal) attrs.magic_color = magicColorVal;
+      if (magicTypeVal) attrs.magic_type = magicTypeVal;
       const cat = document.getElementById('edit-item-cat').value;
       if (cat === 'Libros' && lang) return genre ? genre + ' · ' + lang : lang;
       return genre || null;
