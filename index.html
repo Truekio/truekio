@@ -10147,27 +10147,30 @@ function openDetail(itemId) {
       footerBtn.style.opacity = '';
       footerBtn.style.cursor = '';
 
-      // Calcular mejor objeto tuyo para este item
+      // Calcular mejor objeto tuyo para este item — consulta Supabase
       const bannerEl = document.getElementById('detail-best-match');
       if (bannerEl && currentUser) {
-        const myAvailableItems = items.filter(i =>
-          String(i.user_id) === String(currentUser.id) && i.status === 'available'
-        );
-        if (myAvailableItems.length > 0) {
-          const scored = myAvailableItems.map(o => {
-            const scoreAB = calcMatchScore(
-              { name: item.name||item.title, cat: item.cat||item.category, subcat: item.subcat||item.subcategory, wants: item.wants, wants_open: item.wants_open||false, location: item.location },
-              { name: o.name||o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? (Array.isArray(o.wants)?o.wants:o.wants.split(',').map(w=>w.trim())) : [], wants_open: o.wants_open||false, location: o.location }
-            );
-            const scoreBA = calcMatchScore(
-              { name: o.name||o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? (Array.isArray(o.wants)?o.wants:o.wants.split(',').map(w=>w.trim())) : [], wants_open: o.wants_open||false, location: o.location },
-              { name: item.name||item.title, cat: item.cat||item.category, subcat: item.subcat||item.subcategory, wants: item.wants, wants_open: item.wants_open||false, location: item.location }
-            );
-            return { ...o, score: Math.round(Math.sqrt(scoreAB * scoreBA)) };
-          }).sort((a, b) => b.score - a.score);
+        bannerEl.style.display = 'none';
+        db.from('items')
+          .select('id,title,category,subcategory,location,emoji,photos,photo_urls,wants,wants_open,status')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'available')
+          .then(({ data: myItems }) => {
+            if (!myItems || !myItems.length) return;
+            const scored = myItems.map(o => {
+              const scoreAB = calcMatchScore(
+                { name: item.name||item.title, cat: item.cat||item.category, subcat: item.subcat||item.subcategory, wants: item.wants, wants_open: item.wants_open||false, location: item.location },
+                { name: o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? o.wants.split(',').map(w=>w.trim()) : [], wants_open: o.wants_open||false, location: o.location }
+              );
+              const scoreBA = calcMatchScore(
+                { name: o.title, cat: o.category, subcat: o.subcategory, wants: o.wants ? o.wants.split(',').map(w=>w.trim()) : [], wants_open: o.wants_open||false, location: o.location },
+                { name: item.name||item.title, cat: item.cat||item.category, subcat: item.subcat||item.subcategory, wants: item.wants, wants_open: item.wants_open||false, location: item.location }
+              );
+              return { ...o, score: Math.round(Math.sqrt(scoreAB * scoreBA)) };
+            }).sort((a, b) => b.score - a.score);
 
-          const best = scored[0];
-          if (best && best.score > 0) {
+            const best = scored[0];
+            if (!best || best.score === 0) return;
             const photo = best.photo_urls?.[0] || best.photos?.[0] || null;
             bannerEl.style.display = 'block';
             bannerEl.innerHTML = `
@@ -10175,14 +10178,11 @@ function openDetail(itemId) {
               <div style="display:flex;align-items:center;gap:10px">
                 ${photo ? `<img src="${photo}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0">` : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">${best.emoji||'📦'}</div>`}
                 <div style="flex:1;min-width:0">
-                  <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${best.name||best.title}</div>
-                  <div style="font-size:11px;color:var(--accent);font-weight:700">⚡ ${best.score}% match</div>
+                  <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${best.title}</div>
+                  <div style="font-size:11px;color:var(--accent);font-weight:700">⚡ ${best.score}% match bidireccional</div>
                 </div>
               </div>`;
-          } else {
-            bannerEl.style.display = 'none';
-          }
-        }
+          });
       }
     }
   }
