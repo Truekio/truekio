@@ -11501,10 +11501,6 @@ async function saveEditItem() {
     subcategory: (() => {
       const genre = document.getElementById('edit-item-subcat').value || '';
       const lang = document.getElementById('edit-book-lang')?.value || '';
-      const magicColorVal = document.getElementById('edit-magic-color')?.value || '';
-      const magicTypeVal = document.getElementById('edit-magic-type')?.value || '';
-      if (magicColorVal) attrs.magic_color = magicColorVal;
-      if (magicTypeVal) attrs.magic_type = magicTypeVal;
       const cat = document.getElementById('edit-item-cat').value;
       if (cat === 'Libros' && lang) return genre ? genre + ' · ' + lang : lang;
       return genre || null;
@@ -11512,6 +11508,18 @@ async function saveEditItem() {
     wants: document.getElementById('edit-item-wants').value,
     location: city,
   };
+
+  // Atributos (idioma, Magic, etc.)
+  const attrs = {};
+  const editCatFinal = document.getElementById('edit-item-cat').value;
+  const editLangFinal = document.getElementById('edit-book-lang')?.value || '';
+  if (editCatFinal === 'Libros' && editLangFinal) attrs.language = editLangFinal;
+  const magicColorFinal = document.getElementById('edit-magic-color')?.value || '';
+  const magicTypeFinal = document.getElementById('edit-magic-type')?.value || '';
+  if (magicColorFinal) attrs.magic_color = magicColorFinal;
+  if (magicTypeFinal) attrs.magic_type = magicTypeFinal;
+  if (Object.keys(attrs).length) updates.attributes = attrs;
+
   if (allPhotos.length) {
     updates.photos = allPhotos[0];
     updates.photo_urls = allPhotos;
