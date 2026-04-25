@@ -11182,7 +11182,7 @@ let editItemNewPhotos = []; // nuevas fotos seleccionadas
 
 async function openEditItem(itemId) {
   const { data, error } = await db.from('items')
-    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,location,status')
+    .select('id,title,description,category,subcategory,emoji,condition,wants,wants_open,photo_urls,photos,location,status,attributes')
     .eq('id', itemId).single();
   if (error || !data) { showToast('⚠️ No se pudo cargar el objeto'); return; }
 
@@ -11208,14 +11208,23 @@ async function openEditItem(itemId) {
   // Categoría y subcategoría
   const catEl = document.getElementById('edit-item-cat');
   catEl.value = data.category || '';
-  updateEditSubcat();
-  // Setear subcategoría y idioma después de rellenar opciones
+  updateEditSubcat(); // puebla las opciones del select
+  // Setear subcategoría después de que las opciones estén cargadas
   if (data.subcategory) {
-    // El subcategory puede ser "Ficción · Inglés" — separar género e idioma
     const parts = data.subcategory.split(' · ');
     const genre = parts[0] || '';
     const lang = parts[1] || '';
-    document.getElementById('edit-item-subcat').value = genre;
+    // Verificar que la opción existe en el select antes de setearla
+    const subcatEl = document.getElementById('edit-item-subcat');
+    const optionExists = Array.from(subcatEl.options).some(o => o.value === genre || o.text === genre);
+    if (optionExists) {
+      subcatEl.value = genre;
+    } else {
+      // Añadir la opción si no existe (datos legacy)
+      const opt = document.createElement('option');
+      opt.value = genre; opt.text = genre; opt.selected = true;
+      subcatEl.appendChild(opt);
+    }
     if (lang && document.getElementById('edit-book-lang')) {
       document.getElementById('edit-book-lang').value = lang;
     }
