@@ -6561,8 +6561,11 @@ function applyFilter(q, cat) {
     // Filtrar solo objetos de café
     f = f.filter(i => i.wants && i.wants.some(w => w === '☕ Un café' || w === '☕ ¡Te lo doy por un café!'));
   } else if (sortMode === 'surprise') {
-    // Filtrar solo objetos "¡Sorpréndeme!"
+    // Filtrar solo objetos "¡Sorpréndeme!" y ordenar por distancia
     f = f.filter(i => i.wants && i.wants.some(w => w === '🎲 ¡Sorpréndeme!'));
+    if (userCoords) {
+      f.sort((a, b) => (a._dist ?? 9999) - (b._dist ?? 9999));
+    }
   }
 
   const countEl = document.getElementById('sp-results-n');
@@ -7755,7 +7758,7 @@ function calcMatchScore(itemA, itemB) {
     const aWantsBCat    = aWants.some(w => matchCat(w, bCat));
     const aWantsBSubcat = bSubcat && aWants.some(w => matchCat(w, bSubcat));
     const aIsSurprise = aWantsOpen || aWants.some(w => w.toLowerCase().includes('sorpréndeme') || w.toLowerCase().includes('sorprendeme') || w.includes('🎲'));
-    if (aIsSurprise)        scoreA = 45; // acepta cualquier cosa
+    if (aIsSurprise)        scoreA = 0; // no sabemos qué quiere — sin % de match
     else if (aWantsBTitle)       scoreA = 50;
     else if (aWantsBSubcat) scoreA = 35;
     else if (aWantsBCat)    scoreA = 25;
@@ -7780,7 +7783,7 @@ function calcMatchScore(itemA, itemB) {
     const bWantsACat    = bWants.some(w => matchCat(w, aCat));
     const bWantsASubcat = aSubcat && bWants.some(w => matchCat(w, aSubcat));
     const bIsSurprise = bWantsOpen || bWants.some(w => w.toLowerCase().includes('sorpréndeme') || w.toLowerCase().includes('sorprendeme') || w.includes('🎲'));
-    if (bIsSurprise)        scoreB = 45; // acepta cualquier cosa
+    if (bIsSurprise)        scoreB = 0; // no sabemos qué quiere — sin % de match
     else if (bWantsATitle)       scoreB = 50;
     else if (bWantsASubcat) scoreB = 35;
     else if (bWantsACat)    scoreB = 25;
