@@ -3754,6 +3754,36 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
             <button class="fd-chip" data-val="Otro idioma" onclick="fdToggleLang(this)">Otro</button>
           </div>
         </div>
+      <!-- Color para Magic -->
+      <div id="fd-magic-color-section" style="display:none">
+        <div class="fd-section">
+          <div class="fd-label">Color (Magic)</div>
+          <div class="fd-chips" id="fd-magic-color-chips">
+            <button class="fd-chip" data-val="Blanco" onclick="fdToggleMagicColor(this)">⬜ Blanco</button>
+            <button class="fd-chip" data-val="Azul" onclick="fdToggleMagicColor(this)">🔵 Azul</button>
+            <button class="fd-chip" data-val="Negro" onclick="fdToggleMagicColor(this)">⬛ Negro</button>
+            <button class="fd-chip" data-val="Rojo" onclick="fdToggleMagicColor(this)">🔴 Rojo</button>
+            <button class="fd-chip" data-val="Verde" onclick="fdToggleMagicColor(this)">🟢 Verde</button>
+            <button class="fd-chip" data-val="Multicolor" onclick="fdToggleMagicColor(this)">🌈 Multicolor</button>
+            <button class="fd-chip" data-val="Incoloro / Neutro" onclick="fdToggleMagicColor(this)">⚪ Incoloro</button>
+          </div>
+        </div>
+      </div>
+      <!-- Tipo para Magic -->
+      <div id="fd-magic-type-section" style="display:none">
+        <div class="fd-section">
+          <div class="fd-label">Tipo de carta (Magic)</div>
+          <div class="fd-chips" id="fd-magic-type-chips">
+            <button class="fd-chip" data-val="Criatura" onclick="fdToggleMagicType(this)">Criatura</button>
+            <button class="fd-chip" data-val="Tierra" onclick="fdToggleMagicType(this)">Tierra</button>
+            <button class="fd-chip" data-val="Instantáneo" onclick="fdToggleMagicType(this)">Instantáneo</button>
+            <button class="fd-chip" data-val="Conjuro" onclick="fdToggleMagicType(this)">Conjuro</button>
+            <button class="fd-chip" data-val="Encantamiento" onclick="fdToggleMagicType(this)">Encantamiento</button>
+            <button class="fd-chip" data-val="Artefacto" onclick="fdToggleMagicType(this)">Artefacto</button>
+            <button class="fd-chip" data-val="Planeswalker" onclick="fdToggleMagicType(this)">Planeswalker</button>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   </div>
@@ -3768,7 +3798,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── FILTER DRAWER LOGIC ──
-let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', genre: '', subcat: '' };
+let fdState = { cat: '', conditions: [], shipping: [], sort: 'relevance', lang: '', magicColor: '', magicType: '', genre: '', subcat: '' };
 
 function openFilterDrawer() {
   document.getElementById('filter-drawer').classList.add('open');
@@ -3804,6 +3834,11 @@ function _fdRenderSubcatFilters(cat) {
   if (!subs.length) { container.style.display = 'none'; return; }
   if (labelEl) labelEl.textContent = cat === 'Libros' ? 'Género' : 'Subcategoría';
   if (langSection) langSection.style.display = cat === 'Libros' ? 'block' : 'none';
+  // Ocultar secciones Magic al cambiar categoría
+  const magicColorSection = document.getElementById('fd-magic-color-section');
+  const magicTypeSection = document.getElementById('fd-magic-type-section');
+  if (magicColorSection) magicColorSection.style.display = 'none';
+  if (magicTypeSection) magicTypeSection.style.display = 'none';
   chipsEl.innerHTML = subs.map(s =>
     `<button class="fd-chip${fdState.subcat === s ? ' on' : ''}" data-val="${s}" onclick="fdToggleSubcat(this)">${s}</button>`
   ).join('');
@@ -3812,6 +3847,24 @@ function _fdRenderSubcatFilters(cat) {
 function fdToggleSubcat(btn) {
   fdState.subcat = fdState.subcat === btn.dataset.val ? '' : btn.dataset.val;
   document.querySelectorAll('#fd-subcat-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.subcat));
+  // Mostrar filtros Magic si subcategoría es Magic
+  const isMagic = fdState.subcat === 'Magic: The Gathering';
+  const magicColorSection = document.getElementById('fd-magic-color-section');
+  const magicTypeSection = document.getElementById('fd-magic-type-section');
+  if (magicColorSection) magicColorSection.style.display = isMagic ? 'block' : 'none';
+  if (magicTypeSection) magicTypeSection.style.display = isMagic ? 'block' : 'none';
+  fdApply();
+}
+
+function fdToggleMagicColor(btn) {
+  fdState.magicColor = fdState.magicColor === btn.dataset.val ? '' : btn.dataset.val;
+  document.querySelectorAll('#fd-magic-color-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.magicColor));
+  fdApply();
+}
+
+function fdToggleMagicType(btn) {
+  fdState.magicType = fdState.magicType === btn.dataset.val ? '' : btn.dataset.val;
+  document.querySelectorAll('#fd-magic-type-chips .fd-chip').forEach(c => c.classList.toggle('on', c.dataset.val === fdState.magicType));
   fdApply();
 }
 function fdToggleLang(btn) {
@@ -3839,6 +3892,9 @@ function fdClearAll() {
   const subcatFilters = document.getElementById('fd-subcat-filters');
   if (subcatFilters) subcatFilters.style.display = 'none';
   _fdSyncUI();
+  fdState.magicColor = ''; fdState.magicType = '';
+  document.getElementById('fd-magic-color-section') && (document.getElementById('fd-magic-color-section').style.display='none');
+  document.getElementById('fd-magic-type-section') && (document.getElementById('fd-magic-type-section').style.display='none');
   fdApply();
 }
 function _fdSyncUI() {
@@ -12108,13 +12164,32 @@ const PUB_CATS = {
   },
   'Juegos de mesa': {
     emoji: '🎲',
-    subcats: ['Estrategia','Party / Familiar','Cooperativo','Puzzle','Dados / Azar','Cartas no coleccionables','Otros'],
+    subcats: ['Estrategia','Party / Familiar','Cooperativo','Puzzle','Dados / Azar','Rol (D&D, Pathfinder...)','Wargames','Otros'],
     attrs: []
   },
   'Cartas y coleccionables': {
     emoji: '🃏',
     subcats: ['Pokémon','Magic: The Gathering','Yu-Gi-Oh','One Piece','Cromos deportivos','Cromos infantiles','Otras'],
-    attrs: []
+    attrs: [
+      {
+        id: 'magic_color',
+        label: 'Color (Magic)',
+        showIf: { subcat: 'Magic: The Gathering' },
+        type: 'select',
+        options: ['Blanco','Azul','Negro','Rojo','Verde','Multicolor','Incoloro / Neutro'],
+        required: false,
+        exclusive: false
+      },
+      {
+        id: 'magic_type',
+        label: 'Tipo de carta (Magic)',
+        showIf: { subcat: 'Magic: The Gathering' },
+        type: 'select',
+        options: ['Criatura','Tierra','Instantáneo','Conjuro','Encantamiento','Artefacto','Planeswalker','Otro'],
+        required: false,
+        exclusive: false
+      }
+    ]
   },
   'Videojuegos': {
     emoji: '🎮',
@@ -12226,17 +12301,24 @@ function pubLoadSubcats(cat) {
   container.innerHTML = `<button onclick="pubSelectSubcat('','pub')" class="pub-subcat-btn" id="pubsub-any"
     style="background:var(--accent-l);border:1.5px solid var(--accent);border-radius:99px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--accent);transition:all .15s">Cualquiera ✓</button>` + container.innerHTML;
 
-  // Cargar atributos dinámicos
-  if (attrsContainer) {
-    attrsContainer.innerHTML = data.attrs.map(attr => `
+  // Cargar atributos dinámicos (respetando showIf)
+  window._renderPubAttrsForSubcat = (subcat) => {
+    if (!attrsContainer) return;
+    const visibleAttrs = (data.attrs || []).filter(a => {
+      if (!a.showIf) return true;
+      if (a.showIf.subcat && subcat !== a.showIf.subcat) return false;
+      return true;
+    });
+    attrsContainer.innerHTML = visibleAttrs.map(attr => `
       <div class="field">
-        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(el idioma debe coincidir para hacer match)</span>' : ''}</label>
+        <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(debe coincidir para hacer match)</span>' : ''}</label>
         <select id="pub-attr-${attr.id}" style="font-size:14px">
           <option value="">— ${attr.required ? 'Selecciona' : 'Opcional'} —</option>
           ${attr.options.map(o => `<option>${o}</option>`).join('')}
         </select>
       </div>`).join('');
-  }
+  };
+  window._renderPubAttrsForSubcat(''); // inicial sin subcategoría
 
   // Para libros: mostrar subcategorías como select en lugar de botones
   if (cat === 'Libros' && data.subcats.length) {
@@ -12253,6 +12335,8 @@ function pubLoadSubcats(cat) {
 
 function pubSelectSubcat(sub, prefix) {
   document.getElementById(`${prefix === 'pub' ? 'pub-subcat' : 'wants-subcat'}`).value = sub;
+  // Re-renderizar atributos según subcategoría (ej: Magic)
+  if (prefix === 'pub' && window._renderPubAttrsForSubcat) window._renderPubAttrsForSubcat(sub);
   const container = document.getElementById(`${prefix === 'pub' ? 'pub-subcat-options' : 'wants-subcat-options'}`);
   if (!container) return;
   container.querySelectorAll('button').forEach(btn => {
@@ -13035,7 +13119,7 @@ function updateSubcat() {
 // Subcategorías para formulario publicar
 const PUB_SUBCATS = {
   'Libros': ['Novela','Ciencia ficción','Fantasía','Terror','Romance','Historia','Biografía','Infantil','Cómic / Manga','Autoayuda','No ficción / Economía','Universitario','Escolar / Bachillerato','Técnico / Programación','Otros'],
-  'Juegos de mesa': ['Estrategia','Party / Familiar','Cooperativo','Puzzle','Dados / Azar','Cartas no coleccionables','Otros'],
+  'Juegos de mesa': ['Estrategia','Party / Familiar','Cooperativo','Puzzle','Dados / Azar','Rol (D&D, Pathfinder...)','Wargames','Otros'],
   'Cartas y coleccionables': ['Pokémon','Magic: The Gathering','Yu-Gi-Oh','One Piece','Cromos deportivos','Cromos infantiles','Otras'],
   'Videojuegos': ['Nintendo Switch','PlayStation','Xbox','PC','Retro','Otros'],
   'Música': ['Vinilo','CD','Cassette','Instrumentos','Otros'],
