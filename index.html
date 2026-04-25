@@ -7754,10 +7754,11 @@ function calcMatchScore(itemA, itemB) {
     const aWantsBTitle  = aWants.some(w => matchTitle(w, bTitle));
     const aWantsBCat    = aWants.some(w => matchCat(w, bCat));
     const aWantsBSubcat = bSubcat && aWants.some(w => matchCat(w, bSubcat));
-    if (aWantsBTitle)       scoreA = 50;
+    const aIsSurprise = aWantsOpen || aWants.some(w => w.toLowerCase().includes('sorpréndeme') || w.toLowerCase().includes('sorprendeme') || w.includes('🎲'));
+    if (aIsSurprise)        scoreA = 45; // acepta cualquier cosa
+    else if (aWantsBTitle)       scoreA = 50;
     else if (aWantsBSubcat) scoreA = 35;
     else if (aWantsBCat)    scoreA = 25;
-    else if (aWantsOpen && bCat) scoreA = 15;
   }
 
   // ── LADO B: ¿B quiere lo que ofrece A? ──
@@ -7778,10 +7779,11 @@ function calcMatchScore(itemA, itemB) {
     const bWantsATitle  = bWants.some(w => matchTitle(w, aTitle));
     const bWantsACat    = bWants.some(w => matchCat(w, aCat));
     const bWantsASubcat = aSubcat && bWants.some(w => matchCat(w, aSubcat));
-    if (bWantsATitle)       scoreB = 50;
+    const bIsSurprise = bWantsOpen || bWants.some(w => w.toLowerCase().includes('sorpréndeme') || w.toLowerCase().includes('sorprendeme') || w.includes('🎲'));
+    if (bIsSurprise)        scoreB = 45; // acepta cualquier cosa
+    else if (bWantsATitle)       scoreB = 50;
     else if (bWantsASubcat) scoreB = 35;
     else if (bWantsACat)    scoreB = 25;
-    else if (bWantsOpen && aCat) scoreB = 15;
   }
 
   if (scoreA === 0 && scoreB === 0) return 0;
