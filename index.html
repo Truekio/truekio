@@ -6534,7 +6534,10 @@ function applyFilter(q, cat) {
       if (!hasGenre) return true;
       return subcat.includes(spFilters.genre.toLowerCase());
     })();
-    return bc && bq && bCat && bCity && bCond && bShip && bSubcat && bLang && bGenre;
+    // Filtros Magic: The Gathering
+    const bMagicColor = !fdState.magicColor || (i.attributes?.magic_color || '').toLowerCase() === fdState.magicColor.toLowerCase();
+    const bMagicType = !fdState.magicType || (i.attributes?.magic_type || '').toLowerCase() === fdState.magicType.toLowerCase();
+    return bc && bq && bCat && bCity && bCond && bShip && bSubcat && bLang && bGenre && bMagicColor && bMagicType;
   });
 
   // ── Algoritmo de relevancia ──
@@ -13124,21 +13127,7 @@ const PUB_SUBCATS = {
   'Videojuegos': ['Nintendo Switch','PlayStation','Xbox','PC','Retro','Otros'],
   'Música': ['Vinilo','CD','Cassette','Instrumentos','Otros'],
   'Hogar y muebles': ['Muebles','Cocina','Decoración','Herramientas','Iluminación','Otros'],
-  'Servicios': [
-    'Educación · Clases particulares','Educación · Idiomas','Educación · Apoyo escolar','Educación · Música','Educación · Formación profesional','Educación · Coaching',
-    'Tecnología · Desarrollo web','Tecnología · Diseño UX/UI','Tecnología · Reparación dispositivos','Tecnología · Soporte técnico','Tecnología · Automatizaciones',
-    'Creatividad · Diseño gráfico','Creatividad · Fotografía','Creatividad · Vídeo','Creatividad · Copywriting','Creatividad · Branding',
-    'Salud · Entrenador personal','Salud · Nutrición','Salud · Yoga / pilates','Salud · Fisioterapia','Salud · Terapias alternativas',
-    'Belleza · Peluquería','Belleza · Maquillaje','Belleza · Uñas','Belleza · Estética',
-    'Hogar · Limpieza','Hogar · Organización','Hogar · Mudanzas','Hogar · Reparaciones',
-    'Construcción · Albañilería','Construcción · Electricidad','Construcción · Fontanería','Construcción · Carpintería',
-    'Legal · Asesoría legal','Legal · Contabilidad','Legal · Consultoría',
-    'Transporte · Traslados','Transporte · Compartir coche',
-    'Mascotas · Paseo de perros','Mascotas · Cuidado','Mascotas · Adiestramiento',
-    'Eventos · DJ','Eventos · Fotografía','Eventos · Organización',
-    'Coaching · Vida','Coaching · Negocios','Coaching · Mindfulness',
-    'Idiomas · Intercambio lingüístico','Otro'
-  ],
+  'Servicios': ['Idiomas / Conversación','Clases / Academia','Tecnología / Informática','Diseño / Arte','Reparaciones','Deporte / Entrenamiento','Música / Instrumento','Fotografía / Vídeo','Otros'],
   'Otros': ['Lotes','Regalos','Coleccionismo','Objetos raros','Alimentación artesanal','Otro'],
 };
 
