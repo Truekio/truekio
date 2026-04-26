@@ -4641,12 +4641,13 @@ function distanceKm(lat1, lng1, lat2, lng2) {
 
 // Limpia items que quedaron como 'reserved' pero su propuesta está cancelada
 async function _fixOrphanedReservedItems() {
+  if (!currentUser?.id) return; // no ejecutar sin usuario cargado
   try {
     const { data: orphaned } = await db
       .from('items')
       .select('id')
       .eq('status', 'reserved')
-      .eq('user_id', currentUser?.id); // solo nuestros items
+      .eq('user_id', currentUser.id); // solo nuestros items
 
     if (!orphaned?.length) return;
 
@@ -12378,9 +12379,7 @@ function pubSelectWantsCat(cat) {
 }
 
 function pubLoadSubcats(cat) {
-  console.log('[PUB] pubLoadSubcats called with cat:', cat);
   const data = PUB_CATS[cat];
-  console.log('[PUB] data found:', data);
   if (!data) return;
   const container = document.getElementById('pub-subcat-options');
   const attrsContainer = document.getElementById('pub-attrs');
@@ -12439,7 +12438,9 @@ function pubLoadSubcats(cat) {
 function pubSelectSubcat(sub, prefix) {
   document.getElementById(`${prefix === 'pub' ? 'pub-subcat' : 'wants-subcat'}`).value = sub;
   // Re-renderizar atributos según subcategoría (ej: Magic)
-  if (prefix === 'pub' && window._renderPubAttrsForSubcat) window._renderPubAttrsForSubcat(sub);
+  if (prefix === 'pub' && window._renderPubAttrsForSubcat) {
+    requestAnimationFrame(() => window._renderPubAttrsForSubcat(sub));
+  }
   // Mostrar atributos con showIf en wants — solo para subcategoría correcta
   if (prefix === 'wants') {
     const attrsContainer = document.getElementById('wants-attrs');
@@ -12666,7 +12667,6 @@ function pubGoTo(n) {
   // Cargar subcategorías al llegar al paso 4
   if (n === 4) {
     const catVal = document.getElementById('pub-cat')?.value;
-    console.log('[PUB] Going to step 4, cat=', catVal);
     if (catVal) setTimeout(() => pubLoadSubcats(catVal), 100);
   }
 
