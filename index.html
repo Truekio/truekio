@@ -5595,6 +5595,7 @@ async function loadAdminPoints() {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <div style="font-weight:700;font-size:14px">${p.name}</div>
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:${p.type==='secure'?'#eff6ff':'var(--accent-l)'};color:${p.type==='secure'?'#1d4ed8':'var(--accent)'}">${p.type==='secure'?'📍 Seguro':'🤝 Colaborador'}</span>
           <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:${p.active?'var(--green-l)':'var(--bg2)'};color:${p.active?'var(--green)':'var(--muted)'}">${p.active?'Activo':'Inactivo'}</span>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
@@ -5632,6 +5633,11 @@ function openAddPointModal() {
     <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
       <div style="font-weight:700;font-size:1rem;margin-bottom:16px">📍 Añadir Punto Truquo</div>
       <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:8px">
+          <button type="button" onclick="ptSetType(this,'secure')" id="pt-type-secure" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--text)">📍 Punto Seguro</button>
+          <button type="button" onclick="ptSetType(this,'collaborator')" id="pt-type-collaborator" style="flex:1;padding:10px;border:2px solid var(--accent);border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent-l);color:var(--accent)">🤝 Colaborador</button>
+        </div>
+        <input type="hidden" id="pt-type" value="collaborator">
         <input id="pt-name" placeholder="Nombre del establecimiento *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
         <input id="pt-address" placeholder="Dirección *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
         <input id="pt-city" placeholder="Ciudad *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
@@ -5651,6 +5657,16 @@ function openAddPointModal() {
   document.body.appendChild(overlay);
 }
 
+function ptSetType(btn, type) {
+  document.getElementById('pt-type').value = type;
+  document.getElementById('pt-type-secure').style.cssText = type === 'secure'
+    ? 'flex:1;padding:10px;border:2px solid var(--accent);border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent-l);color:var(--accent)'
+    : 'flex:1;padding:10px;border:2px solid var(--border);border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--text)';
+  document.getElementById('pt-type-collaborator').style.cssText = type === 'collaborator'
+    ? 'flex:1;padding:10px;border:2px solid var(--accent);border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent-l);color:var(--accent)'
+    : 'flex:1;padding:10px;border:2px solid var(--border);border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--bg);color:var(--text)';
+}
+
 async function saveNewPoint(btn) {
   const name = document.getElementById('pt-name')?.value.trim();
   const address = document.getElementById('pt-address')?.value.trim();
@@ -5664,10 +5680,11 @@ async function saveNewPoint(btn) {
     showToast('⚠️ Rellena los campos obligatorios (*)'); return;
   }
   btn.textContent = 'Guardando...'; btn.disabled = true;
+  const type = document.getElementById('pt-type')?.value || 'collaborator';
   const { error } = await db.from('truquo_points').insert([{
     name, address, city, lat, lng,
     schedule: schedule||null, photo_url: photo_url||null,
-    description: description||null, active: true
+    description: description||null, active: true, type
   }]);
   if (error) { showToast('⚠️ Error: ' + error.message); btn.textContent = 'Guardar'; btn.disabled = false; return; }
   document.getElementById('add-point-overlay')?.remove();
@@ -5703,6 +5720,7 @@ async function openTruquoPoints(origen) {
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
           <div style="font-weight:700;font-size:14px">${p.name}</div>
           ${p._dist!==null?`<span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-l);padding:2px 7px;border-radius:99px">${distLabel(p._dist)}</span>`:''}
+          <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:${p.type==='secure'?'#eff6ff':'var(--accent-l)'};color:${p.type==='secure'?'#1d4ed8':'var(--accent)'}">${p.type==='secure'?'📍 Punto Seguro':'🤝 Colaborador'}</span>
           ${idx===0&&sorted.length>1&&p._dist!==null?`<span style="font-size:10px;font-weight:700;color:var(--green);background:var(--green-l);padding:2px 7px;border-radius:99px">⭐ Más cercano</span>`:''}
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
@@ -5765,8 +5783,9 @@ async function openTruquoPoints(origen) {
           <!-- CTA: quiero ser punto Truquo -->
           <div style="border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-top:4px">
             <div style="font-weight:700;font-size:14px;margin-bottom:4px">🏪 ¿Tienes un negocio?</div>
-            <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Únete a la red de Puntos Truquo y recibe visitas de nuevos clientes sin ningún compromiso.</div>
-            <button onclick="openPuntoTruquoForm()" style="width:100%;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✉️ Quiero ser Punto Truquo</button>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Únete a la red de Puntos Truquo Colaboradores y recibe visitas de nuevos clientes.</div>
+            <button onclick="openPuntoTruquoForm('collaborator')" style="width:100%;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">🤝 Quiero ser Punto Colaborador</button>
+            <button onclick="openPuntoTruquoForm('secure')" style="width:100%;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:12px;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📍 Proponer Punto Seguro</button>
           </div>
         `}
       </div>
@@ -5780,10 +5799,13 @@ async function openTruquoPoints(origen) {
   _initTruquoMap(sorted);
 }
 
-function openPuntoTruquoForm() {
-  const subject = encodeURIComponent('Quiero ser Punto Truquo');
+function openPuntoTruquoForm(type) {
+  const isSecure = type === 'secure';
+  const subject = encodeURIComponent(isSecure ? 'Propuesta Punto Seguro Truquo' : 'Quiero ser Punto Colaborador Truquo');
   const body = encodeURIComponent(
-    'Hola equipo Truquo,\n\nMe gustaría ser un Punto Truquo. Os dejo mis datos:\n\n' +
+    isSecure
+      ? 'Hola equipo Truquo,\n\nMe gustaría proponer un Punto Seguro (lugar público para quedar). Os dejo los datos:\n\nNombre del lugar: \nDirección: \nCiudad: \nTipo de lugar (cafetería, biblioteca, plaza...): \n\nSaludos'
+      : 'Hola equipo Truquo,\n\nMe gustaría ser un Punto Colaborador Truquo. Os dejo mis datos:\n\n' +
     'Nombre del negocio: \n' +
     'Nombre de contacto: \n' +
     'Teléfono: \n' +
@@ -5836,8 +5858,10 @@ function _initTruquoMap(points) {
     // Pins de puntos Truquo
     points.forEach(p => {
       if (!p.lat || !p.lng) return;
+      const pinColor = p.type === 'secure' ? '#1d4ed8' : '#4e8fba';
+      const pinEmoji = p.type === 'secure' ? '📍' : '🤝';
       const icon = L.divIcon({
-        html: `<div style="background:#4e8fba;color:#fff;border-radius:50% 50% 50% 0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid #fff"><span style="transform:rotate(45deg)">📍</span></div>`,
+        html: `<div style="background:${pinColor};color:#fff;border-radius:50% 50% 50% 0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid #fff"><span style="transform:rotate(45deg)">${pinEmoji}</span></div>`,
         className: '', iconSize: [32,32], iconAnchor: [16,32], popupAnchor: [0,-32]
       });
       const marker = L.marker([parseFloat(p.lat), parseFloat(p.lng)], {icon})
