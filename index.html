@@ -2276,6 +2276,26 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
               <option>Portugués</option><option>Otro idioma</option>
             </select>
           </div>
+          <div id="edit-wants-magic-fields" style="display:none">
+            <div class="field" style="margin-bottom:8px">
+              <label>Color (Magic)</label>
+              <select id="edit-wants-magic-color">
+                <option value="">— Opcional —</option>
+                <option>Blanco</option><option>Azul</option><option>Negro</option>
+                <option>Rojo</option><option>Verde</option><option>Multicolor</option>
+                <option>Incoloro / Neutro</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:8px">
+              <label>Tipo de carta (Magic)</label>
+              <select id="edit-wants-magic-type">
+                <option value="">— Opcional —</option>
+                <option>Criatura</option><option>Tierra</option><option>Instantáneo</option>
+                <option>Conjuro</option><option>Encantamiento</option><option>Artefacto</option>
+                <option>Planeswalker</option>
+              </select>
+            </div>
+          </div>
           <input id="edit-wants-input" placeholder="Nombre concreto (ej: Canon EOS 90D)" style="width:100%;box-sizing:border-box;margin-bottom:8px">
           <div style="display:flex;justify-content:flex-end">
             <button class="btn btn-primary btn-sm" onclick="addEditExchangeOption()">+ Añadir</button>
@@ -11228,14 +11248,21 @@ async function openEditItem(itemId) {
     if (lang && document.getElementById('edit-book-lang')) {
       document.getElementById('edit-book-lang').value = lang;
     }
-    // Cargar atributos Magic
-    const isMagicEdit = (data.subcategory || '') === 'Magic: The Gathering';
-    const magicFieldsEl = document.getElementById('edit-magic-fields');
-    if (magicFieldsEl) magicFieldsEl.style.display = isMagicEdit ? '' : 'none';
-    const editMagicColorEl = document.getElementById('edit-magic-color');
-    const editMagicTypeEl = document.getElementById('edit-magic-type');
-    if (editMagicColorEl) editMagicColorEl.value = data.attributes?.magic_color || '';
-    if (editMagicTypeEl) editMagicTypeEl.value = data.attributes?.magic_type || '';
+    // Cargar atributos Magic — esperar a que updateEditSubcat haya poblado el select
+    setTimeout(() => {
+      const subcat = data.subcategory || '';
+      if (typeof _updateEditMagicFields === 'function') _updateEditMagicFields(subcat);
+      const editMagicColorEl = document.getElementById('edit-magic-color');
+      const editMagicTypeEl = document.getElementById('edit-magic-type');
+      if (editMagicColorEl) editMagicColorEl.value = data.attributes?.magic_color || '';
+      if (editMagicTypeEl) editMagicTypeEl.value = data.attributes?.magic_type || '';
+      // También setear el valor del select de subcategoría por si no se seteó antes
+      const subcatEl = document.getElementById('edit-item-subcat');
+      if (subcatEl && subcat) {
+        const exists = Array.from(subcatEl.options).some(o => o.value === subcat);
+        if (exists) subcatEl.value = subcat;
+      }
+    }, 100);
   }
 
   document.getElementById('edit-item-modal').classList.add('open');
@@ -11313,8 +11340,10 @@ function updateEditWantsSubcat() {
   const cat = document.getElementById('edit-wants-cat').value;
   const sub = document.getElementById('edit-wants-subcat');
   const langField = document.getElementById('edit-wants-lang-field');
+  const magicFields = document.getElementById('edit-wants-magic-fields');
 
   if (langField) langField.style.display = cat === 'Libros' ? '' : 'none';
+  if (magicFields) magicFields.style.display = 'none'; // ocultar hasta seleccionar Magic
 
   const opts = PUB_SUBCATS[cat] || [];
   if (opts.length) {
@@ -11324,15 +11353,23 @@ function updateEditWantsSubcat() {
     sub.innerHTML = '<option value="">— Sin subcategoría —</option>';
     sub.disabled = true;
   }
+  // Listener para mostrar Magic al seleccionar subcategoría
+  sub.onchange = () => {
+    if (magicFields) magicFields.style.display = sub.value === 'Magic: The Gathering' ? '' : 'none';
+  };
 }
 
 function addEditExchangeOption() {
   const cat = document.getElementById('edit-wants-cat').value;
   const subcat = document.getElementById('edit-wants-subcat').value;
   const lang = document.getElementById('edit-wants-lang')?.value || '';
+  const magicColor = document.getElementById('edit-wants-magic-color')?.value || '';
+  const magicType = document.getElementById('edit-wants-magic-type')?.value || '';
   const name = document.getElementById('edit-wants-input').value.trim();
   let label = name || (subcat ? cat + ' › ' + subcat : cat) || '';
   if (cat === 'Libros' && lang && !name) label = label + ' · ' + lang;
+  if (magicColor && !name) label = label + ' · ' + magicColor;
+  if (magicType && !name) label = label + ' · ' + magicType;
   if (!label) { showToast('⚠️ Escribe o selecciona qué aceptas'); return; }
   editExchangeOptions.push(label);
   renderEditExchangeList();
@@ -11341,6 +11378,9 @@ function addEditExchangeOption() {
   document.getElementById('edit-wants-subcat').innerHTML = '<option value="">— Selecciona categoría —</option>';
   if (document.getElementById('edit-wants-lang')) document.getElementById('edit-wants-lang').value = '';
   if (document.getElementById('edit-wants-lang-field')) document.getElementById('edit-wants-lang-field').style.display = 'none';
+  if (document.getElementById('edit-wants-magic-fields')) document.getElementById('edit-wants-magic-fields').style.display = 'none';
+  if (document.getElementById('edit-wants-magic-color')) document.getElementById('edit-wants-magic-color').value = '';
+  if (document.getElementById('edit-wants-magic-type')) document.getElementById('edit-wants-magic-type').value = '';
 }
 
 function removeEditExchangeOption(idx) {
@@ -12400,19 +12440,18 @@ function pubSelectSubcat(sub, prefix) {
   document.getElementById(`${prefix === 'pub' ? 'pub-subcat' : 'wants-subcat'}`).value = sub;
   // Re-renderizar atributos según subcategoría (ej: Magic)
   if (prefix === 'pub' && window._renderPubAttrsForSubcat) window._renderPubAttrsForSubcat(sub);
-  // Mostrar atributos con showIf en wants (ej: Magic)
+  // Mostrar atributos con showIf en wants — solo para subcategoría correcta
   if (prefix === 'wants') {
     const attrsContainer = document.getElementById('wants-attrs');
     if (attrsContainer && window._wantsAttrsWithShowIf) {
-      const matching = window._wantsAttrsWithShowIf.filter(a => !a.showIf.subcat || a.showIf.subcat === sub);
-      const existing = attrsContainer.innerHTML;
-      // Eliminar attrs de Magic previos
-      const cleanedExisting = attrsContainer.querySelectorAll('[id^="wants-attr-magic"]');
-      cleanedExisting.forEach(el => el.closest('.field')?.remove());
-      // Añadir attrs que corresponden
+      // Limpiar attrs de showIf previos
+      attrsContainer.querySelectorAll('[data-showif]').forEach(el => el.remove());
+      // Añadir solo los que corresponden a esta subcategoría
+      const matching = window._wantsAttrsWithShowIf.filter(a => a.showIf.subcat === sub);
       matching.forEach(attr => {
         const div = document.createElement('div');
         div.className = 'field';
+        div.dataset.showif = '1';
         div.innerHTML = `
           <label>${attr.label}</label>
           <select id="wants-attr-${attr.id}" style="font-size:14px">
