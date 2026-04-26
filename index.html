@@ -3780,22 +3780,7 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
         <div class="fd-label" id="fd-subcat-label">Subcategoría</div>
         <div class="fd-chips" id="fd-subcat-chips"></div>
       </div>
-      <!-- Extra: idioma para libros -->
-      <div id="fd-lang-section" style="display:none">
-        <div class="fd-section">
-          <div class="fd-label">Idioma</div>
-          <div class="fd-chips" id="fd-lang-chips">
-            <button class="fd-chip" data-val="Español" onclick="fdToggleLang(this)">Español</button>
-            <button class="fd-chip" data-val="Inglés" onclick="fdToggleLang(this)">Inglés</button>
-            <button class="fd-chip" data-val="Catalán" onclick="fdToggleLang(this)">Catalán</button>
-            <button class="fd-chip" data-val="Francés" onclick="fdToggleLang(this)">Francés</button>
-            <button class="fd-chip" data-val="Alemán" onclick="fdToggleLang(this)">Alemán</button>
-            <button class="fd-chip" data-val="Italiano" onclick="fdToggleLang(this)">Italiano</button>
-            <button class="fd-chip" data-val="Portugués" onclick="fdToggleLang(this)">Portugués</button>
-            <button class="fd-chip" data-val="Otro idioma" onclick="fdToggleLang(this)">Otro</button>
-          </div>
-        </div>
-      <!-- Color para Magic -->
+      <!-- Color para Magic — aparece al seleccionar Magic: The Gathering -->
       <div id="fd-magic-color-section" style="display:none">
         <div class="fd-section">
           <div class="fd-label">Color (Magic)</div>
@@ -3825,6 +3810,21 @@ function handleLogout() { if(window._handleLogout) window._handleLogout(); }
           </div>
         </div>
       </div>
+      <!-- Extra: idioma para libros -->
+      <div id="fd-lang-section" style="display:none">
+        <div class="fd-section">
+          <div class="fd-label">Idioma</div>
+          <div class="fd-chips" id="fd-lang-chips">
+            <button class="fd-chip" data-val="Español" onclick="fdToggleLang(this)">Español</button>
+            <button class="fd-chip" data-val="Inglés" onclick="fdToggleLang(this)">Inglés</button>
+            <button class="fd-chip" data-val="Catalán" onclick="fdToggleLang(this)">Catalán</button>
+            <button class="fd-chip" data-val="Francés" onclick="fdToggleLang(this)">Francés</button>
+            <button class="fd-chip" data-val="Alemán" onclick="fdToggleLang(this)">Alemán</button>
+            <button class="fd-chip" data-val="Italiano" onclick="fdToggleLang(this)">Italiano</button>
+            <button class="fd-chip" data-val="Portugués" onclick="fdToggleLang(this)">Portugués</button>
+            <button class="fd-chip" data-val="Otro idioma" onclick="fdToggleLang(this)">Otro</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -3861,6 +3861,8 @@ function fdSelectCat(btn) {
   fdState.lang = '';
   fdState.genre = '';
   fdState.subcat = '';
+  fdState.magicColor = '';
+  fdState.magicType = '';
   document.querySelectorAll('#filter-drawer .fd-cat-grid .fd-cat-btn').forEach(b => b.classList.toggle('on', b === btn));
   _fdRenderSubcatFilters(fdState.cat);
   fdApply();
