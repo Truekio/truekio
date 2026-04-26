@@ -5796,7 +5796,7 @@ async function openTruquoPoints(origen) {
   overlay.addEventListener('click', e => { if(e.target===overlay) closeAndGoExplore(); });
 
   // Inicializar mapa Leaflet después de añadir al DOM
-  _initTruquoMap(sorted);
+  setTimeout(() => _initTruquoMap(sorted), 100);
 }
 
 function openPuntoTruquoForm(type) {
