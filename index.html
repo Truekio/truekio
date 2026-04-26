@@ -5601,6 +5601,7 @@ async function loadAdminPoints() {
         <div style="font-size:12px;color:var(--muted);margin-bottom:2px">📍 ${p.address}, ${p.city}</div>
         ${p.schedule?`<div style="font-size:12px;color:var(--muted)">🕐 ${p.schedule}</div>`:''}
         ${p.description?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${p.description}</div>`:''}
+        ${p.categories&&p.categories.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${p.categories.map(c=>'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bg2);color:var(--muted)">'+c+'</span>').join('')}</div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
         <button onclick="openEditPointModal(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="background:var(--accent);color:#fff;border:none;border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar</button>
@@ -5664,6 +5665,12 @@ function openEditPointModal(p) {
         <input id="ep-schedule" value="${p.schedule||''}" placeholder="Horario" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
         <textarea id="ep-desc" rows="2" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;resize:none;color:var(--text);background:var(--white)">${p.description||''}</textarea>
       </div>
+
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">CATEGORÍAS QUE ACEPTA <span style="font-weight:400">(vacío = todas)</span></div>
+          <div id="ep-cat-chips" style="display:flex;flex-wrap:wrap;gap:6px"><button type="button" onclick="ptToggleCat(this,'Libros')" data-cat="Libros" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Libros</button><button type="button" onclick="ptToggleCat(this,'Juegos de mesa')" data-cat="Juegos de mesa" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Juegos de mesa</button><button type="button" onclick="ptToggleCat(this,'Cartas y coleccionables')" data-cat="Cartas y coleccionables" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Cartas y coleccionables</button><button type="button" onclick="ptToggleCat(this,'Videojuegos')" data-cat="Videojuegos" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Videojuegos</button><button type="button" onclick="ptToggleCat(this,'Música')" data-cat="Música" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Música</button><button type="button" onclick="ptToggleCat(this,'Hogar y muebles')" data-cat="Hogar y muebles" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Hogar y muebles</button><button type="button" onclick="ptToggleCat(this,'Servicios')" data-cat="Servicios" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Servicios</button><button type="button" onclick="ptToggleCat(this,'Otros')" data-cat="Otros" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Otros</button></div>
+          <input type="hidden" id="ep-categories" value="${JSON.stringify(p.categories||[])}">
+        </div>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button onclick="document.getElementById('edit-point-overlay').remove()" style="flex:1;background:var(--bg2);border:none;padding:11px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Cancelar</button>
         <button onclick="saveEditPoint('${p.id}',this)" style="flex:1;background:var(--accent);color:#fff;border:none;padding:11px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Guardar</button>
@@ -5673,6 +5680,7 @@ function openEditPointModal(p) {
   window._epCurrentPhotoUrl = p.photo_url || null;
   window._epNewPhotoFile = null;
   window._epRemovePhoto = false;
+  setTimeout(() => ptInitCatChips('ep-cat-chips', 'ep-categories'), 50);
 }
 
 function epSetType(btn, type) {
@@ -5738,7 +5746,8 @@ async function saveEditPoint(id, btn) {
   const { error } = await db.from('truquo_points').update({
     name, address, city, lat, lng,
     schedule: schedule||null, description: description||null,
-    photo_url, type
+    photo_url, type,
+    categories: JSON.parse(document.getElementById('ep-categories')?.value||'[]')
   }).eq('id', id);
 
   if (error) { showToast('⚠️ Error: ' + error.message); btn.textContent = 'Guardar'; btn.disabled = false; return; }
@@ -5781,6 +5790,11 @@ function openAddPointModal() {
           <input type="hidden" id="pt-photo">
         </div>
         <textarea id="pt-desc" placeholder="Descripción / instrucciones para dejar el objeto" rows="2" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;resize:none;color:var(--text);background:var(--white)"></textarea>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">CATEGORÍAS QUE ACEPTA <span style="font-weight:400">(vacío = todas)</span></div>
+          <div id="pt-cat-chips" style="display:flex;flex-wrap:wrap;gap:6px"><button type="button" onclick="ptToggleCat(this,'Libros')" data-cat="Libros" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Libros</button><button type="button" onclick="ptToggleCat(this,'Juegos de mesa')" data-cat="Juegos de mesa" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Juegos de mesa</button><button type="button" onclick="ptToggleCat(this,'Cartas y coleccionables')" data-cat="Cartas y coleccionables" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Cartas y coleccionables</button><button type="button" onclick="ptToggleCat(this,'Videojuegos')" data-cat="Videojuegos" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Videojuegos</button><button type="button" onclick="ptToggleCat(this,'Música')" data-cat="Música" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Música</button><button type="button" onclick="ptToggleCat(this,'Hogar y muebles')" data-cat="Hogar y muebles" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Hogar y muebles</button><button type="button" onclick="ptToggleCat(this,'Servicios')" data-cat="Servicios" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Servicios</button><button type="button" onclick="ptToggleCat(this,'Otros')" data-cat="Otros" style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Otros</button></div>
+          <input type="hidden" id="pt-categories" value="[]">
+        </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button onclick="document.getElementById('add-point-overlay').remove()" style="flex:1;background:var(--bg2);border:none;padding:11px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Cancelar</button>
@@ -5788,6 +5802,32 @@ function openAddPointModal() {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+}
+
+function ptToggleCat(btn, cat) {
+  const isEdit = !!document.getElementById('ep-categories');
+  const hiddenId = isEdit ? 'ep-categories' : 'pt-categories';
+  const hidden = document.getElementById(hiddenId);
+  let cats = [];
+  try { cats = JSON.parse(hidden.value || '[]'); } catch(e) { cats = []; }
+  if (cats.includes(cat)) {
+    cats = cats.filter(c => c !== cat);
+    btn.style.background = 'var(--bg)'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text)';
+  } else {
+    cats.push(cat);
+    btn.style.background = 'var(--accent-l)'; btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
+  }
+  hidden.value = JSON.stringify(cats);
+}
+
+function ptInitCatChips(containerId, hiddenId) {
+  let cats = [];
+  try { cats = JSON.parse(document.getElementById(hiddenId)?.value || '[]'); } catch(e) {}
+  document.querySelectorAll('#' + containerId + ' [data-cat]').forEach(btn => {
+    if (cats.includes(btn.dataset.cat)) {
+      btn.style.background = 'var(--accent-l)'; btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
+    }
+  });
 }
 
 function ptPreviewPhoto(input) {
@@ -5845,7 +5885,8 @@ async function saveNewPoint(btn) {
   const { error } = await db.from('truquo_points').insert([{
     name, address, city, lat, lng,
     schedule: schedule||null, photo_url: finalPhotoUrl,
-    description: description||null, active: true, type
+    description: description||null, active: true, type,
+    categories: JSON.parse(document.getElementById('pt-categories')?.value||'[]')
   }]);
   if (error) { showToast('⚠️ Error: ' + error.message); btn.textContent = 'Guardar'; btn.disabled = false; return; }
   document.getElementById('add-point-overlay')?.remove();
@@ -5862,7 +5903,20 @@ async function openTruquoPoints(origen) {
   overlay.id = 'truquo-points-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
 
-  const sorted = (points||[]).map(p => {
+  // Filtrar por categorías relevantes si hay contexto
+  let filteredPoints = (points||[]);
+  if (origen === 'chat' && activeConvId) {
+    const convs = typeof conversations !== 'undefined' ? conversations : [];
+    const conv = convs.find(c => c.id === activeConvId);
+    const chatCats = [conv?.item1_category, conv?.item2_category].filter(Boolean);
+    if (chatCats.length) {
+      filteredPoints = filteredPoints.filter(p =>
+        !p.categories || !p.categories.length || p.categories.some(c => chatCats.includes(c))
+      );
+    }
+  }
+
+  const sorted = filteredPoints.map(p => {
     const dist = (userCoords && p.lat && p.lng)
       ? distanceKm(userCoords.lat, userCoords.lng, parseFloat(p.lat), parseFloat(p.lng)) : null;
     return {...p, _dist:dist};
