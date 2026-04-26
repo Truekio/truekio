@@ -6130,14 +6130,17 @@ async function detectTradeChains(newItemId) {
       const bWantsRaw = (itemB.wants || '').split(',').map(w => w.trim());
       if (bWantsRaw.some(isSurpriseItem)) continue;
 
-      // ¿B tiene lo que yo quiero?
+      // ¿B tiene lo que yo quiero? — solo match concreto, sin Sorpréndeme
       const bCat = itemB.category || '';
-      const iWantB = myWants.some(w => chainMatchCat(w, bCat)) || myItem.wants_open;
+      const bSubcat = itemB.subcategory || '';
+      if (myItem.wants_open) continue; // mi objeto es Sorpréndeme — no hacer cadenas
+      const iWantB = myWants.some(w => chainMatchCat(w, bCat));
       if (!iWantB) continue;
 
-      // ¿Qué quiere B?
+      // ¿Qué quiere B? — B tampoco puede ser Sorpréndeme
+      if (itemB.wants_open) continue;
       const bWants = (itemB.wants || '').split(',').map(w => w.trim()).filter(Boolean);
-      const bWantsOpen = itemB.wants_open;
+      if (!bWants.length) continue;
 
       // Buscar C que tenga lo que quiere B y quiera lo que tengo yo
       for (const itemC of allItems) {
@@ -6149,15 +6152,16 @@ async function detectTradeChains(newItemId) {
         // Excluir Sorpréndeme en C
         const cWantsRaw2 = (itemC.wants || '').split(',').map(w => w.trim());
         if (cWantsRaw2.some(isSurpriseItem)) continue;
+        if (itemC.wants_open) continue; // C tampoco puede ser Sorpréndeme
 
-        // ¿B quiere lo que tiene C?
-        const bWantC = bWants.some(w => chainMatchCat(w, cCat)) || bWantsOpen;
+        // ¿B quiere lo que tiene C? — solo match concreto
+        const bWantC = bWants.some(w => chainMatchCat(w, cCat));
         if (!bWantC) continue;
 
-        // ¿C quiere lo que tengo yo?
+        // ¿C quiere lo que tengo yo? — solo match concreto
         const cWants = (itemC.wants || '').split(',').map(w => w.trim()).filter(Boolean);
-        const cWantsOpen = itemC.wants_open;
-        const cWantMe = cWants.some(w => chainMatchCat(w, myCat)) || cWantsOpen;
+        if (!cWants.length) continue;
+        const cWantMe = cWants.some(w => chainMatchCat(w, myCat));
         if (!cWantMe) continue;
 
         // ¡Cadena encontrada!
