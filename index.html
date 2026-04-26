@@ -12400,6 +12400,29 @@ function pubSelectSubcat(sub, prefix) {
   document.getElementById(`${prefix === 'pub' ? 'pub-subcat' : 'wants-subcat'}`).value = sub;
   // Re-renderizar atributos según subcategoría (ej: Magic)
   if (prefix === 'pub' && window._renderPubAttrsForSubcat) window._renderPubAttrsForSubcat(sub);
+  // Mostrar atributos con showIf en wants (ej: Magic)
+  if (prefix === 'wants') {
+    const attrsContainer = document.getElementById('wants-attrs');
+    if (attrsContainer && window._wantsAttrsWithShowIf) {
+      const matching = window._wantsAttrsWithShowIf.filter(a => !a.showIf.subcat || a.showIf.subcat === sub);
+      const existing = attrsContainer.innerHTML;
+      // Eliminar attrs de Magic previos
+      const cleanedExisting = attrsContainer.querySelectorAll('[id^="wants-attr-magic"]');
+      cleanedExisting.forEach(el => el.closest('.field')?.remove());
+      // Añadir attrs que corresponden
+      matching.forEach(attr => {
+        const div = document.createElement('div');
+        div.className = 'field';
+        div.innerHTML = `
+          <label>${attr.label}</label>
+          <select id="wants-attr-${attr.id}" style="font-size:14px">
+            <option value="">— Opcional —</option>
+            ${attr.options.map(o => `<option>${o}</option>`).join('')}
+          </select>`;
+        attrsContainer.appendChild(div);
+      });
+    }
+  }
   const container = document.getElementById(`${prefix === 'pub' ? 'pub-subcat-options' : 'wants-subcat-options'}`);
   if (!container) return;
   container.querySelectorAll('button').forEach(btn => {
@@ -12436,8 +12459,22 @@ function pubLoadWantsSubcats(cat) {
         style="background:var(--bg);border:1.5px solid var(--border);border-radius:99px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .15s">${sub}</button>`
     ).join('');
 
+  // Para libros: mostrar subcategorías como select desplegable
+  if (cat === 'Libros' && data.subcats.length) {
+    container.innerHTML = `
+      <div class="field">
+        <label>Género <span style="font-size:11px;color:var(--muted)">(opcional)</span></label>
+        <select id="wants-subcat-select" onchange="document.getElementById('wants-subcat').value=this.value" style="font-size:14px">
+          <option value="">— Cualquier género —</option>
+          ${data.subcats.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>`;
+  }
+
+  // Atributos sin showIf (ej: idioma de libros) — mostrar siempre
   if (attrsContainer) {
-    attrsContainer.innerHTML = data.attrs.map(attr => `
+    const attrsNoShowIf = (data.attrs || []).filter(a => !a.showIf);
+    attrsContainer.innerHTML = attrsNoShowIf.map(attr => `
       <div class="field">
         <label>${attr.label}${attr.required ? ' <span style="color:#e53e3e">*</span>' : ''} ${attr.exclusive ? '<span style="font-size:10px;color:var(--muted)">(excluyente — el idioma debe coincidir)</span>' : ''}</label>
         <select id="wants-attr-${attr.id}" style="font-size:14px">
@@ -12445,19 +12482,10 @@ function pubLoadWantsSubcats(cat) {
           ${attr.options.map(o => `<option>${o}</option>`).join('')}
         </select>
       </div>`).join('');
-
-    // Para libros: mostrar subcategorías como select desplegable en lugar de botones
-    if (cat === 'Libros' && data.subcats.length) {
-      container.innerHTML = `
-        <div class="field">
-          <label>Género <span style="font-size:11px;color:var(--muted)">(opcional)</span></label>
-          <select id="wants-subcat-select" onchange="document.getElementById('wants-subcat').value=this.value" style="font-size:14px">
-            <option value="">— Cualquier género —</option>
-            ${data.subcats.map(s => `<option value="${s}">${s}</option>`).join('')}
-          </select>
-        </div>`;
-    }
   }
+
+  // Atributos con showIf (ej: Magic) — guardar referencia y mostrar al seleccionar subcategoría
+  window._wantsAttrsWithShowIf = (data.attrs || []).filter(a => a.showIf);
 }
 
 function pubAddWantOption() {
@@ -13569,8 +13597,16 @@ function addCatWant() {
   const cat = document.getElementById('wants-cat').value;
   const sub = document.getElementById('wants-subcat').value;
   if(!cat) return;
-  const label = sub && sub !== '' ? cat + ' › ' + sub : cat;
-  exchangeOptions.push({label, items:[label], isBundle:false, cat, subcat:sub});
+  // Leer atributos Magic si están presentes
+  const magicColor = document.getElementById('wants-attr-magic_color')?.value || '';
+  const magicType = document.getElementById('wants-attr-magic_type')?.value || '';
+  const lang = document.getElementById('wants-attr-language')?.value || '';
+  let label = sub && sub !== '' ? cat + ' › ' + sub : cat;
+  const attrs = {};
+  if (magicColor) { attrs.magic_color = magicColor; label += ' · ' + magicColor; }
+  if (magicType) { attrs.magic_type = magicType; label += ' · ' + magicType; }
+  if (lang) { attrs.language = lang; label += ' (' + lang + ')'; }
+  exchangeOptions.push({label, items:[label], isBundle:false, cat, subcat:sub, lang, magic_color:magicColor, magic_type:magicType, attrs});
   renderExchangeOptions();
   document.getElementById('wants-cat').value = '';
   updateSubcat();
@@ -13637,6 +13673,8 @@ async function publishItem() {
     wantsStr = _pubWantsAdded.map(o => {
       let s = o.cat;
       if (o.subcat) s += ' · ' + o.subcat;
+      if (o.magic_color) s += ' · ' + o.magic_color;
+      if (o.magic_type) s += ' · ' + o.magic_type;
       if (o.lang) s += ' (' + o.lang + ')';
       if (o.desc) s += ': ' + o.desc;
       return s;
@@ -13651,6 +13689,8 @@ async function publishItem() {
   const wantsAttributes = _pubWantsAdded.map(o => {
     const wa = {};
     if (o.lang) wa.language = o.lang;
+    if (o.magic_color) wa.magic_color = o.magic_color;
+    if (o.magic_type) wa.magic_type = o.magic_type;
     return { cat: o.cat, subcat: o.subcat || '', attributes: wa };
   });
 
