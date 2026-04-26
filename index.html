@@ -5621,38 +5621,32 @@ async function loadAdminStats() {
   const todayISO = today.toISOString();
 
   // Hoy
-  const [
-    { count: usersToday },
-    { count: itemsToday },
-    { count: propsToday },
-    { count: usersTotal },
-    { count: itemsTotal },
-    { count: propsTotal },
-    { count: tradesTotal },
-    { data: itemsByCat },
-    { data: recentUsers }
-  ] = await Promise.all([
-    db.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
-    db.from('items').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
-    db.from('proposals').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
-    db.from('profiles').select('id', { count: 'exact', head: true }),
-    db.from('items').select('id', { count: 'exact', head: true }).neq('status','deleted'),
-    db.from('proposals').select('id', { count: 'exact', head: true }),
-    db.from('conversations').select('id', { count: 'exact', head: true }).eq('status','completed'),
-    db.from('items').select('category').neq('status','deleted'),
-    db.from('profiles').select('name,email,created_at').order('created_at', { ascending: false }).limit(10)
+  // Queries individuales con manejo de errores
+  const safeCount = async (query) => { try { const r = await query; return r.count || 0; } catch(e) { return 0; } };
+  const safeData = async (query) => { try { const r = await query; return r.data || []; } catch(e) { return []; } };
+
+  const [usersToday, itemsToday, propsToday, usersTotal, itemsTotal, propsTotal, tradesTotal, itemsByCat, recentUsers] = await Promise.all([
+    safeCount(db.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', todayISO)),
+    safeCount(db.from('items').select('id', { count: 'exact', head: true }).gte('created_at', todayISO)),
+    safeCount(db.from('proposals').select('id', { count: 'exact', head: true }).gte('created_at', todayISO)),
+    safeCount(db.from('profiles').select('id', { count: 'exact', head: true })),
+    safeCount(db.from('items').select('id', { count: 'exact', head: true }).not('status', 'eq', 'deleted')),
+    safeCount(db.from('proposals').select('id', { count: 'exact', head: true })),
+    safeCount(db.from('conversations').select('id', { count: 'exact', head: true }).eq('status','completed')),
+    safeData(db.from('items').select('category').not('status', 'eq', 'deleted')),
+    safeData(db.from('profiles').select('id,name,email,created_at').order('created_at', { ascending: false }).limit(10))
   ]);
 
   // Hoy
-  document.getElementById('stat-users-today').textContent = usersToday ?? 0;
-  document.getElementById('stat-items-today').textContent = itemsToday ?? 0;
-  document.getElementById('stat-proposals-today').textContent = propsToday ?? 0;
+  document.getElementById('stat-users-today').textContent = usersToday;
+  document.getElementById('stat-items-today').textContent = itemsToday;
+  document.getElementById('stat-proposals-today').textContent = propsToday;
 
   // Totales
-  document.getElementById('stat-users-total').textContent = usersTotal ?? 0;
-  document.getElementById('stat-items-total').textContent = itemsTotal ?? 0;
-  document.getElementById('stat-proposals-total').textContent = propsTotal ?? 0;
-  document.getElementById('stat-trades-total').textContent = tradesTotal ?? 0;
+  document.getElementById('stat-users-total').textContent = usersTotal;
+  document.getElementById('stat-items-total').textContent = itemsTotal;
+  document.getElementById('stat-proposals-total').textContent = propsTotal;
+  document.getElementById('stat-trades-total').textContent = tradesTotal;
 
   // Por categoría
   const catCount = {};
