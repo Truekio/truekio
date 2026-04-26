@@ -12537,7 +12537,10 @@ function pubAddWantOption() {
   if (langAttr?.required && !lang) { showToast('⚠️ El idioma es obligatorio para libros'); return; }
 
   const desc = document.getElementById('wants-desc')?.value.trim() || '';
-  _pubWantsAdded.push({ cat, subcat, lang, desc });
+  // Leer atributos Magic si están presentes
+  const magic_color = document.getElementById('wants-attr-magic_color')?.value || '';
+  const magic_type = document.getElementById('wants-attr-magic_type')?.value || '';
+  _pubWantsAdded.push({ cat, subcat, lang, desc, magic_color, magic_type });
   renderWantsAddedList();
 
   // Reset selección
@@ -12554,6 +12557,8 @@ function pubAddWantOption() {
   if (subcatEl) subcatEl.innerHTML = '';
   const attrsEl = document.getElementById('wants-attrs');
   if (attrsEl) attrsEl.innerHTML = '';
+  // Limpiar atributos showIf (Magic)
+  if (attrsEl) attrsEl.querySelectorAll('[data-showif]').forEach(el => el.remove());
   const addBtn = document.getElementById('wants-add-btn');
   if (addBtn) addBtn.style.display = 'none';
 
@@ -13724,6 +13729,11 @@ async function publishItem() {
   // Atributos para matching
   const attributes = {};
   if (exclusiveAttr && exclusiveVal) attributes[exclusiveAttr.id] = exclusiveVal;
+  // Atributos no-exclusive (ej: Magic color y tipo)
+  (catData?.attrs || []).filter(a => !a.exclusive).forEach(attr => {
+    const val = document.getElementById(`pub-attr-${attr.id}`)?.value || '';
+    if (val) attributes[attr.id] = val;
+  });
   // Atributos de lo que busca (excluyentes)
   const wantsAttributes = _pubWantsAdded.map(o => {
     const wa = {};
