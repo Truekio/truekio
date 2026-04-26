@@ -6233,12 +6233,15 @@ async function loadAdminReports() {
 }
 
 async function loadAdminUsers() {
-  const { data } = await db.from('profiles').select('id,welcome_sent,is_admin').order('id');
-  // Combinar con datos de items para tener nombres
-  const { data: itemUsers } = await db.from('items').select('user_id,user_name,user_avatar').limit(500);
-  const userMap = {};
-  (itemUsers || []).forEach(i => { if (!userMap[i.user_id]) userMap[i.user_id] = { name: i.user_name, avatar: i.user_avatar }; });
-  _adminUsers = (data || []).map(u => ({ ...u, name: userMap[u.id]?.name || 'Sin nombre', avatar: userMap[u.id]?.avatar || '' }));
+  const { data } = await db.from('profiles').select('id,name,email,avatar_url,is_admin,created_at').order('created_at', { ascending: false });
+  // Traer objetos por usuario
+  const { data: allItems } = await db.from('items').select('id,title,user_id,status,category,photo_urls,photos').not('status','eq','deleted').order('created_at', { ascending: false });
+  const itemsByUser = {};
+  (allItems || []).forEach(i => {
+    if (!itemsByUser[i.user_id]) itemsByUser[i.user_id] = [];
+    itemsByUser[i.user_id].push(i);
+  });
+  _adminUsers = (data || []).map(u => ({ ...u, items: itemsByUser[u.id] || [] }));
   renderAdminUsers(_adminUsers);
 }
 
@@ -6275,18 +6278,37 @@ function renderAdminUsers(list) {
   const el = document.getElementById('admin-users-list');
   if (!el) return;
   if (!list.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">No hay usuarios</div>'; return; }
-  el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${list.length} usuarios</div>` + list.map(u => `
-    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div style="display:flex;align-items:center;gap:10px;min-width:0">
-        <div style="width:36px;height:36px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;overflow:hidden">
-          ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover">` : (u.name?.charAt(0)?.toUpperCase() || '?')}
+  el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:12px">${list.length} usuarios registrados</div>` + list.map(u => `
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:10px">
+      <!-- Cabecera usuario -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:${u.items.length ? '10px' : '0'}">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <div style="width:38px;height:38px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;overflow:hidden">
+            ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : (u.name?.charAt(0)?.toUpperCase() || '?')}
+          </div>
+          <div style="min-width:0">
+            <div style="font-weight:700;font-size:13px">${u.name || 'Sin nombre'} ${u.is_admin ? '⚙ Admin' : ''}</div>
+            <div style="font-size:12px;color:var(--accent)">${u.email || '—'}</div>
+            <div style="font-size:11px;color:var(--muted)">${u.created_at ? new Date(u.created_at).toLocaleDateString('es-ES') : ''} · ${u.items.length} objeto${u.items.length !== 1 ? 's' : ''}</div>
+          </div>
         </div>
-        <div style="min-width:0">
-          <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name} ${u.is_admin ? '⚙' : ''}</div>
-          <div style="font-size:11px;color:var(--muted)">${u.id.substring(0,8)}...</div>
-        </div>
+        ${!u.is_admin ? `<button onclick="adminDeleteUser('${u.id}',null)" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:5px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">Eliminar</button>` : ''}
       </div>
-      ${!u.is_admin ? `<button onclick="adminDeleteUser('${u.id}',null)" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:5px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Eliminar</button>` : '<span style="font-size:11px;color:var(--accent)">Admin</span>'}
+      <!-- Objetos del usuario -->
+      ${u.items.length ? `
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
+          ${u.items.slice(0,8).map(i => {
+            const photo = i.photo_urls?.[0] || i.photos?.[0] || '';
+            return `<div style="flex-shrink:0;text-align:center;width:56px" onclick="adminDeleteItem('${i.id}',null)" title="${i.title}">
+              <div style="width:56px;height:56px;border-radius:8px;background:var(--bg2);overflow:hidden;margin-bottom:3px">
+                ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem">📦</div>`}
+              </div>
+              <div style="font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.title}</div>
+            </div>`;
+          }).join('')}
+          ${u.items.length > 8 ? `<div style="flex-shrink:0;width:44px;height:56px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-weight:700">+${u.items.length-8}</div>` : ''}
+        </div>
+      ` : ''}
     </div>`).join('');
 }
 
