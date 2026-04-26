@@ -5615,6 +5615,78 @@ async function submitReport() {
 // ═══ ADMIN PANEL ═══
 let _adminUsers = [], _adminItems = [], _adminReports = [];
 
+async function loadAdminStats() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayISO = today.toISOString();
+
+  // Hoy
+  const [
+    { count: usersToday },
+    { count: itemsToday },
+    { count: propsToday },
+    { count: usersTotal },
+    { count: itemsTotal },
+    { count: propsTotal },
+    { count: tradesTotal },
+    { data: itemsByCat },
+    { data: recentUsers }
+  ] = await Promise.all([
+    db.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
+    db.from('items').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
+    db.from('proposals').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
+    db.from('profiles').select('id', { count: 'exact', head: true }),
+    db.from('items').select('id', { count: 'exact', head: true }).neq('status','deleted'),
+    db.from('proposals').select('id', { count: 'exact', head: true }),
+    db.from('conversations').select('id', { count: 'exact', head: true }).eq('status','completed'),
+    db.from('items').select('category').neq('status','deleted'),
+    db.from('profiles').select('name,email,created_at').order('created_at', { ascending: false }).limit(10)
+  ]);
+
+  // Hoy
+  document.getElementById('stat-users-today').textContent = usersToday ?? 0;
+  document.getElementById('stat-items-today').textContent = itemsToday ?? 0;
+  document.getElementById('stat-proposals-today').textContent = propsToday ?? 0;
+
+  // Totales
+  document.getElementById('stat-users-total').textContent = usersTotal ?? 0;
+  document.getElementById('stat-items-total').textContent = itemsTotal ?? 0;
+  document.getElementById('stat-proposals-total').textContent = propsTotal ?? 0;
+  document.getElementById('stat-trades-total').textContent = tradesTotal ?? 0;
+
+  // Por categoría
+  const catCount = {};
+  (itemsByCat || []).forEach(i => { catCount[i.category] = (catCount[i.category] || 0) + 1; });
+  const catSorted = Object.entries(catCount).sort((a,b) => b[1]-a[1]);
+  const maxCat = catSorted[0]?.[1] || 1;
+  const catsEl = document.getElementById('stat-cats');
+  if (catsEl) {
+    catsEl.innerHTML = catSorted.map(([cat, count]) => `
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:600">${cat}</span>
+          <span style="font-size:13px;color:var(--muted)">${count}</span>
+        </div>
+        <div style="height:6px;background:var(--bg2);border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${Math.round(count/maxCat*100)}%;background:var(--accent);border-radius:99px;transition:width .5s"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Últimos usuarios
+  const usersEl = document.getElementById('stat-recent-users');
+  if (usersEl) {
+    usersEl.innerHTML = (recentUsers || []).map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-weight:600;font-size:13px">${u.name || '—'}</div>
+          <div style="font-size:11px;color:var(--muted)">${u.email || ''}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">${new Date(u.created_at).toLocaleDateString('es-ES')}</div>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Sin usuarios aún</div>';
+  }
+}
+
 async function loadAdminPoints() {
   const el = document.getElementById('admin-points-list');
   if (!el) return;
@@ -6298,6 +6370,7 @@ function switchAdminTab(tab) {
     if (btn) { btn.style.background = t === tab ? 'var(--white)' : 'none'; btn.style.color = t === tab ? 'var(--accent)' : 'var(--muted)'; btn.style.fontWeight = t === tab ? '700' : '600'; }
   });
   if (tab === 'points') loadAdminPoints();
+  if (tab === 'stats') loadAdminStats();
 }
 
 // Screenshots carousel
@@ -14659,6 +14732,7 @@ document.addEventListener('mouseup', e => {
       <button id="admin-tab-users" onclick="switchAdminTab('users')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">👥 Usuarios</button>
       <button id="admin-tab-items" onclick="switchAdminTab('items')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📦 Objetos</button>
       <button id="admin-tab-points" onclick="switchAdminTab('points')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📍 Puntos</button>
+      <button id="admin-tab-stats" onclick="switchAdminTab('stats')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📊 Estadísticas</button>
     </div>
 
     <!-- Reportes -->
@@ -14689,6 +14763,52 @@ document.addEventListener('mouseup', e => {
         <button onclick="openAddPointModal()" style="background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Añadir punto</button>
       </div>
       <div id="admin-points-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Cargando...</div></div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div id="admin-content-stats" style="display:none">
+      <!-- Hoy -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Hoy</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+        <div style="background:var(--accent-l);border-radius:var(--r-lg);padding:14px;text-align:center">
+          <div style="font-size:1.6rem;font-weight:800;color:var(--accent)" id="stat-users-today">—</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Nuevos usuarios</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:var(--r-lg);padding:14px;text-align:center">
+          <div style="font-size:1.6rem;font-weight:800;color:#16a34a" id="stat-items-today">—</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Objetos publicados</div>
+        </div>
+        <div style="background:#fef9c3;border-radius:var(--r-lg);padding:14px;text-align:center">
+          <div style="font-size:1.6rem;font-weight:800;color:#92400e" id="stat-proposals-today">—</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Propuestas</div>
+        </div>
+      </div>
+      <!-- Totales -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Total acumulado</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px">
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--text)" id="stat-users-total">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">👥 Usuarios registrados</div>
+        </div>
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--text)" id="stat-items-total">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">📦 Objetos publicados</div>
+        </div>
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--text)" id="stat-proposals-total">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">🤝 Propuestas enviadas</div>
+        </div>
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--text)" id="stat-trades-total">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">✅ Trueques completados</div>
+        </div>
+      </div>
+      <!-- Objetos por categoría -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Objetos por categoría</div>
+      <div id="stat-cats" style="margin-bottom:20px"></div>
+      <!-- Últimos usuarios -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Últimos usuarios registrados</div>
+      <div id="stat-recent-users"></div>
     </div>
   </div>
 </div>
