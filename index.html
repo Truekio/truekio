@@ -1966,6 +1966,18 @@ function switchAuthTab(tab) {
   document.getElementById('auth-tab-register').style.fontWeight = isLogin ? '500' : '700';
 }
 function handleLogin() { if(window._handleLogin) window._handleLogin(); }
+
+async function handleGoogleAuth() {
+  try {
+    const { error } = await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/?nav=explore' }
+    });
+    if (error) showToast('⚠️ Error con Google: ' + error.message);
+  } catch(e) {
+    showToast('⚠️ Error: ' + e.message);
+  }
+}
 function handleRegister() { if(window._handleRegister) window._handleRegister(); }
 function handleForgotPassword() { if(window.handleForgotPassword) window.handleForgotPassword(); }
 function enterApp() { if(window._enterApp) window._enterApp(); }
