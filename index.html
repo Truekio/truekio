@@ -5003,7 +5003,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
               const { data: profile } = await db.from('profiles').select('welcome_sent').eq('id', user.id).maybeSingle();
               if (!profile?.welcome_sent) {
-                await db.from('profiles').upsert({ id: user.id, welcome_sent: true, email: user.email, name: user.user_metadata?.name || user.email?.split('@')[0] || '' }, { onConflict: 'id' });
+                await db.from('profiles').upsert({ id: user.id, welcome_sent: true, name: user.user_metadata?.name || user.email?.split('@')[0] || '' }, { onConflict: 'id' });
                 const name = user.user_metadata?.name || user.email.split('@')[0];
                 sendEmail('welcome', user.email, { name });
               }
@@ -5633,8 +5633,8 @@ async function loadAdminStats() {
     safeCount(db.from('proposals').select('id', { count: 'exact', head: true })),
     safeCount(db.from('conversations').select('id', { count: 'exact', head: true }).eq('status','completed')),
     safeData(db.from('items').select('category').not('status', 'eq', 'deleted')),
-    safeData(db.from('profiles').select('id,name,email')),
-    safeData(db.from('profiles').select('id,name,email').limit(10).order('id', {ascending: false})),
+    safeData(db.from('profiles').select('id,name')),
+    safeData(db.from('profiles').select('id,name').limit(10).order('id', {ascending: false})),
     safeData(db.from('items').select('user_id,user_name').not('status','eq','deleted'))
   ]);
 
@@ -6238,7 +6238,7 @@ async function loadAdminReports() {
 }
 
 async function loadAdminUsers() {
-  const { data } = await db.from('profiles').select('id,name,email,avatar_url,is_admin').order('id', { ascending: false });
+  const { data } = await db.from('profiles').select('id,name,avatar_url,is_admin').order('id', { ascending: false });
   // Traer objetos por usuario
   const { data: allItems } = await db.from('items').select('id,title,user_id,status,category,photo_urls,photos').not('status','eq','deleted').order('created_at', { ascending: false });
   const itemsByUser = {};
