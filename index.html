@@ -5626,20 +5626,22 @@ async function loadAdminStats() {
   const safeData = async (query) => { try { const r = await query; return r.data || []; } catch(e) { return []; } };
 
   // Cargar todos los datos con manejo de errores individual
-  const [itemsToday, propsToday, itemsTotal, propsTotal, tradesTotal, itemsByCat, allUsers, recentUsers] = await Promise.all([
+  const [itemsToday, propsToday, itemsTotal, propsTotal, tradesTotal, itemsByCat, allUsers, recentUsers, itemUsers] = await Promise.all([
     safeCount(db.from('items').select('id', { count: 'exact', head: true }).gte('created_at', todayISO)),
     safeCount(db.from('proposals').select('id', { count: 'exact', head: true }).gte('created_at', todayISO)),
     safeCount(db.from('items').select('id', { count: 'exact', head: true }).not('status', 'eq', 'deleted')),
     safeCount(db.from('proposals').select('id', { count: 'exact', head: true })),
     safeCount(db.from('conversations').select('id', { count: 'exact', head: true }).eq('status','completed')),
     safeData(db.from('items').select('category').not('status', 'eq', 'deleted')),
-    safeData(db.from('profiles').select('id,created_at')),
-    safeData(db.from('profiles').select('id,name,email,created_at').order('created_at', { ascending: false }).limit(10))
+    safeData(db.from('profiles').select('id,name,email')),
+    safeData(db.from('profiles').select('id,name,email').limit(10)),
+    safeData(db.from('items').select('user_id,user_name').not('status','eq','deleted'))
   ]);
 
-  // Calcular usuarios totales y de hoy desde profiles
-  const usersTotal = allUsers.length;
-  const usersToday = allUsers.filter(u => u.created_at && u.created_at >= todayISO).length;
+  // Calcular usuarios únicos desde items (más fiable que profiles)
+  const uniqueUserIds = new Set([...allUsers.map(u => u.id), ...itemUsers.map(i => i.user_id)]);
+  const usersTotal = uniqueUserIds.size;
+  const usersToday = 0;
 
   // Hoy
   document.getElementById('stat-users-today').textContent = usersToday;
@@ -5678,9 +5680,8 @@ async function loadAdminStats() {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-weight:600;font-size:13px">${u.name || '—'}</div>
-          <div style="font-size:11px;color:var(--muted)">${u.email || ''}</div>
+          <div style="font-size:11px;color:var(--accent)">${u.email || ''}</div>
         </div>
-        <div style="font-size:11px;color:var(--muted)">${new Date(u.created_at).toLocaleDateString('es-ES')}</div>
       </div>`).join('') || '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Sin usuarios aún</div>';
   }
 }
