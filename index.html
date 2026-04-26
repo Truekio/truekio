@@ -5603,6 +5603,7 @@ async function loadAdminPoints() {
         ${p.description?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${p.description}</div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button onclick="openEditPointModal(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="background:var(--accent);color:#fff;border:none;border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar</button>
         <button onclick="togglePoint('${p.id}',${!p.active})" style="background:none;border:1px solid var(--border);border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">${p.active?'Desactivar':'Activar'}</button>
         <button onclick="deletePoint('${p.id}')" style="background:none;border:1px solid #fca5a5;border-radius:var(--r);padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444">Eliminar</button>
       </div>
@@ -5620,6 +5621,130 @@ async function deletePoint(id) {
     showToast('Punto eliminado');
     loadAdminPoints();
   });
+}
+
+function openEditPointModal(p) {
+  if (typeof p === 'string') { try { p = JSON.parse(p); } catch(e) { return; } }
+  const existing = document.getElementById('edit-point-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'edit-point-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+      <div style="font-weight:700;font-size:1rem;margin-bottom:16px">✏️ Editar Punto Truquo</div>
+      <!-- Foto actual + subir nueva -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">FOTO DEL LUGAR</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="ep-photo-preview" style="width:72px;height:72px;border-radius:var(--r);overflow:hidden;background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;height:100%;object-fit:cover" id="ep-photo-img">` : `<span style="font-size:2rem">📍</span>`}
+          </div>
+          <div style="flex:1">
+            <input type="file" id="ep-photo-input" accept="image/*" onchange="epPreviewPhoto(this)" style="display:none">
+            <button onclick="document.getElementById('ep-photo-input').click()" style="width:100%;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--r);padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">📷 Cambiar foto</button>
+            ${p.photo_url ? `<button onclick="epRemovePhoto()" style="width:100%;margin-top:4px;background:none;border:1px solid #fca5a5;border-radius:var(--r);padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#ef4444">✕ Quitar foto</button>` : ''}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <!-- Tipo -->
+        <div style="display:flex;gap:8px">
+          <button type="button" onclick="epSetType(this,'secure')" id="ep-type-secure" style="flex:1;padding:8px;border:${p.type==='secure'?'2px solid var(--accent)':'1.5px solid var(--border)'};border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:${p.type==='secure'?'var(--accent-l)':'var(--bg)'};color:${p.type==='secure'?'var(--accent)':'var(--text)'}">📍 Punto Seguro</button>
+          <button type="button" onclick="epSetType(this,'collaborator')" id="ep-type-collaborator" style="flex:1;padding:8px;border:${p.type!=='secure'?'2px solid var(--accent)':'1.5px solid var(--border)'};border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:${p.type!=='secure'?'var(--accent-l)':'var(--bg)'};color:${p.type!=='secure'?'var(--accent)':'var(--text)'}">🤝 Colaborador</button>
+        </div>
+        <input type="hidden" id="ep-type" value="${p.type||'collaborator'}">
+        <input id="ep-name" value="${p.name||''}" placeholder="Nombre *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
+        <input id="ep-address" value="${p.address||''}" placeholder="Dirección *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
+        <input id="ep-city" value="${p.city||''}" placeholder="Ciudad *" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
+        <div style="display:flex;gap:8px">
+          <input id="ep-lat" value="${p.lat||''}" placeholder="Latitud *" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
+          <input id="ep-lng" value="${p.lng||''}" placeholder="Longitud *" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
+        </div>
+        <input id="ep-schedule" value="${p.schedule||''}" placeholder="Horario" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
+        <textarea id="ep-desc" rows="2" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;resize:none;color:var(--text);background:var(--white)">${p.description||''}</textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="document.getElementById('edit-point-overlay').remove()" style="flex:1;background:var(--bg2);border:none;padding:11px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">Cancelar</button>
+        <button onclick="saveEditPoint('${p.id}',this)" style="flex:1;background:var(--accent);color:#fff;border:none;padding:11px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  window._epCurrentPhotoUrl = p.photo_url || null;
+  window._epNewPhotoFile = null;
+  window._epRemovePhoto = false;
+}
+
+function epSetType(btn, type) {
+  document.getElementById('ep-type').value = type;
+  ['secure','collaborator'].forEach(t => {
+    const b = document.getElementById('ep-type-' + t);
+    if (!b) return;
+    const isActive = t === type;
+    b.style.border = isActive ? '2px solid var(--accent)' : '1.5px solid var(--border)';
+    b.style.background = isActive ? 'var(--accent-l)' : 'var(--bg)';
+    b.style.color = isActive ? 'var(--accent)' : 'var(--text)';
+  });
+}
+
+function epPreviewPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  window._epNewPhotoFile = input.files[0];
+  window._epRemovePhoto = false;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('ep-photo-preview');
+    if (preview) preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function epRemovePhoto() {
+  window._epRemovePhoto = true;
+  window._epNewPhotoFile = null;
+  const preview = document.getElementById('ep-photo-preview');
+  if (preview) preview.innerHTML = '<span style="font-size:2rem">📍</span>';
+}
+
+async function saveEditPoint(id, btn) {
+  const name = document.getElementById('ep-name')?.value.trim();
+  const address = document.getElementById('ep-address')?.value.trim();
+  const city = document.getElementById('ep-city')?.value.trim();
+  const lat = parseFloat(document.getElementById('ep-lat')?.value);
+  const lng = parseFloat(document.getElementById('ep-lng')?.value);
+  const schedule = document.getElementById('ep-schedule')?.value.trim();
+  const description = document.getElementById('ep-desc')?.value.trim();
+  const type = document.getElementById('ep-type')?.value || 'collaborator';
+  if (!name || !address || !city || isNaN(lat) || isNaN(lng)) { showToast('⚠️ Rellena los campos obligatorios'); return; }
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+
+  // Gestionar foto
+  let photo_url = window._epCurrentPhotoUrl || null;
+  if (window._epRemovePhoto) photo_url = null;
+  if (window._epNewPhotoFile) {
+    try {
+      const file = window._epNewPhotoFile;
+      let blob;
+      try { blob = await compressToBlob(file); } catch(e) { blob = file; }
+      const fileName = `point_${id}_${Date.now()}.jpg`;
+      const { error: upErr } = await db.storage.from('photos').upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+      if (!upErr) {
+        const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
+        photo_url = urlData.publicUrl;
+      }
+    } catch(e) { console.warn('Error subiendo foto del punto:', e); }
+  }
+
+  const { error } = await db.from('truquo_points').update({
+    name, address, city, lat, lng,
+    schedule: schedule||null, description: description||null,
+    photo_url, type
+  }).eq('id', id);
+
+  if (error) { showToast('⚠️ Error: ' + error.message); btn.textContent = 'Guardar'; btn.disabled = false; return; }
+  document.getElementById('edit-point-overlay')?.remove();
+  showToast('✅ Punto actualizado');
+  loadAdminPoints();
 }
 
 function openAddPointModal() {
@@ -5646,7 +5771,15 @@ function openAddPointModal() {
           <input id="pt-lng" placeholder="Longitud * (ej: 2.4448)" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
         </div>
         <input id="pt-schedule" placeholder="Horario (ej: Lun-Vie 9:00-20:00)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
-        <input id="pt-photo" placeholder="URL de foto (opcional)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)">
+        <!-- Foto: subir archivo o URL -->
+        <div>
+          <input type="file" id="pt-photo-file" accept="image/*" onchange="ptPreviewPhoto(this)" style="display:none">
+          <div style="display:flex;gap:8px;align-items:center">
+            <div id="pt-photo-preview" style="width:56px;height:56px;border-radius:var(--r);background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:1.5rem">📍</div>
+            <button type="button" onclick="document.getElementById('pt-photo-file').click()" style="flex:1;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--r);padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)">📷 Subir foto del lugar</button>
+          </div>
+          <input type="hidden" id="pt-photo">
+        </div>
         <textarea id="pt-desc" placeholder="Descripción / instrucciones para dejar el objeto" rows="2" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;outline:none;resize:none;color:var(--text);background:var(--white)"></textarea>
       </div>
       <div style="display:flex;gap:10px;margin-top:16px">
@@ -5655,6 +5788,17 @@ function openAddPointModal() {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+}
+
+function ptPreviewPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  window._ptNewPhotoFile = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('pt-photo-preview');
+    if (preview) preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+  };
+  reader.readAsDataURL(input.files[0]);
 }
 
 function ptSetType(btn, type) {
@@ -5681,9 +5825,26 @@ async function saveNewPoint(btn) {
   }
   btn.textContent = 'Guardando...'; btn.disabled = true;
   const type = document.getElementById('pt-type')?.value || 'collaborator';
+
+  // Subir foto si hay archivo nuevo
+  let finalPhotoUrl = photo_url || null;
+  if (window._ptNewPhotoFile) {
+    try {
+      let blob;
+      try { blob = await compressToBlob(window._ptNewPhotoFile); } catch(e) { blob = window._ptNewPhotoFile; }
+      const fileName = `point_new_${Date.now()}.jpg`;
+      const { error: upErr } = await db.storage.from('photos').upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+      if (!upErr) {
+        const { data: urlData } = db.storage.from('photos').getPublicUrl(fileName);
+        finalPhotoUrl = urlData.publicUrl;
+      }
+    } catch(e) { console.warn('Error subiendo foto:', e); }
+    window._ptNewPhotoFile = null;
+  }
+
   const { error } = await db.from('truquo_points').insert([{
     name, address, city, lat, lng,
-    schedule: schedule||null, photo_url: photo_url||null,
+    schedule: schedule||null, photo_url: finalPhotoUrl,
     description: description||null, active: true, type
   }]);
   if (error) { showToast('⚠️ Error: ' + error.message); btn.textContent = 'Guardar'; btn.disabled = false; return; }
