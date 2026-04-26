@@ -6357,7 +6357,7 @@ async function adminDismissReport(reportId) {
 }
 
 function switchAdminTab(tab) {
-  ['reports','users','items','points'].forEach(t => {
+  ['reports','users','items','points','stats'].forEach(t => {
     const el = document.getElementById(`admin-content-${t}`);
     if (el) el.style.display = t === tab ? '' : 'none';
     const btn = document.getElementById(`admin-tab-${t}`);
@@ -14720,13 +14720,13 @@ document.addEventListener('mouseup', e => {
       <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:800;margin:0">⚙ Panel de administración</h2>
     </div>
 
-    <!-- Tabs -->
-    <div style="display:flex;gap:4px;background:var(--bg2);border-radius:var(--r);padding:4px;margin-bottom:20px;width:fit-content">
-      <button id="admin-tab-reports" onclick="switchAdminTab('reports')" style="background:var(--white);border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--accent)">📋 Reportes</button>
-      <button id="admin-tab-users" onclick="switchAdminTab('users')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">👥 Usuarios</button>
-      <button id="admin-tab-items" onclick="switchAdminTab('items')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📦 Objetos</button>
-      <button id="admin-tab-points" onclick="switchAdminTab('points')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📍 Puntos</button>
-      <button id="admin-tab-stats" onclick="switchAdminTab('stats')" style="background:none;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">📊 Estadísticas</button>
+    <!-- Tabs — scroll horizontal en móvil -->
+    <div style="display:flex;gap:4px;background:var(--bg2);border-radius:var(--r);padding:4px;margin-bottom:20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
+      <button id="admin-tab-reports" onclick="switchAdminTab('reports')" style="background:var(--white);border:none;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--accent);white-space:nowrap;flex-shrink:0">📋 Reportes</button>
+      <button id="admin-tab-users" onclick="switchAdminTab('users')" style="background:none;border:none;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);white-space:nowrap;flex-shrink:0">👥 Usuarios</button>
+      <button id="admin-tab-items" onclick="switchAdminTab('items')" style="background:none;border:none;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);white-space:nowrap;flex-shrink:0">📦 Objetos</button>
+      <button id="admin-tab-points" onclick="switchAdminTab('points')" style="background:none;border:none;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);white-space:nowrap;flex-shrink:0">📍 Puntos</button>
+      <button id="admin-tab-stats" onclick="switchAdminTab('stats')" style="background:none;border:none;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);white-space:nowrap;flex-shrink:0">📊 Stats</button>
     </div>
 
     <!-- Reportes -->
