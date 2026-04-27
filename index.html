@@ -5633,15 +5633,14 @@ async function loadAdminStats() {
     safeCount(db.from('proposals').select('id', { count: 'exact', head: true })),
     safeCount(db.from('conversations').select('id', { count: 'exact', head: true }).eq('status','completed')),
     safeData(db.from('items').select('category').not('status', 'eq', 'deleted')),
-    safeData(db.from('profiles').select('id,name')),
-    safeData(db.from('profiles').select('id,name').limit(10).order('id', {ascending: false})),
+    safeData(db.rpc('get_all_users')),
+    safeData(db.rpc('get_all_users')),
     safeData(db.from('items').select('user_id,user_name').not('status','eq','deleted'))
   ]);
 
-  // Calcular usuarios únicos desde items (más fiable que profiles)
-  const uniqueUserIds = new Set([...allUsers.map(u => u.id), ...itemUsers.map(i => i.user_id)]);
-  const usersTotal = uniqueUserIds.size;
-  const usersToday = 0;
+  // Usuarios reales desde auth.users via RPC
+  const usersTotal = allUsers.length;
+  const usersToday = allUsers.filter(u => u.created_at && u.created_at >= todayISO).length;
 
   // Hoy
   document.getElementById('stat-users-today').textContent = usersToday;
@@ -5676,12 +5675,13 @@ async function loadAdminStats() {
   // Últimos usuarios
   const usersEl = document.getElementById('stat-recent-users');
   if (usersEl) {
-    usersEl.innerHTML = (recentUsers || []).map(u => `
+    usersEl.innerHTML = (recentUsers || []).slice(0,10).map(u => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-weight:600;font-size:13px">${u.name || '—'}</div>
+          <div style="font-weight:600;font-size:13px">${u.email?.split('@')[0] || '—'}</div>
           <div style="font-size:11px;color:var(--accent)">${u.email || ''}</div>
         </div>
+        <div style="font-size:11px;color:var(--muted)">${u.created_at ? new Date(u.created_at).toLocaleDateString('es-ES') : ''}</div>
       </div>`).join('') || '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Sin usuarios aún</div>';
   }
 }
@@ -6238,15 +6238,33 @@ async function loadAdminReports() {
 }
 
 async function loadAdminUsers() {
-  const { data } = await db.from('profiles').select('id,name,avatar_url,is_admin').order('id', { ascending: false });
-  // Traer objetos por usuario
+  // Usar función RPC para obtener todos los usuarios de auth.users
+  const { data: authUsers, error } = await db.rpc('get_all_users');
+  if (error) { console.warn('get_all_users error:', error.message); }
+
+  // Obtener perfiles para nombres y avatares
+  const { data: profiles } = await db.from('profiles').select('id,name,avatar_url,is_admin');
+  const profileMap = {};
+  (profiles || []).forEach(p => { profileMap[p.id] = p; });
+
+  // Objetos por usuario
   const { data: allItems } = await db.from('items').select('id,title,user_id,status,category,photo_urls,photos').not('status','eq','deleted').order('created_at', { ascending: false });
   const itemsByUser = {};
   (allItems || []).forEach(i => {
     if (!itemsByUser[i.user_id]) itemsByUser[i.user_id] = [];
     itemsByUser[i.user_id].push(i);
   });
-  _adminUsers = (data || []).map(u => ({ ...u, items: itemsByUser[u.id] || [] }));
+
+  _adminUsers = (authUsers || []).map(u => ({
+    id: u.id,
+    email: u.email,
+    created_at: u.created_at,
+    last_sign_in_at: u.last_sign_in_at,
+    name: profileMap[u.id]?.name || u.email?.split('@')[0] || '—',
+    avatar_url: profileMap[u.id]?.avatar_url || '',
+    is_admin: profileMap[u.id]?.is_admin || false,
+    items: itemsByUser[u.id] || []
+  }));
   renderAdminUsers(_adminUsers);
 }
 
@@ -6294,7 +6312,11 @@ function renderAdminUsers(list) {
           <div style="min-width:0">
             <div style="font-weight:700;font-size:13px">${u.name || 'Sin nombre'} ${u.is_admin ? '⚙ Admin' : ''}</div>
             <div style="font-size:12px;color:var(--accent)">${u.email || '—'}</div>
-            <div style="font-size:11px;color:var(--muted)">${u.created_at ? new Date(u.created_at).toLocaleDateString('es-ES') : ''} · ${u.items.length} objeto${u.items.length !== 1 ? 's' : ''}</div>
+            <div style="font-size:11px;color:var(--muted)">
+              ${u.created_at ? '📅 ' + new Date(u.created_at).toLocaleDateString('es-ES') : ''}
+              ${u.last_sign_in_at ? ' · 🕐 ' + new Date(u.last_sign_in_at).toLocaleDateString('es-ES') : ''}
+              · ${u.items.length} objeto${u.items.length !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
         ${!u.is_admin ? `<button onclick="adminDeleteUser('${u.id}',null)" style="background:none;border:1px solid #fca5a5;color:#ef4444;padding:5px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">Eliminar</button>` : ''}
