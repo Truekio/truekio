@@ -193,7 +193,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 
 /* ── LAYOUT ── */
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
-#view-explore .wrap, #explore-grid-wrap { max-width:100%; padding:0 20px; }
+#view-explore .wrap, #explore-grid-wrap { max-width:100%; padding:0 10px; } #view-explore { background:var(--bg); }
 .page-pad{padding-top:74px;padding-bottom:max(120px,calc(90px + env(safe-area-inset-bottom)));}
 @media(min-width:641px){
   .page-pad{padding-top:32px;padding-bottom:60px;}
@@ -340,7 +340,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 
 /* ── ITEM CARDS — redesigned ── */
 /* ── EXPLORER GRID — 2 col Wallapop style ── */
-.items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
+.items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding-bottom:max(90px,calc(72px + env(safe-area-inset-bottom)));}
 .explore-sticky{position:sticky;top:58px;z-index:90;background:#f5f8fb;border-bottom:1px solid rgba(0,0,0,.06);box-shadow:0 2px 12px rgba(0,0,0,.04);}
 .activity-sticky{position:sticky;top:58px;z-index:90;background:#f5f8fb;border-bottom:1px solid var(--border);padding-top:8px;}
 .explore-search-row{display:flex;align-items:center;gap:8px;padding:5px 0 3px;}
@@ -399,13 +399,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 
 /* Quitar FAB */
 .fab-publish{display:none!important;}
-.item-card{display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden;transition:all .2s cubic-bezier(.22,1,.36,1);background:var(--white);border:1px solid var(--border);}
+.item-card{display:flex;flex-direction:column;border-radius:10px;overflow:hidden;transition:all .2s cubic-bezier(.22,1,.36,1);background:var(--white);border:1px solid var(--border);}
 .item-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md);}
 .item-card.is-premium{border-color:rgba(245,158,11,.35);}
 .item-card.is-premium:hover{box-shadow:0 8px 28px rgba(245,158,11,.18),var(--sh-md);}
 
 /* Foto cuadrada dominante */
-.item-img{aspect-ratio:1/1;position:relative;overflow:hidden;background:var(--bg2);}
+.item-img{aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--bg2);}
 .item-img-bg{position:absolute;inset:0;opacity:.12;}
 .item-img-emoji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.6rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.08));transition:transform .3s ease;}
 .item-card:hover .item-img-emoji{transform:scale(1.06);}
@@ -428,11 +428,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,248,251,
 .fav-heart{width:14px;height:14px;stroke:rgba(80,80,80,.5);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:all .2s;}
 
 /* Info debajo de la foto — compacta */
-.item-body{padding:7px 9px 8px;display:flex;flex-direction:column;}
+.item-body{padding:6px 8px 7px;display:flex;flex-direction:column;}
 .item-user-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
 .item-user-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;flex-shrink:0;color:#fff;font-weight:700;}
 .item-user-name{font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.item-name{font-weight:700;font-size:.82rem;margin-bottom:2px;line-height:1.3;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.item-name{font-weight:700;font-size:.80rem;margin-bottom:1px;line-height:1.25;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .item-location{font-size:10px;color:var(--muted);margin:0;display:flex;align-items:center;gap:3px;}
 .wants-label{font-size:9px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
 .wants-tags{display:flex;gap:4px;flex-wrap:wrap;flex:1;}
