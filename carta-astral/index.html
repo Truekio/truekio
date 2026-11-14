@@ -77,6 +77,7 @@ button:disabled{opacity:.6;cursor:default}
       <button id="aibtn" type="button">Interpretar mi carta con Claude</button>
       <p class="note">Texto generado por IA a partir de las posiciones calculadas. Orientativo y de entretenimiento.</p>
     </div>
+    <div class="card"><h2>Resumen de la carta</h2><div id="sumtext" style="white-space:pre-line;font-size:14px"></div></div>
     <button class="ghost" id="copy" type="button">Copiar resumen</button>
     <p class="note" style="margin-top:14px">Hecho con efemérides astronómicas (Astronomy Engine). Nodo norte medio. Como entretenimiento: las interpretaciones son orientativas.</p>
   </div>
@@ -581,6 +582,7 @@ function render(ch, name, place, dateStr, timeStr) {
   P.forEach(p => { txt += `${p.name}: ${pos(p)}${p.retro ? " (R)" : ""}${p.house ? " · casa " + p.house : ""}\n`; });
   if (ch.hs) txt += `Ascendente: ${pos(ch.ascInfo)}\nMedio Cielo: ${pos(ch.mcInfo)}\n`;
   window.__summary = txt;
+  document.getElementById("sumtext").textContent = txt.trim();
   window.__ctx = { ch, name, place, dateStr };
   document.getElementById("aitext").innerHTML = "";
   document.getElementById("aibtn").textContent = "Interpretar mi carta con Claude";
@@ -633,8 +635,8 @@ function buildPrompt() {
   ch.aspects.slice().sort((x, y) => x.orb - y.orb).forEach(a => { d += `- ${P[a.a].name} ${a.name} ${P[a.b].name} (orbe ${a.orb.toFixed(1)}°)\n`; });
   return "Eres un astrólogo de tono cercano, cálido y honesto. Interpreta en español esta carta natal (zodiaco tropical, casas Placidus). " +
     "Usa SOLO las posiciones y aspectos de los datos; no recalcules ni inventes nada. " +
-    "Estructura con encabezados que empiecen por '## ': Esencia (Sol, Luna" + (ch.hs ? ", Ascendente" : "") + "), Mente y comunicación (Mercurio), Amor y relaciones (Venus y Marte), Trabajo y propósito (Júpiter, Saturno" + (ch.hs ? ", Medio Cielo y casas relevantes" : "") + "), Aspectos clave y Consejo final. " +
-    "Máximo 450 palabras. Evita el determinismo, las predicciones y los temas médicos: es un texto de entretenimiento y reflexión. Puedes usar **negrita**, sin listas largas." +
+    "Estructura con encabezados que empiecen por '## ': Esencia (Sol, Luna" + (ch.hs ? ", Ascendente" : "") + "), Mente y comunicación (Mercurio), Amor y relaciones (Venus y Marte), Trabajo y propósito (Júpiter, Saturno" + (ch.hs ? ", Medio Cielo y casas relevantes" : "") + "), Aspectos clave, Consejo final y, para terminar, un último apartado '## Resumen' con 4-5 frases cortas que condensen la carta (rasgos principales, fortalezas y retos). " +
+    "Máximo 500 palabras. Evita el determinismo, las predicciones y los temas médicos: es un texto de entretenimiento y reflexión. Puedes usar **negrita**, sin listas largas." +
     (ch.hs ? "" : " No hay hora de nacimiento: no menciones Ascendente ni casas, y habla de la Luna con cautela.") + "\n\nDATOS:\n" + d;
 }
 document.getElementById("aibtn").onclick = async () => {
