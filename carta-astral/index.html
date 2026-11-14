@@ -633,19 +633,21 @@ function buildPrompt() {
   if (ch.hs) d += `- Ascendente: ${pos(ch.ascInfo)}\n- Medio Cielo: ${pos(ch.mcInfo)}\n`;
   d += "\nAspectos:\n";
   ch.aspects.slice().sort((x, y) => x.orb - y.orb).forEach(a => { d += `- ${P[a.a].name} ${a.name} ${P[a.b].name} (orbe ${a.orb.toFixed(1)}°)\n`; });
-  return "Eres un astrólogo de tono cercano, cálido y honesto. Interpreta en español esta carta natal (zodiaco tropical, casas Placidus). " +
-    "Usa SOLO las posiciones y aspectos de los datos; no recalcules ni inventes nada. " +
-    "Estructura con encabezados que empiecen por '## ': Esencia (Sol, Luna" + (ch.hs ? ", Ascendente" : "") + "), Mente y comunicación (Mercurio), Amor y relaciones (Venus y Marte), Trabajo y propósito (Júpiter, Saturno" + (ch.hs ? ", Medio Cielo y casas relevantes" : "") + "), Aspectos clave y Consejo final. Termina SIEMPRE con un último apartado '## Veredicto para el grupo de amigos', pensado para leerlo en voz alta entre risas: " +
-    "(1) un titular de prensa del corazón sobre esta persona; (2) un carnet oficial con un cargo absurdo e inventado; (3) dos red flags y dos green flags, en broma; (4) qué pide en el bar y qué plan de sábado elegiría; (5) su frase estrella en el grupo de WhatsApp; (6) con qué tipo de persona tiene mejor y peor química. " +
-    "Todo en tono muy gracioso, con ironía cariñosa y exageraciones absurdas. Sé ORIGINAL: no uses chistes de manual del signo ni tópicos típicos; saca el humor de combinaciones concretas de esta carta (por ejemplo, la Luna con Marte, o un aspecto tenso) y de imágenes cotidianas inesperadas. Humor tierno: nada ofensivo sobre físico, salud, orientación, religión ni origen. " +
-    "El resto de apartados también con toques de humor, pero más breves. Máximo 600 palabras. Evita el determinismo, las predicciones y los temas médicos: es un texto de entretenimiento y reflexión. Puedes usar **negrita**, sin listas largas." +
-    (ch.hs ? "" : " No hay hora de nacimiento: no menciones Ascendente ni casas, y habla de la Luna con cautela.") + "\n\nDATOS:\n" + d;
+  return `Eres un cómico de stand-up que además sabe astrología, y estás haciendo un monólogo sobre esta persona delante de sus amigos, que se mueren de risa. Interpreta en español su carta natal (zodiaco tropical, casas Placidus) usando SOLO las posiciones y aspectos de los datos: no recalcules ni inventes nada, pero lo que significa cada cosa lo cuentas con muchísima gracia (que se entienda qué implica cada posición, contado con humor).
+
+ESTILO: la gracia es lo principal. Frases cortas y con ritmo, remates inesperados, exageraciones absurdas, comparaciones cotidianas disparatadas (compras, trabajo, grupos de WhatsApp, series, el metro, la familia), reglas de tres con giro final, y trata a los planetas y a los aspectos tensos como personajes de una comunidad de vecinos con sus broncas. Retoma chistes anteriores más adelante (callbacks). Háblale directamente a la persona, de tú. Puedes usar algún emoji. Cero tono de horóscopo de revista y cero frases solemnes. Sé ORIGINAL: nada de chistes de manual del signo; busca el humor en combinaciones concretas de esta carta.
+LÍMITES: ironía cariñosa, nunca hiriente; nada sobre físico, salud, orientación, religión ni origen; sin predicciones serias.
+
+ESTRUCTURA, con encabezados que empiecen por '## ' y títulos ingeniosos y graciosos (no los nombres aburridos): esencia (Sol, Luna${ch.hs ? ", Ascendente" : ""}); mente y comunicación (Mercurio); amor y relaciones (Venus y Marte); trabajo y ambición (Júpiter, Saturno${ch.hs ? ", Medio Cielo y casas" : ""}); los dramas de la carta (los aspectos más intensos). Para cerrar, '## Veredicto para el grupo de amigos' con: un titular de prensa del corazón, un carnet oficial con un cargo absurdo inventado, dos red flags y dos green flags en broma, qué pide en el bar y qué plan de sábado elegiría, su frase estrella en el grupo de WhatsApp, y con qué tipo de persona tiene mejor y peor química. Máximo 650 palabras.${ch.hs ? "" : " No hay hora de nacimiento: no menciones Ascendente ni casas, y haz broma de que la Luna 'a saber dónde andaba'."}
+
+DATOS:
+` + d;
 }
 document.getElementById("aibtn").onclick = async () => {
   const btn = document.getElementById("aibtn"), el = document.getElementById("aitext");
   btn.disabled = true; btn.textContent = "Interpretando…"; el.innerHTML = "";
   try {
-    const r = await SAMPLE(buildPrompt(), { cache: false, onText: ({ text }) => { el.innerHTML = md(text); } });
+    const r = await SAMPLE(buildPrompt(), { cache: false, modelTier: "complex", onText: ({ text }) => { el.innerHTML = md(text); } });
     el.innerHTML = md(r.text);
   } catch (e) {
     el.innerHTML = "<p class='note'>" + (e && e.code === "rate_limited" ? "Demasiadas peticiones; prueba de nuevo en un momento." : e && e.code === "not_granted" ? "No hay permiso para usar Claude desde esta página." : "No se pudo generar la interpretación.") + "</p>";
